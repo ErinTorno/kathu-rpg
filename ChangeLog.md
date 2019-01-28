@@ -1,5 +1,5 @@
 # Revision history for kathu
 
-## 0.1.0.0 -- YYYY-mm-dd
+## 0.1.0.0 -- 2019-01-28
 
-* First version. Released on an unsuspecting world.
+* First release
