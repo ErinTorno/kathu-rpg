@@ -1,0 +1,15 @@
+identity:
+  id: boulder
+  name: Boulder
+  description: A large rock
+specialEntity: player
+tags: [stone]
+position: default
+render: ["boulder.png"] # since this isn't animated, we can just give the file name
+actorState:
+  team: object
+  health: 60.0 # 3 hearts at start
+  mana: 40.0
+  armor: 0.0
+  aura: 0.0
+  resists: {}
