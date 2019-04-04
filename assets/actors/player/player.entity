@@ -3,7 +3,7 @@ identity:
   id: player
   name: This should never appear
   description: This should never appear
-# This follows an Entity Component System. Everything component is optional, with only an ID part of an identity being required
+# This follows an Entity Component System. Everything component is optional, with only an ID part of an identity being required for serialized entities
 specialEntity: player
 tags: [player]
 position: default # these are given here with "default", to state that we have it without giving any special configs
