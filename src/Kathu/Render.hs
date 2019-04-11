@@ -100,25 +100,7 @@ runRender !window !dT = do
             where topLeft = V2 (scale * x - 0.5 * resX) (scale * y - 0.5 * resY)
                   draw p scr sprite = drawRenderSprite scr (getRenderRect topLeft ((*scale) <$> p) scale) sprite $> scr
     cfoldM_ runForCamera screen
-
-    {-
-    older to be updated
-    let aspect  = aspectRatio . fmap fromIntegral . resolution $ settings
-        scale   = (fromIntegral . resolutionY $ settings) / (pixelsPerUnit * unitsPerHeight)
-        camEdge = SDL.V2 (unitsPerHeight * aspect) unitsPerHeight
-        runForCamera :: SDL.Surface -> (Camera, Position) -> SystemT' IO SDL.Surface
-        runForCamera !screen (cam@(Camera {}), Position (SDL.V3 x y z)) = cfoldM (renderEach topLeft) screen
-            where topLeft :: SDL.V3 CInt
-                  topLeft = fmap floor $ SDL.V3 (scale * x - 0.5 * (fromIntegral . resolutionX $ settings)) (scale * y - 0.5 * (fromIntegral . resolutionY $ settings)) z
-        renderEach :: SDL.V3 CInt -> SDL.Surface -> (Position, Render) -> SystemT' IO SDL.Surface
-        renderEach topLeft !screen (Position pos, Render sprites) = Vec.foldM draw screen sprites
-            where draw scr sprite = drawRenderSprite scr renderRect sprite $> scr
-                  renderRect      = getRenderRect topLeft pos scale
-                  -- error $ "attempted to render " ++ (Vec.foldl (\acc v -> acc ++ " " ++ show v) "" sprites)
-    cfoldM_ runForCamera screen
-        --cmapIf (\(Position pos, Render sprites) -> isWithinCamera camEdge camPos pos) $ (Position (SDL.V2 x y z), Render sprites) ->
-        --    pure ()
-    -}
+    
     SDL.updateWindowSurface window
 
 runRenderGL :: IO ()

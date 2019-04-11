@@ -30,5 +30,5 @@ instance FromJSON (SystemLink BreakBehavior) where
     parseJSON v          = typeMismatch "BreakBehavior" v
     
 instance FromJSON (SystemLink Tile) where
-    parseJSON (Object v) = getCompose $ Tile <$> v .:~ "tileID" <*> v .:^ "tileID" <*> v .:^ "name" <*> v .:~ "breakBehavior"
+    parseJSON (Object v) = getCompose $ Tile <$> v .:~ "tileID" <*> v .:^ "tileID" <*> v .:^ "name" <*> v .:^ "isSolid" <*> v .:~ "breakBehavior"
     parseJSON v          = typeMismatch "Tile" v

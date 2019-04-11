@@ -17,8 +17,8 @@ import Foreign.C.Types (CInt)
 import GHC.Generics
 import Kathu.Graphics.Color
 import Kathu.Graphics.Drawable
+import Kathu.IO.Misc
 import Kathu.IO.Parsing
-import Kathu.IO.External
 import qualified SDL
 import qualified SDL.Image as SDLI
 

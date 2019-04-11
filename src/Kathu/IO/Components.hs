@@ -15,8 +15,8 @@ import Kathu.Entity.Prototype
 import Kathu.Entity.System
 import Kathu.Graphics.Drawable
 import Kathu.IO.Graphics
+import Kathu.IO.Misc
 import Kathu.IO.Parsing
-import Kathu.IO.External
 import Linear.V3 (V3(..))
 
 -- The EntityPrototype itself
@@ -46,14 +46,6 @@ instance (Fractional a, FromJSON a) => FromJSON (R.Dynamic a) where
     parseJSON (Number s) = let base = fromScientific s in pure $ R.Dynamic base base 0
     parseJSON e          = typeMismatch "Dynamic" e
 
-instance FromJSON (SystemLink Render) where
-    parseJSON obj@(Object v) = (\v -> v >>= pure . Render . Vec.singleton) <$> parseJSON obj
-    parseJSON (Array a)      = toRender <$> Vec.foldM run (pure []) a
-        where run :: SystemLink [RenderSprite] -> Value -> Parser (SystemLink [RenderSprite])
-              run acc cur = (\rn -> rn >>= \inner -> (inner:) <$> acc) <$> parseJSON cur
-              toRender ls = Render <$> (Vec.fromList <$> ls)
-    parseJSON e              = typeMismatch "Render" e
-
 -- Simple Components: need no custom instances
 
 instance ToJSON MovingSpeed
@@ -70,14 +62,14 @@ instance ToJSON ActorState
 instance ToJSON Identity
 instance FromJSON Identity where
     parseJSON (String s) = pure $ Identity s "" "" -- basic one with only an id
-    parseJSON (Object v) = Identity <$> v .: "id" <*> v .: "name" <*> v .: "description"
+    parseJSON (Object v) = Identity <$> v .: "id" <*> v .:? "name" .!= "" <*> v .:? "description" .!= ""
     parseJSON e          = typeMismatch "Identity" e
 
 instance ToJSON SpecialEntity
 instance FromJSON SpecialEntity where
     parseJSON (String s) = case T.toLower s of
         "player" -> pure Player
-        _        -> fail . concat $ ["Couldn't match ", T.unpack s, " with any known instance of SpecialEntity"]
+        _        -> fail $ "Couldn't match " ++ T.unpack s ++ " with any known instance of SpecialEntity"
     parseJSON e = typeMismatch "SpecialEntity" e
 
 instance ToJSON Position
@@ -98,3 +90,11 @@ instance FromJSON Team where
     parseJSON (String "neutral") = pure . Team $ 2
     parseJSON (String "object") = pure . Team $ 3
     parseJSON v = genericParseJSON defaultOptions v
+
+instance FromJSON (SystemLink Render) where
+    parseJSON obj@(Object v) = (\v -> v >>= pure . Render . Vec.singleton) <$> parseJSON obj
+    parseJSON (Array a)      = toRender <$> Vec.foldM run (pure []) a
+        where run :: SystemLink [RenderSprite] -> Value -> Parser (SystemLink [RenderSprite])
+              run acc cur = (\rn -> rn >>= \inner -> (inner:) <$> acc) <$> parseJSON cur
+              toRender ls = Render <$> (Vec.fromList <$> ls)
+    parseJSON e              = typeMismatch "Render" e

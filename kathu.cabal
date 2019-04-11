@@ -21,10 +21,10 @@ library
 
                      Kathu.Graphics.Color, Kathu.Graphics.Drawable,
 
-                     Kathu.IO.Components, Kathu.IO.External, Kathu.IO.File, Kathu.IO.Graphics,
-                     Kathu.IO.Library, Kathu.IO.Parsing, Kathu.IO.Settings, Kathu.IO.World,
+                     Kathu.IO.Components, Kathu.IO.File, Kathu.IO.Graphics, Kathu.IO.Library,
+                     Kathu.IO.Misc, Kathu.IO.Parsing, Kathu.IO.Settings, Kathu.IO.World,
 
-                     Kathu.World.Tile
+                     Kathu.World.Field, Kathu.World.Tile
   build-depends:     base >=4.11 && <4.12,
                      text, bytestring,
                      containers, lens, linear, mtl, random, scientific, template-haskell, vector,

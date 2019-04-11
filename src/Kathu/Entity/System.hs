@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -72,7 +73,7 @@ type SystemT' m a = SystemT EntityWorld m a
 destroyEntity ety = destroy ety (Proxy @AllComponents)
 
 stepLogicTime :: Word32 -> System' ()
-stepLogicTime dT = modify global $ \(LogicTime t) -> LogicTime (t + dT)
+stepLogicTime !dT = modify global $ \(LogicTime t) -> LogicTime (t + dT)
 
 stepRenderTime :: Word32 -> System' ()
-stepRenderTime dT = modify global $ \(RenderTime t) -> RenderTime (t + dT)
+stepRenderTime !dT = modify global $ \(RenderTime t) -> RenderTime (t + dT)
