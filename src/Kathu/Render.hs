@@ -3,12 +3,13 @@
 module Kathu.Render where
 
 import Apecs hiding (($=))
+import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Functor
 import qualified Data.Vector as Vec
 import Data.Word
 import Foreign.C.Types (CInt)
-import qualified Graphics.Rendering.OpenGL as GL
+import Graphics.Rendering.OpenGL hiding (get, Render)
 import Kathu.Entity.Components
 import Kathu.Entity.System
 import Kathu.Graphics.Drawable
@@ -20,9 +21,11 @@ import Linear.V3 (V3(..))
 import qualified SDL
 import SDL (($=))
 
+{-
 type Color = SDL.V4 Word8
 backgroundColor :: Color
 backgroundColor = SDL.V4 0 0 0 maxBound
+-}
 
 -- the camera will render excepting the camera to look down on us at these degrees
 angleFromFront :: Float
@@ -46,6 +49,7 @@ isWithinCamera (SDL.V2 camW camH) (SDL.V3 cx _ cz) (SDL.V3 tx ty tz) = withinX &
           withinX  = cx - camW <= tx && tx <= cx + camW
 -}
 
+{-
 -- scales a render image's rectangle to wherever it should be when drawn
 -- as of now, we don't scale for z at all
 getRenderRect :: V2 Float -> V2 Float -> Float -> SDL.Rectangle CInt -> SDL.Rectangle CInt
@@ -76,9 +80,10 @@ updateAnimations = do
         updateAnimations (Render spr, ActionSet{moving = m, lastMoving = lm}) = if m == lm then Render spr else switch
             where switch 
 -}
-
+-}
 -- main render loop
 
+{-
 runRender :: SDL.Window -> Word32 -> SystemT' IO ()
 runRender !window !dT = do
     do stepRenderTime dT
@@ -101,9 +106,39 @@ runRender !window !dT = do
                   draw p scr sprite = drawRenderSprite scr (getRenderRect topLeft ((*scale) <$> p) scale) sprite $> scr
     cfoldM_ runForCamera screen
     
-    SDL.updateWindowSurface window
+    lift $ runRenderGL window
 
-runRenderGL :: IO ()
-runRenderGL = do
-    GL.clearColor $= GL.Color4 1 0 1 1
-    GL.clear [GL.ColorBuffer]
+    SDL.updateWindowSurface window
+-}
+
+runRender :: SDL.Window -> Word32 -> SystemT' IO ()
+runRender window dT = do
+    do stepRenderTime dT
+    settings <- get global
+    let startGL :: IO ()
+        startGL = do
+            clearColor $= Color4 0 0 0 1
+            clear [ColorBuffer]
+                    -- error . concat $ ["x ", show x, " y ", show y, " z ", show z]
+        endGL :: IO ()
+        endGL = do
+            flush
+            SDL.glSwapWindow window
+        drawSprite sprite = do
+            let tex = getImage sprite
+            SDL.glBindTexture tex
+            let mkQuad :: GLfloat -> [Vertex3 GLfloat]
+                mkQuad w = [Vertex3 (-w) (-w) 0, Vertex3 (-w) w 0, Vertex3 w w 0, Vertex3 w (-w) 0]
+            -- 1.0 top of screen, -1.0 bottom, 1.0 right, -1.0 left
+            preservingMatrix $ do
+                color $ Color3 0 0 (0 :: GLfloat)
+                renderPrimitive Quads $ mapM_ vertex (mkQuad 0.1)
+            SDL.glUnbindTexture tex
+        -- Apecs related drawing
+        aspect = aspectRatio . fmap fromIntegral . resolution $ settings
+        (SDL.V2 resX resY) = fromIntegral <$> resolution settings
+        renderEachSprite (Render spr) = lift . forM_ spr $ drawSprite
+    lift startGL
+    -- draw each quad
+    cmapM_ renderEachSprite
+    lift endGL

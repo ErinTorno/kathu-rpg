@@ -18,6 +18,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Scientific
+import Kathu.Graphics.Drawable
 import Kathu.IO.File
 import qualified SDL
 import System.FilePath
@@ -28,16 +29,19 @@ fromScientific = fromRational . toRational
 -- Helpers for desparseSLerialization that works with state
 
 data ParsingLibrary = ParsingLibrary
-    { _images :: Map Text SDL.Surface
+    { _images :: Map Text Image
     , _countingIDs :: Map Text (Map Text Int) -- First key is category, second is individual id and associated index
     , _workingDirectory :: String
+    , _renderer :: SDL.Renderer
     }
 makeLenses ''ParsingLibrary
 
-emptyPL = ParsingLibrary
+mkEmptyPL :: SDL.Renderer -> ParsingLibrary
+mkEmptyPL renderer = ParsingLibrary
     { _images = Map.empty
     , _countingIDs = Map.empty
     , _workingDirectory = ""
+    , _renderer = renderer
     }
 
 newtype SystemLink a = SystemLink (StateT ParsingLibrary IO a) deriving (Functor, Applicative, Monad, MonadState ParsingLibrary)

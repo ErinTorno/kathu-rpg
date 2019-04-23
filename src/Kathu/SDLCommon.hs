@@ -5,24 +5,8 @@ module Kathu.SDLCommon where
 import qualified SDL
 
 import Data.Word
-import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Text (Text)
-
-withSDL :: MonadIO m => m a -> m ()
-withSDL op = do SDL.initialize []
-                void op
-                SDL.quit
-
-withWindow :: MonadIO m => Text -> SDL.V2 Word32 -> Maybe SDL.OpenGLConfig -> (SDL.Window -> m a) -> m ()
-withWindow title (SDL.V2 w h) glconfig op = do
-    window <- SDL.createWindow title $ SDL.defaultWindow {SDL.windowOpenGL = glconfig, SDL.windowInitialSize = SDL.V2 (fromIntegral w) (fromIntegral h)}
-    SDL.showWindow window
-    void . op $ window
-    SDL.destroyWindow window
-
-renderSurfaceToWindow :: (MonadIO m) => SDL.Window -> SDL.Surface -> SDL.Surface -> m ()
-renderSurfaceToWindow window screen image = SDL.surfaceBlit image Nothing screen Nothing >> SDL.updateWindowSurface window
                              
 isOpen :: Maybe SDL.Event -> Bool
 isOpen = maybe True (not . isQuitEvent)

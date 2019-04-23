@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Strict #-}
 
 module Kathu.App (start) where
 
@@ -10,11 +11,12 @@ import Data.Bool
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Word
+import qualified Graphics.Rendering.OpenGL as GL
 import Kathu.Entity.System
 import qualified Kathu.Init as Init
 import Kathu.Game (runGame)
 import Kathu.IO.Settings
-import Kathu.Render (runRender, runRenderGL)
+import Kathu.Render (runRender)
 import qualified Kathu.SDLCommon as SDLC
 import Kathu.Util
 import qualified SDL
@@ -32,7 +34,7 @@ renderDelay :: Settings -> Word32
 renderDelay = max updateDelay . floor . (1000.0/) . targetFPS
 
 run :: Word32 -> SystemT' IO Bool -> SDL.Window -> Word32 -> Word32 -> SystemT' IO ()
-run renderDelay b !window !prevPhysTime !prevRendTime = b >>= go
+run renderDelay b window !prevPhysTime !prevRendTime = b >>= go
     where go False = pure ()
           go True  = do
               startTime <- SDL.ticks
@@ -52,20 +54,28 @@ run renderDelay b !window !prevPhysTime !prevRendTime = b >>= go
               -- Physics steps back to ensure next update is on time; render goes whenever it can
               run renderDelay b window (startTime - remainder) renderStartTime
 
-initialize :: Settings -> SDL.Window -> SystemT' IO ()
-initialize settings window = do
-    Init.system settings
-    context <- SDL.glCreateContext window
-    (program, attrib) <- lift $ Init.openGL
-
-    SDL.ticks >>= \t -> run (floor $ 1000.0 / (targetFPS settings)) (SDLC.isOpen <$> SDL.pollEvent) window t t
-
-    SDL.glDeleteContext context
-    SDL.destroyWindow window
-
 start :: IO ()
-start = do SDL.initialize [SDL.InitVideo]
-           SDL.HintRenderScaleQuality $= SDL.ScaleNearest
-           settings <- loadSettings
-           world    <- Init.entityWorld
-           runWith world $ (SDLC.withSDL $ SDLC.withWindow appName (resolution settings) (Just SDL.defaultOpenGL) (initialize settings))
+start = do
+    SDL.initialize [SDL.InitVideo]
+    SDL.HintRenderScaleQuality $= SDL.ScaleNearest
+    settings <- loadSettings
+    world    <- Init.entityWorld
+    let winConfig = SDL.defaultWindow
+                        { SDL.windowInitialSize = SDL.V2 (fromIntegral . resolutionX $ settings) (fromIntegral . resolutionY $ settings)
+                        , SDL.windowOpenGL = Just SDL.defaultOpenGL
+                        }
+    window <- SDL.createWindow appName winConfig
+    SDL.showWindow window
+    _ <- SDL.glCreateContext window
+    renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
+    Init.openGL
+
+    curTime <- SDL.ticks
+    -- the main loop
+    runWith world $
+        Init.system renderer settings
+        >> run (floor $ 1000.0 / (targetFPS settings)) (SDLC.isOpen <$> SDL.pollEvent) window curTime curTime
+
+    -- dispose of resources
+    SDL.destroyWindow window
+    SDL.quit

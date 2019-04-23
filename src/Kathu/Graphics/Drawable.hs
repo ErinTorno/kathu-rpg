@@ -7,19 +7,21 @@ import Foreign.C.Types (CInt)
 import qualified Kathu.SDLCommon as SDLC
 import qualified SDL
 
+type Image = SDL.Texture
+
 data AnimStyle = Single | StandardActor deriving (Show, Eq)
 
 -- a drawable that can change
 data AnimationStrip = AnimationStrip {animID :: Text, frameCount :: Int, row :: Int, delay :: Word32} deriving (Show, Eq)
 
 data Animation = Animation
-    { animAtlas  :: SDL.Surface
+    { animAtlas  :: Image
     , animStrips :: Vector AnimationStrip
     , animBounds :: SDL.V2 CInt
     }
 
 data RenderSprite
-    = StaticSprite {staticSurface :: SDL.Surface, staticBounds :: SDL.Rectangle CInt}
+    = StaticSprite {staticSurface :: Image, staticBounds :: SDL.Rectangle CInt}
     | AnimatedSprite
       { animation    :: Animation
       , activeAnim   :: Int
@@ -34,6 +36,10 @@ currentBounds sprite = SDLC.mkRect ((*) w . fromIntegral . currentFrame $ sprite
 
 isAnimated StaticSprite {} = False
 isAnimated _               = True
+
+getImage :: RenderSprite -> Image
+getImage (StaticSprite im _) = im
+getImage anim = animAtlas . animation $ anim
 
 -- updates current time, and switches to new frame if we reach it
 updateFrames dT s@(StaticSprite {})   = s

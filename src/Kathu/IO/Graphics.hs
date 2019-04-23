@@ -27,20 +27,24 @@ import qualified SDL.Image as SDLI
 zeroPoint :: SDL.Point SDL.V2 CInt
 zeroPoint = SDL.P $ SDL.V2 0 0
 
-insertImage :: Text -> SDL.Surface -> SystemLink SDL.Surface
+insertImage :: Text -> Image -> SystemLink Image
 insertImage key img = modify (over images $ Map.insert key img) $> img
 
 -- loads an image if it hasn't already been loaded and add it to our map, otherwise get that
-loadImage :: Text -> SystemLink SDL.Surface
+loadImage :: Text -> SystemLink Image
 loadImage t = do
     url    <- T.pack <$> (parseUrl . T.unpack $ t)
     images <- gets (view images)
+    render <- gets (view renderer)
     case Map.lookup url images of
         Just img -> liftSL . pure $ img
-        Nothing  -> (liftSL . SDLI.load . T.unpack $ url) >>= insertImage url
+        Nothing  -> (liftSL . SDLI.loadTexture render . T.unpack $ url) >>= insertImage url
 
 getSurfaceBounds :: MonadIO m => SDL.Surface -> m (SDL.Rectangle CInt)
-getSurfaceBounds s = SDL.surfaceDimensions s >>= return . SDL.Rectangle zeroPoint
+getSurfaceBounds s = SDL.surfaceDimensions s >>= pure . SDL.Rectangle zeroPoint
+
+getTextureBounds :: MonadIO m => SDL.Texture -> m (SDL.Rectangle CInt)
+getTextureBounds t = SDL.queryTexture t >>= \t -> pure . SDL.Rectangle zeroPoint $ SDL.V2 (SDL.textureWidth t) (SDL.textureHeight t)
 
 instance FromJSON AnimationStrip where
     parseJSON = withObject "AnimationStrip" $ \v -> AnimationStrip <$> v .: "id" <*> v .: "frames" <*> v .: "row" <*> v .: "delay"
@@ -54,6 +58,6 @@ instance FromJSON (SystemLink Animation) where
     parseJSON v = typeMismatch "Animation" v
 
 instance FromJSON (SystemLink RenderSprite) where
-    parseJSON (String s)     = pure $ loadImage s >>= \i -> liftSL (getSurfaceBounds i) >>= \bnds -> pure $ StaticSprite i bnds
+    parseJSON (String s)     = pure $ loadImage s >>= \i -> liftSL (getTextureBounds i) >>= \bnds -> pure $ StaticSprite i bnds
     parseJSON obj@(Object _) = (parseJSON obj :: Parser (SystemLink Animation)) >>= \img -> pure $ img >>= \a -> pure $ AnimatedSprite a 0 0 0
     parseJSON v              = typeMismatch "RenderSprite" v

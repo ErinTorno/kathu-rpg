@@ -14,6 +14,7 @@ import Kathu.Entity.System
 import Kathu.IO.Components
 import Kathu.IO.File
 import Kathu.IO.Parsing
+import qualified SDL
 import System.FilePath
 
 addEntities :: [EntityPrototype] -> Library -> Library
@@ -22,8 +23,8 @@ addEntities ety lib = lib {prototypes = etyMap ety}
           getID (Just ident) = identifier ident
           getID Nothing      = error "Attempted to load entity from file without an id"
 
-loadLibrary :: FilePath -> IO Library
-loadLibrary fldr = fst <$> process
+loadLibrary :: SDL.Renderer -> FilePath -> IO Library
+loadLibrary renderer fldr = fst <$> process
     where -- parses all files of a type requiring SystemLink
           psSL :: FromJSON (SystemLink a) => (String, [a] -> Library -> Library) -> (Library, ParsingLibrary) -> IO (Library, ParsingLibrary) 
           psSL (ext, adder) (lib, plib) = (parseSL plib . parseAllSL ext $ fldr) >>= \(nset, nplib) -> pure (adder nset lib, nplib)
@@ -31,5 +32,5 @@ loadLibrary fldr = fst <$> process
           psNo :: FromJSON a => (String, [a] -> Library -> Library)  -> (Library, ParsingLibrary) -> IO (Library, ParsingLibrary)
           psNo (ext, adder) (lib, plib) = parseAll ext fldr >>= \nset -> pure (adder nset lib, plib)
           -- the set of elements to 
-          start = (emptyLibrary, emptyPL)
+          start = (emptyLibrary, mkEmptyPL renderer)
           process = pure start >>= psSL ("entity", addEntities)
