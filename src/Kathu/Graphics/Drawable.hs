@@ -7,7 +7,7 @@ import Foreign.C.Types (CInt)
 import qualified Kathu.SDLCommon as SDLC
 import qualified SDL
 
-type Image = SDL.Texture
+type Image = SDL.Surface
 
 data AnimStyle = Single | StandardActor deriving (Show, Eq)
 

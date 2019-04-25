@@ -4,6 +4,6 @@
 
 * First release
 
-## 0.1.1.0 -- 2019-4-4
+## 0.1.3.0 -- 2019-04-24
 
-* Second release, with a large amount of code refactorings and simplification
+* Implemented surface depth sorting

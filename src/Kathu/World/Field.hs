@@ -1,5 +1,3 @@
-{-# TemplateHaskell #-}
-
 module Kathu.World.Field where
 
 import Control.Lens

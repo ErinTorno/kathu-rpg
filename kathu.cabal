@@ -1,5 +1,5 @@
 name:                kathu
-version:             0.1.2.0
+version:             0.1.3.0
 -- synopsis:
 -- description:
 license:             BSD3
@@ -27,8 +27,8 @@ library
                      Kathu.World.Field, Kathu.World.Tile
   build-depends:     base >=4.11 && <4.12,
                      text, bytestring,
-                     containers, lens, linear, mtl, random, scientific, template-haskell, vector,
-                     sdl2 >=2.4.1 && <2.4.2, sdl2-image, OpenGL, apecs,
+                     containers, lens, linear, mtl, random, scientific, template-haskell, vector, vector-algorithms,
+                     sdl2 >=2.4.1 && <2.4.2, sdl2-image, apecs,
                      directory, filepath,
                      aeson, yaml
   hs-source-dirs:    src

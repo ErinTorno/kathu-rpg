@@ -1,6 +1,6 @@
 # Kathu RPG
 
-An (tentatively named) dungeon-puzzle focused RPG written in the Haskell.
+A (tentatively named) dungeon-puzzle focused RPG written in Haskell using SDL2.
 
 The project was aimed as a rewrite for a previous game written in a different language, and used as a means of learning Haskell for the author.
 

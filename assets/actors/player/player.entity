@@ -8,7 +8,7 @@ specialEntity: player
 tags: [player]
 position: default # these are given here with "default", to state that we have it without giving any special configs
 velocity: default # same for this; this component will be dropped in the future, with the "physics" type likely replacing it
-movingSpeed: 2.0 # 1/8 of a tile each tick, 7.5 tiles per second; each tile is 16 units
+movingSpeed: 2.5 # 2.5/16 of a tile each tick; each tile is 16 units
 render:
 - atlas: "test.png"
   bounds: [23, 32] # kind of irregular

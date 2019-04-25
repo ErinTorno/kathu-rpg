@@ -21,10 +21,12 @@ conditionalRun _ False = pure False
 
 -- working with SDL data types
 
-mkRect :: a -> a -> a -> a -> SDL.Rectangle a
-mkRect x y w h = SDL.Rectangle topLeft size
-    where topLeft = SDL.P $ SDL.V2 x y
-          size    = SDL.V2 w h
+mkRect = mkRectWith id
+
+mkRectWith :: (a -> b) -> a -> a -> a -> a -> SDL.Rectangle b
+mkRectWith f x y w h = SDL.Rectangle topLeft size
+    where topLeft = SDL.P $ SDL.V2 (f x) (f y)
+          size    = SDL.V2 (f w) (f h)
 
 shiftRect :: Num a => a -> a -> SDL.Rectangle a -> SDL.Rectangle a
 shiftRect dx dy (SDL.Rectangle (SDL.P (SDL.V2 x y)) (SDL.V2 w h)) = mkRect (x + dx) (y + dy) w h

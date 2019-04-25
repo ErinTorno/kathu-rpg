@@ -35,10 +35,9 @@ loadImage :: Text -> SystemLink Image
 loadImage t = do
     url    <- T.pack <$> (parseUrl . T.unpack $ t)
     images <- gets (view images)
-    render <- gets (view renderer)
     case Map.lookup url images of
         Just img -> liftSL . pure $ img
-        Nothing  -> (liftSL . SDLI.loadTexture render . T.unpack $ url) >>= insertImage url
+        Nothing  -> (liftSL . SDLI.load . T.unpack $ url) >>= insertImage url
 
 getSurfaceBounds :: MonadIO m => SDL.Surface -> m (SDL.Rectangle CInt)
 getSurfaceBounds s = SDL.surfaceDimensions s >>= pure . SDL.Rectangle zeroPoint
@@ -58,6 +57,6 @@ instance FromJSON (SystemLink Animation) where
     parseJSON v = typeMismatch "Animation" v
 
 instance FromJSON (SystemLink RenderSprite) where
-    parseJSON (String s)     = pure $ loadImage s >>= \i -> liftSL (getTextureBounds i) >>= \bnds -> pure $ StaticSprite i bnds
+    parseJSON (String s)     = pure $ loadImage s >>= \i -> liftSL (getSurfaceBounds i) >>= \bnds -> pure $ StaticSprite i bnds
     parseJSON obj@(Object _) = (parseJSON obj :: Parser (SystemLink Animation)) >>= \img -> pure $ img >>= \a -> pure $ AnimatedSprite a 0 0 0
     parseJSON v              = typeMismatch "RenderSprite" v
