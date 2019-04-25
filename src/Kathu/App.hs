@@ -14,8 +14,9 @@ import Data.Word
 import Kathu.Entity.System
 import qualified Kathu.Init as Init
 import Kathu.Game (runGame)
+import Kathu.Graphics.RenderBuffer (RenderBuffer, mkRenderBuffer)
 import Kathu.IO.Settings
-import Kathu.Render (runRender, RenderBuffer, mkRenderBuffer)
+import Kathu.Render (runRender)
 import qualified Kathu.SDLCommon as SDLC
 import Kathu.Util
 import qualified SDL

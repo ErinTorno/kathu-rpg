@@ -19,7 +19,7 @@ library
                      Kathu.Entity.Action, Kathu.Entity.Components, Kathu.Entity.Item, Kathu.Entity.Player,
                      Kathu.Entity.Prototype, Kathu.Entity.Resource, Kathu.Entity.System, Kathu.Entity.Timing,
 
-                     Kathu.Graphics.Color, Kathu.Graphics.Drawable,
+                     Kathu.Graphics.Color, Kathu.Graphics.Drawable, Kathu.Graphics.RenderBuffer,
 
                      Kathu.IO.Components, Kathu.IO.File, Kathu.IO.Graphics, Kathu.IO.Library,
                      Kathu.IO.Misc, Kathu.IO.Parsing, Kathu.IO.Settings, Kathu.IO.World,

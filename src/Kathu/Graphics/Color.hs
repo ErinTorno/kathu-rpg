@@ -4,13 +4,21 @@ module Kathu.Graphics.Color where
 
 import Data.Word
 import GHC.Generics
+import Linear.V4 (V4(..))
 
-data Color = Color
-    { red   :: Word8
-    , green :: Word8
-    , blue  :: Word8
-    , alpha :: Word8
-    } deriving (Show, Eq, Generic)
+type Color = V4 Word8
+
+mkColor :: Word8 -> Word8 -> Word8 -> Word8 -> Color
+mkColor = V4
+
+red :: Color -> Word8
+red   (V4 r _ _ _) = r
+green :: Color -> Word8
+green (V4 _ g _ _) = g
+blue :: Color -> Word8
+blue  (V4 _ _ b _) = b
+alpha :: Color -> Word8
+alpha (V4 _ _ _ a) = a
 
 data HSVColor = HSVColor
     { hue        :: Float
@@ -72,9 +80,9 @@ fromHSV hsv = let fromFloat :: Float -> Word8
                   q = fromFloat . (*(value hsv)) . (*255.0) $ 1.0 - f * saturation hsv
                   t = fromFloat . (*(value hsv)) . (*255.0) $ 1.0 - (1.0 - f) * saturation hsv in
               case hi of
-                  0 -> Color v t p alph
-                  1 -> Color q v p alph
-                  2 -> Color p v t alph
-                  3 -> Color p q v alph
-                  4 -> Color t p v alph
-                  _ -> Color v p q alph
+                  0 -> mkColor v t p alph
+                  1 -> mkColor q v p alph
+                  2 -> mkColor p v t alph
+                  3 -> mkColor p q v alph
+                  4 -> mkColor t p v alph
+                  _ -> mkColor v p q alph

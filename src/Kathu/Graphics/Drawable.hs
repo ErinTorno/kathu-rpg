@@ -20,29 +20,34 @@ data Animation = Animation
     , animBounds :: SDL.V2 CInt
     }
 
-data RenderSprite
-    = StaticSprite {staticSurface :: Image, staticBounds :: SDL.Rectangle CInt}
-    | AnimatedSprite
-      { animation    :: Animation
-      , activeAnim   :: Int
-      , currentFrame :: Int
-      , animTime     :: Word32
-      }
+data StaticSprite = StaticSprite {staticSurface :: Image, staticBounds :: SDL.Rectangle CInt}
+data AnimatedSprite = AnimatedSprite
+    { animation    :: Animation
+    , activeAnim   :: Int
+    , currentFrame :: Int
+    , animTime     :: Word32
+    }
+
+data RenderSprite = RSStatic StaticSprite | RSAnimated AnimatedSprite
 
 currentBounds :: RenderSprite -> SDL.Rectangle CInt
-currentBounds (StaticSprite _ bnd) = bnd
-currentBounds sprite = SDLC.mkRect ((*) w . fromIntegral . currentFrame $ sprite) ((*) h . fromIntegral . activeAnim $ sprite) w h
-    where (SDL.V2 w h) = animBounds . animation $ sprite
+currentBounds (RSStatic (StaticSprite _ bnd)) = bnd
+currentBounds (RSAnimated anim) = SDLC.mkRect ((*) w . fromIntegral . currentFrame $ anim) ((*) h . fromIntegral . activeAnim $ anim) w h
+    where (SDL.V2 w h) = animBounds . animation $ anim
 
-isAnimated StaticSprite {} = False
-isAnimated _               = True
+isAnimated :: RenderSprite -> Bool
+isAnimated (RSStatic _)   = False
+isAnimated (RSAnimated _) = True
 
 getImage :: RenderSprite -> Image
-getImage (StaticSprite im _) = im
-getImage anim = animAtlas . animation $ anim
+getImage (RSStatic (StaticSprite img _)) = img
+getImage (RSAnimated anim) = animAtlas . animation $ anim
+
+switchAnimation :: Int -> AnimatedSprite -> AnimatedSprite
+switchAnimation i anim = anim {activeAnim = i, currentFrame = 0, animTime = 0}
 
 -- updates current time, and switches to new frame if we reach it
-updateFrames dT s@(StaticSprite {})   = s
+updateFrames :: Word32 -> AnimatedSprite -> AnimatedSprite
 updateFrames dT d@(AnimatedSprite {animTime = animT, activeAnim = act, currentFrame = frame, animation = anim}) = d {animTime = newTime, currentFrame = newFrame}
     where newTime  = animT + dT
           curStrip = (animStrips anim) ! act

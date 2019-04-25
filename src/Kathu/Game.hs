@@ -18,7 +18,10 @@ runPhysics :: System' ()
 runPhysics = do
     --let updateCheck v = if v == SDL.V3 0.0 0.0 0.0 then v else error . show $ v
     -- Updates ActionSet for the local player based on pressed 
-    cmap $ \(as, Local press) -> set moving (getDirection press) . set lastMoving (view moving as) $ as
+    cmap $ \(as, Local press) ->
+        let dir = getDirection press
+            facingDir = fromMaybe (view facingDirection as) dir
+        in set facingDirection facingDir . set moving dir . set lastMoving (view moving as) $ as
     -- Updates Velocity for all moving acting entities
     cmapIf newDirection $ \(as, MovingSpeed s, Velocity v) -> Velocity . fromMaybe SDLC.zeroV3 . fmap (getMoveVector s) . view moving $ as
     -- Updates Position based on Velocity

@@ -57,6 +57,6 @@ instance FromJSON (SystemLink Animation) where
     parseJSON v = typeMismatch "Animation" v
 
 instance FromJSON (SystemLink RenderSprite) where
-    parseJSON (String s)     = pure $ loadImage s >>= \i -> liftSL (getSurfaceBounds i) >>= \bnds -> pure $ StaticSprite i bnds
-    parseJSON obj@(Object _) = (parseJSON obj :: Parser (SystemLink Animation)) >>= \img -> pure $ img >>= \a -> pure $ AnimatedSprite a 0 0 0
+    parseJSON (String s)     = pure $ loadImage s >>= \i -> liftSL (getSurfaceBounds i) >>= \bnds -> pure . RSStatic $ StaticSprite i bnds
+    parseJSON obj@(Object _) = (parseJSON obj :: Parser (SystemLink Animation)) >>= \img -> pure $ img >>= \a -> pure . RSAnimated $ AnimatedSprite a 0 0 0
     parseJSON v              = typeMismatch "RenderSprite" v

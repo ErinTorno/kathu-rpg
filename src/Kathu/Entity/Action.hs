@@ -18,6 +18,7 @@ data ActionSet = ActionSet
     { _controller :: ActionSet -> ActionSet
     , _moving :: Maybe Direction
     , _lastMoving :: Maybe Direction
+    , _facingDirection :: Direction -- so even if waiting, we still know which direction to draw
     , _usingPrimary :: Maybe Angle
     , _usingSecondary :: Maybe Angle
     }
@@ -26,7 +27,7 @@ makeLenses ''ActionSet
 newDirection aset = view moving aset /= view lastMoving aset
 
 emptyActionSet :: ActionSet
-emptyActionSet = ActionSet id Nothing Nothing Nothing Nothing
+emptyActionSet = ActionSet id Nothing Nothing South Nothing Nothing
 
 -- unlike NPCs, the player gives input that is later combined
 data ActionPressed = ActionPressed
@@ -109,3 +110,14 @@ intToDir (-5) = Just Southwest
 intToDir (-4) = Just West
 intToDir (-3) = Just Northwest
 intToDir _    = Nothing
+
+-- a temporary solution until we have non absolute animation atlases
+dirToAnimIndex :: Direction -> Int
+dirToAnimIndex North     = 0
+dirToAnimIndex Northeast = 1
+dirToAnimIndex East      = 2
+dirToAnimIndex Southeast = 3
+dirToAnimIndex South     = 4
+dirToAnimIndex Southwest = 5
+dirToAnimIndex West      = 6
+dirToAnimIndex Northwest = 7

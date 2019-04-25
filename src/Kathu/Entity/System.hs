@@ -18,6 +18,7 @@ import GHC.Generics
 import Kathu.Entity.Action
 import Kathu.Entity.Components
 import Kathu.Entity.Prototype
+import Kathu.Graphics.Color (Color, mkColor)
 import Kathu.IO.Settings
 import qualified System.Random as R
 
@@ -50,6 +51,11 @@ instance Semigroup Settings where (<>) = mappend
 instance Monoid Settings where mempty = defaultSettings
 instance Component Settings where type Storage Settings = Global Settings
 
+newtype BackgroundColor = BackgroundColor Color
+instance Semigroup BackgroundColor where (<>) = mappend
+instance Monoid BackgroundColor where mempty = BackgroundColor $ mkColor 0 0 0 maxBound
+instance Component BackgroundColor where type Storage BackgroundColor = Global BackgroundColor
+
 -- | This data type plays the role as a collection of named values for the game to read from when loading a level
 data Library = Library
     { prototypes :: M.Map Text EntityPrototype
@@ -63,7 +69,7 @@ instance Component Library where type Storage Library = Global Library
 
 -- World
 
-makeWorld "EntityWorld" $ allNonGlobal ++ [''LogicTime, ''RenderTime, ''Random, ''Settings, ''Library]
+makeWorld "EntityWorld" $ allNonGlobal ++ [''LogicTime, ''RenderTime, ''Random, ''Settings, ''BackgroundColor, ''Library]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a

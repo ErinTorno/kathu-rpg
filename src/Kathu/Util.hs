@@ -6,7 +6,7 @@ import Data.Bool
 import Data.Char
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified SDL
+import qualified Data.Vector.Mutable as MVec
 
 -- Util types
 
@@ -36,6 +36,12 @@ partitionM fn (x:xs) = fn x >>= app
     where next       = partitionM fn xs
           app True   = (\(u, v) -> (x:u, v)) <$> next
           app False  = (\(u, v) -> (u, x:v)) <$> next
+
+-- Vector functions
+
+growMVecIfNeeded s i vec
+    | i < MVec.length vec = pure vec
+    | otherwise           = MVec.unsafeGrow vec s
 
 -- Text functions
 

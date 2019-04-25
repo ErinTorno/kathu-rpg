@@ -18,6 +18,9 @@ render:
   - {id: walkEast,      frames: 4, row: 2, delay: 160}
   - {id: walkSoutheast, frames: 4, row: 3, delay: 160}
   - {id: walkSouth,     frames: 4, row: 4, delay: 160}
+  - {id: walkSouthwest, frames: 4, row: 5, delay: 160}
+  - {id: walkWest,      frames: 4, row: 6, delay: 160}
+  - {id: walkNorthwest, frames: 4, row: 7, delay: 160}
 actorState:
   team: ally
   health: 60.0 # 3 hearts at start
