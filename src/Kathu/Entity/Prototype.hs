@@ -15,7 +15,6 @@ import qualified Kathu.Util as Util
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 
-
 -- This modules contains functions that generating helper functions for EntityPrototypes from a given list of components
 
 defBang = Bang NoSourceUnpackedness NoSourceStrictness
@@ -50,7 +49,7 @@ defineEntityFromJSON name prefix names slNames = pure . pure $ InstanceD Nothing
           (first: rem) = (\n -> (n, n `elem` slNames)) <$> names
           varName      = mkName $ "v"
 
-          indvParse (compName, isLinked) = UInfixE (VarE varName) (VarE (if isLinked then '(.:~?) else '(.:^?))) (LitE . StringL . show $ name)
+          indvParse (compName, isLinked) = UInfixE (VarE varName) (VarE (if isLinked then '(.:~?) else '(.:^?))) (LitE . StringL . camelTo2 '-' . show $ name)
               where name = fieldName prefix compName
           sucExpr      = foldl (\acc cur -> UInfixE acc (VarE '(<*>)) (indvParse cur)) (UInfixE (ConE typename) (VarE '(<$>)) (indvParse first)) rem
 

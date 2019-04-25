@@ -12,6 +12,7 @@ import Data.Word
 import GHC.Generics
 import Kathu.IO.File
 import Kathu.IO.Misc
+import Kathu.IO.Parsing (projectOptions)
 import Linear.V2
 
 data Settings = Settings
@@ -25,8 +26,10 @@ data Settings = Settings
     , misc :: Map Text Text
     } deriving (Generic)
 
-instance ToJSON Settings
-instance FromJSON Settings
+instance ToJSON Settings where
+    toJSON = genericToJSON projectOptions
+instance FromJSON Settings where
+    parseJSON = genericParseJSON projectOptions
 
 defaultSettings = Settings
     { targetFPS     = 120.0

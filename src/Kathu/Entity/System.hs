@@ -7,8 +7,9 @@
 
 module Kathu.Entity.System where
 
-import Apecs
-import qualified Data.Map as M
+import Apecs hiding (Map)
+import Data.Map (Map)
+import qualified Data.Map as Map
 import Data.Maybe (maybe)
 import Data.Monoid
 import Data.Semigroup (Semigroup)
@@ -20,6 +21,7 @@ import Kathu.Entity.Components
 import Kathu.Entity.Prototype
 import Kathu.Graphics.Color (Color, mkColor)
 import Kathu.IO.Settings
+import Kathu.World.Tile
 import qualified System.Random as R
 
 
@@ -58,13 +60,12 @@ instance Component BackgroundColor where type Storage BackgroundColor = Global B
 
 -- | This data type plays the role as a collection of named values for the game to read from when loading a level
 data Library = Library
-    { prototypes :: M.Map Text EntityPrototype
+    { prototypes :: Map Text EntityPrototype
+    , tiles :: Map Text Tile
     }
 
-emptyLibrary = Library M.empty
-
 instance Semigroup Library where (<>) = mappend
-instance Monoid Library where mempty = emptyLibrary
+instance Monoid Library where mempty = Library Map.empty Map.empty
 instance Component Library where type Storage Library = Global Library
 
 -- World

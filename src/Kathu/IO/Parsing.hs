@@ -23,6 +23,8 @@ import Kathu.IO.File
 import qualified SDL
 import System.FilePath
 
+projectOptions = defaultOptions {fieldLabelModifier = camelTo2 '-', omitNothingFields = True}
+
 fromScientific :: Fractional a => Scientific -> a
 fromScientific = fromRational . toRational
 

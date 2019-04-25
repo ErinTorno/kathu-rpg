@@ -6,8 +6,8 @@ module Kathu.IO.Misc where
 
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
-import qualified Data.Vector as Vec
 import Data.Text (Text)
+import qualified Data.Vector as Vec
 import Foreign.C.Types (CInt)
 import GHC.Generics
 import Linear.V2 (V2(..))
@@ -23,7 +23,7 @@ instance FromJSON SDL.Scancode
 instance ToJSON SDL.Keycode
 instance FromJSON SDL.Keycode
 
--- Vectors
+-- Linear Vectors
 
 -- Vectors can either be given as a object with named dimensions, or as an array
 -- Ex: "myVec": {"x": 10.0, "y": -5.0}

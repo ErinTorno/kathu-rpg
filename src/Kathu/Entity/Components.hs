@@ -15,6 +15,7 @@ import GHC.Generics
 import Kathu.Entity.Action
 import qualified Kathu.Entity.Resource as R
 import Kathu.Graphics.Drawable
+import Kathu.Physics.Body
 import Linear.V3 (V3)
 import Data.Vector (Vector)
 
@@ -40,6 +41,10 @@ instance Component Velocity where type Storage Velocity = Cache 1024 (Map Veloci
 
 newtype MovingSpeed = MovingSpeed Float deriving (Show, Eq, Generic)
 instance Component MovingSpeed where type Storage MovingSpeed = Map MovingSpeed
+
+-- the body stores an entity as its parent for use during physics calculations
+type Body' = Body Entity
+instance Component (Body a) where type Storage (Body a) = Cache 1024 (Map (Body a))
 
 newtype Tags = Tags [Text] deriving (Show, Eq, Generic)
 instance Component Tags where type Storage Tags = Map Tags
@@ -70,9 +75,8 @@ data Camera = Camera {width :: Word32, height :: Word32, zoom :: Float}
 instance Component Camera where type Storage Camera = Unique Camera
 
 -- ECS Util
-
 -- selects all unique and non-unique components that an individual entity might have
-type AllComponents = (Position, Velocity, MovingSpeed, Tags, ActorState, ActionSet, Render, Local, Camera)
+type AllComponents = ((Identity, Position, Velocity, MovingSpeed, (Body Entity)), (Tags, Render, Team, ActorState), Render, Local, Camera)
 
 -- these components can be serialized from Strings without any monads
 pureSerialComponents = [''SpecialEntity, ''Identity, ''Position, ''Velocity, ''MovingSpeed, ''Tags, ''ActorState]
@@ -80,7 +84,7 @@ pureSerialComponents = [''SpecialEntity, ''Identity, ''Position, ''Velocity, ''M
 linkedSerialComponents = [''Render]
 allSerialComponents = pureSerialComponents ++ linkedSerialComponents
 
-generalComponents = allSerialComponents ++ [''ActionSet]
+generalComponents = allSerialComponents ++ [''ActionSet, ''Body']
 allNonGlobal = generalComponents ++ [''Local, ''Camera]
 
 -- Misc helper functions for working with these components

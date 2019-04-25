@@ -9,8 +9,10 @@ import Data.Aeson.Types (typeMismatch, Parser)
 import Data.Functor.Compose
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.Serialize
 import Data.Text (Text)
 import Kathu.IO.Components
+import Kathu.IO.Graphics
 import Kathu.IO.Parsing
 import Kathu.World.Tile
 
@@ -30,5 +32,11 @@ instance FromJSON (SystemLink BreakBehavior) where
     parseJSON v          = typeMismatch "BreakBehavior" v
     
 instance FromJSON (SystemLink Tile) where
-    parseJSON (Object v) = getCompose $ Tile <$> v .:~ "tileID" <*> v .:^ "tileID" <*> v .:^ "name" <*> v .:^ "isSolid" <*> v .:~ "breakBehavior"
+    parseJSON (Object v) = getCompose $ Tile
+        <$> v .:~ "id" -- this uses the id to parse SystemLink TileID
+        <*> v .:^ "id" -- this is used for the text name
+        <*> v .:^ "name"
+        <*> v .:~ "render"
+        <*> v .:^ "is-solid"
+        <*> v .:~ "break-behavior"
     parseJSON v          = typeMismatch "Tile" v

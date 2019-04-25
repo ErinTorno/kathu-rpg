@@ -10,6 +10,7 @@ import Data.Text
 import Data.Word
 import GHC.Generics
 import qualified Kathu.Entity.Resource as R
+import Kathu.Graphics.Drawable
 
 newtype TileID = TileID Word16 deriving (Show, Eq)
 
@@ -25,8 +26,8 @@ data Tile = Tile
     { _tileID :: TileID
     , _tileTextID :: Text
     , _tileName :: Text
+    , _tileRender :: RenderSprite
     , _isSolid :: Bool
-    -- Drawable
     , _breakBehavior :: BreakBehavior
     }
 makeLenses ''Tile
@@ -35,15 +36,16 @@ emptyTile = Tile
     { _tileID = TileID 0
     , _tileTextID = ""
     , _tileName = ""
+    , _tileRender = error "Attempted to draw an empty tile"
     , _isSolid = False
     , _breakBehavior = Unbreakable
     }
 
 mkTileState :: Tile -> TileState
-mkTileState = (flip TileState) 0 . view tileID 
+mkTileState = (flip TileState) 0
 
 data TileState = TileState
-    { _assocID :: TileID
+    { _tile :: Tile
     , _metadata :: Word16
     }
 makeLenses ''TileState

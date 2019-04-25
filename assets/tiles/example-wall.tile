@@ -1,0 +1,5 @@
+id:       example-wall
+name:     Example Wall
+render:   "example-wall-single.png"
+is-solid: true
+break-behavior: unbreakable

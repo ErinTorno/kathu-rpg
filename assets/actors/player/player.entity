@@ -4,24 +4,24 @@ identity:
   name: This should never appear
   description: This should never appear
 # This follows an Entity Component System. Everything component is optional, with only an ID part of an identity being required for serialized entities
-specialEntity: player
+special-entity: player
 tags: [player]
 position: default # these are given here with "default", to state that we have it without giving any special configs
 velocity: default # same for this; this component will be dropped in the future, with the "physics" type likely replacing it
-movingSpeed: 2.5 # 2.5/16 of a tile each tick; each tile is 16 units
+moving-speed: 2.5 # 2.5/16 of a tile each tick; each tile is 16 units
 render:
 - atlas: "test.png"
   bounds: [23, 32] # kind of irregular
   strips:
-  - {id: walkNorth,     frames: 4, row: 0, delay: 160} # 160 ms
-  - {id: walkNortheast, frames: 4, row: 1, delay: 160}
-  - {id: walkEast,      frames: 4, row: 2, delay: 160}
-  - {id: walkSoutheast, frames: 4, row: 3, delay: 160}
-  - {id: walkSouth,     frames: 4, row: 4, delay: 160}
-  - {id: walkSouthwest, frames: 4, row: 5, delay: 160}
-  - {id: walkWest,      frames: 4, row: 6, delay: 160}
-  - {id: walkNorthwest, frames: 4, row: 7, delay: 160}
-actorState:
+  - {id: walk-north,     frames: 4, row: 0, delay: 160} # 160 ms
+  - {id: walk-northeast, frames: 4, row: 1, delay: 160}
+  - {id: walk-east,      frames: 4, row: 2, delay: 160}
+  - {id: walk-southeast, frames: 4, row: 3, delay: 160}
+  - {id: walk-south,     frames: 4, row: 4, delay: 160}
+  - {id: walk-southwest, frames: 4, row: 5, delay: 160}
+  - {id: walk-west,      frames: 4, row: 6, delay: 160}
+  - {id: walk-northwest, frames: 4, row: 7, delay: 160}
+actor-state:
   team: ally
   health: 60.0 # 3 hearts at start
   mana: 40.0

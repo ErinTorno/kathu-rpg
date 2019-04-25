@@ -2,9 +2,11 @@
 
 module Kathu.IO.Library (loadLibrary) where
 
+import Control.Lens
 import Control.Monad (foldM)
 import Data.Aeson
 import Data.Maybe
+import Data.Monoid (mempty)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Map (Map)
@@ -14,6 +16,8 @@ import Kathu.Entity.System
 import Kathu.IO.Components
 import Kathu.IO.File
 import Kathu.IO.Parsing
+import Kathu.IO.World
+import Kathu.World.Tile
 import qualified SDL
 import System.FilePath
 
@@ -22,6 +26,9 @@ addEntities ety lib = lib {prototypes = etyMap ety}
     where etyMap = Map.fromList . fmap (\p -> (getID . identity $ p, p))
           getID (Just ident) = identifier ident
           getID Nothing      = error "Attempted to load entity from file without an id"
+
+addTiles :: [Tile] -> Library -> Library
+addTiles tls lib = lib {tiles = Map.fromList $ (\t -> (view tileTextID t, t)) <$> tls}
 
 loadLibrary :: SDL.Renderer -> FilePath -> IO Library
 loadLibrary renderer fldr = fst <$> process
@@ -32,5 +39,7 @@ loadLibrary renderer fldr = fst <$> process
           psNo :: FromJSON a => (String, [a] -> Library -> Library)  -> (Library, ParsingLibrary) -> IO (Library, ParsingLibrary)
           psNo (ext, adder) (lib, plib) = parseAll ext fldr >>= \nset -> pure (adder nset lib, plib)
           -- the set of elements to 
-          start = (emptyLibrary, mkEmptyPL renderer)
-          process = pure start >>= psSL ("entity", addEntities)
+          start = (mempty, mkEmptyPL renderer)
+          process = pure start
+                    >>= psSL ("entity", addEntities)
+                    >>= psSL ("tile", addTiles)

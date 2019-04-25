@@ -48,41 +48,53 @@ instance (Fractional a, FromJSON a) => FromJSON (R.Dynamic a) where
 
 -- Simple Components: need no custom instances
 
-instance ToJSON MovingSpeed
-instance FromJSON MovingSpeed
+instance ToJSON MovingSpeed where
+    toJSON = genericToJSON projectOptions
+instance FromJSON MovingSpeed where
+    parseJSON = genericParseJSON projectOptions
 
-instance FromJSON Tags
-instance ToJSON Tags
+instance ToJSON Tags where
+    toJSON = genericToJSON projectOptions
+instance FromJSON Tags where
+    parseJSON = genericParseJSON projectOptions
 
-instance FromJSON ActorState
-instance ToJSON ActorState
+
+instance ToJSON ActorState where
+    toJSON = genericToJSON projectOptions
+instance FromJSON ActorState where
+    parseJSON = genericParseJSON projectOptions
 
 -- Complex Components: needs custom instances
 
-instance ToJSON Identity
+instance ToJSON Identity where
+    toJSON = genericToJSON projectOptions
 instance FromJSON Identity where
     parseJSON (String s) = pure $ Identity s "" "" -- basic one with only an id
     parseJSON (Object v) = Identity <$> v .: "id" <*> v .:? "name" .!= "" <*> v .:? "description" .!= ""
     parseJSON e          = typeMismatch "Identity" e
 
-instance ToJSON SpecialEntity
+instance ToJSON SpecialEntity where
+    toJSON = genericToJSON projectOptions
 instance FromJSON SpecialEntity where
     parseJSON (String s) = case T.toLower s of
         "player" -> pure Player
         _        -> fail $ "Couldn't match " ++ T.unpack s ++ " with any known instance of SpecialEntity"
     parseJSON e = typeMismatch "SpecialEntity" e
 
-instance ToJSON Position
+instance ToJSON Position where
+    toJSON = genericToJSON projectOptions
 instance FromJSON Position where
     parseJSON (String "default") = pure . Position $ V3 0 0 0
     parseJSON v = genericParseJSON defaultOptions v
 
-instance ToJSON Velocity
+instance ToJSON Velocity where
+    toJSON = genericToJSON projectOptions
 instance FromJSON Velocity where
     parseJSON (String "default") = pure . Velocity $ V3 0 0 0
     parseJSON v = genericParseJSON defaultOptions v
 
-instance ToJSON Team
+instance ToJSON Team where
+    toJSON = genericToJSON projectOptions
 instance FromJSON Team where
     -- the following three are special cases
     parseJSON (String "ally") = pure . Team $ 0

@@ -55,10 +55,3 @@ toPascalCase (c:cs) = toUpper c: cs
 toCamelCase :: String -> String
 toCamelCase []     = []
 toCamelCase (c:cs) = toLower c: cs
-
-toKebabCase :: String -> String
-toKebabCase []     = []
-toKebabCase (c:cs) = toLower c : apply cs
-    where apply []     = []
-          apply (c:cs) | isLower c = c : apply cs
-                       | otherwise = toLower c : '-' : apply cs

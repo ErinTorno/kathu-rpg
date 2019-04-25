@@ -53,8 +53,8 @@ logicCoordToRender :: Floating a => a -> V3 a -> V3 a -> V3 a
 logicCoordToRender scale (V3 topX topY topZ) (V3 tarX tarY tarZ) = V3 x' y' z'
     where topY' = cameraShiftUpPx + topY
           x' = (tarX - topX) * scale
-          -- y' = ((tarZ - topZ) + cameraYMult * (tarY - topY')) * scale -- this factors in both z and y coords
-          y' = (tarY - topY' + cameraZMult * (tarZ - topZ)) * scale -- don't want to mult y, as then it appears as if we move slower in the y direction than the x
+          -- this ensures that the z angle is factored into where it appears
+          y' = (tarY - topY' + cameraZMult * (tarZ - topZ)) * scale
           z' = tarY - topY' -- used only for sorting, closer along y coord is only consideration
 
 
@@ -121,7 +121,6 @@ runRender !window !renBuf !dT = do
                 -- in future, we won't draw off screen objects
                 let renderPos = convPos camera pos
                     shouldDraw = True
-                
                 renBuf' <- lift $ growMVecIfNeeded bufferGrowIncr i buf
                 if shouldDraw then
                     (lift . MVec.unsafeWrite renBuf i) (renderPos, render)
