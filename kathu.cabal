@@ -21,7 +21,7 @@ library
 
                      Kathu.Graphics.Color, Kathu.Graphics.Drawable, Kathu.Graphics.RenderBuffer,
 
-                     Kathu.IO.Components, Kathu.IO.File, Kathu.IO.Graphics, Kathu.IO.Library,
+                     Kathu.IO.Components, Kathu.IO.File, Kathu.IO.Graphics, Kathu.IO.Item, Kathu.IO.Library,
                      Kathu.IO.Misc, Kathu.IO.Parsing, Kathu.IO.Settings, Kathu.IO.World,
 
                      Kathu.Physics.Body, Kathu.Physics.System,

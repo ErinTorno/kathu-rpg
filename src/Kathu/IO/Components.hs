@@ -15,6 +15,7 @@ import Kathu.Entity.Prototype
 import Kathu.Entity.System
 import Kathu.Graphics.Drawable
 import Kathu.IO.Graphics
+import Kathu.IO.Item
 import Kathu.IO.Misc
 import Kathu.IO.Parsing
 import Linear.V3 (V3(..))

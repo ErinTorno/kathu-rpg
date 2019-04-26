@@ -9,7 +9,7 @@ module Kathu.IO.Parsing where
 import Control.Lens
 import Control.Monad.State
 import Data.Aeson
-import Data.Aeson.Types (Parser, typeMismatch)
+import Data.Aeson.Types (Parser, Value, typeMismatch)
 import Data.Functor
 import Data.Functor.Compose
 import Data.Map (Map)
@@ -18,6 +18,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Scientific
+import Kathu.Entity.Item (Item)
 import Kathu.Graphics.Drawable
 import Kathu.IO.File
 import qualified SDL
@@ -33,6 +34,7 @@ fromScientific = fromRational . toRational
 data ParsingLibrary = ParsingLibrary
     { _images :: Map Text Image
     , _countingIDs :: Map Text (Map Text Int) -- First key is category, second is individual id and associated index
+    , _items :: Map Text Item
     , _workingDirectory :: String
     , _renderer :: SDL.Renderer
     }
@@ -42,6 +44,7 @@ mkEmptyPL :: SDL.Renderer -> ParsingLibrary
 mkEmptyPL renderer = ParsingLibrary
     { _images = Map.empty
     , _countingIDs = Map.empty
+    , _items = Map.empty
     , _workingDirectory = ""
     , _renderer = renderer
     }
@@ -120,3 +123,11 @@ lookupSingle getter key = gets (view getter) >>= pure . (flip (Map.!)) key
 
 insertSL :: Ord k => Lens' ParsingLibrary (Map k a) -> k -> a -> SystemLink a
 insertSL getter key val = modify (over getter $ Map.insert key val) $> val
+
+parseListSLWith :: (Value -> Parser (SystemLink a)) -> Value -> Parser (SystemLink [a])
+parseListSLWith parser (Array a) = foldM append (pure []) a
+    where append acc cur = parser cur >>= pure . (flip (liftM2 (:))) acc
+parseListSLWith _ v              = typeMismatch "[SystemLink a]" v
+
+parseListSL :: FromJSON (SystemLink a) => Value -> Parser (SystemLink [a])
+parseListSL = parseListSLWith parseJSON

@@ -1,17 +1,14 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Kathu.Entity.Item where
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import GHC.Generics
+import Kathu.Graphics.Drawable (RenderSprite)
+import Kathu.Util
 
-data Slot = UseItem | Head | Body | Accessory | NoSlot deriving (Show, Eq)
-
--- when we sort and inventory or items, use this order
-slotPriority :: Slot -> Int
-slotPriority UseItem   = 0
-slotPriority Head      = 1
-slotPriority Body      = 2
-slotPriority Accessory = 3
-slotPriority NoSlot    = 4
+data Slot = UseItem | Weapon | Head | Torso | Legs | Accessory | NoSlot deriving (Show, Eq, Generic)
 
 -- allows use to compare slot types
 instance Ord Slot where
@@ -20,8 +17,10 @@ instance Ord Slot where
 
 data Item = Item
     { itemID      :: Text
+    , itemName    :: Text
     , description :: Text
     , slot        :: Slot
+    , itemIcon    :: RenderSprite
     , stackSize   :: Int
     , price       :: Int
     -- Effects?
@@ -29,4 +28,31 @@ data Item = Item
 
 data ItemStack = ItemStack {stackItem :: Item, stackCount :: Int}
 
-data InventorySlot = InventorySlot {restriction :: Maybe Slot, heldItem :: Maybe Item}
+data ContainerSlot = ContainerSlot {restriction :: Maybe Slot, heldItem :: Maybe Item}
+
+data Container = Container
+    { invEquippedItems :: [ContainerSlot]
+    , invMiscItems     :: [ContainerSlot]
+    }
+
+data DeathDrop = DeathDrop
+    { dropChance :: Double
+    , dropCount :: Range Int
+    , dropItem :: Item
+    }
+
+data Inventory = InvContainer Container | InvDeathDrops [DeathDrop]
+
+-----------------------
+-- Utility functions --
+-----------------------
+
+-- when we sort and inventory or items, use this order
+slotPriority :: Slot -> Int
+slotPriority UseItem   = 0
+slotPriority Weapon    = 1
+slotPriority Head      = 2
+slotPriority Torso     = 3
+slotPriority Legs      = 4
+slotPriority Accessory = 5
+slotPriority NoSlot    = 6

@@ -10,10 +10,22 @@ import Data.Text (Text)
 import qualified Data.Vector as Vec
 import Foreign.C.Types (CInt)
 import GHC.Generics
+import Kathu.Util
 import Linear.V2 (V2(..))
 import Linear.V3 (V3(..))
 import Linear.V4 (V4(..))
 import qualified SDL
+
+-- Range
+
+instance ToJSON a => ToJSON (Range a) where
+    toJSON (Range min max) = toJSON [min, max]
+instance FromJSON a => FromJSON (Range a) where
+    parseJSON (Object m) = Range <$> m .: "min" <*> m .: "max"
+    parseJSON (Array a)  = if Vec.length a /= 2 then fail "Range array is not of length 2" else res
+        where pInd = parseJSON . (Vec.!) a
+              res  = pInd 0 >>= \min -> pInd 1 >>= \max -> pure $ Range min max
+    parseJSON e          = typeMismatch "V2" e
 
 -- Keys
 

@@ -28,3 +28,13 @@ actor-state:
   armor: 0.0
   aura: 0.0
   resists: {}
+inventory:
+  type: container
+  equip-slots:
+  - {slot: weapon,   count: 1}
+  - {slot: use-item, count: 3} # can have 3 use items, which we switch through
+  - {slot: head,     count: 1}
+  - {slot: torso,    count: 1}
+  - {slot: legs,     count: 1}
+  misc-slots:
+  - {count: 30}
