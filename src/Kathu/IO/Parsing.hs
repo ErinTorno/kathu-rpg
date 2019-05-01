@@ -3,28 +3,34 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes, TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 
 module Kathu.IO.Parsing where
 
 import Control.Lens
+import Control.Monad
 import Control.Monad.State
 import Data.Aeson
 import Data.Aeson.Types (Parser, Value, typeMismatch)
 import Data.Functor
 import Data.Functor.Compose
+import qualified Data.HashMap.Strict as Hash
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Scientific
+import Kathu.Entity.Damage (DamageProfile)
 import Kathu.Entity.Item (Item)
 import Kathu.Graphics.Drawable
 import Kathu.IO.File
+import Kathu.Util (dropInitial, (>>>=))
 import qualified SDL
 import System.FilePath
 
-projectOptions = defaultOptions {fieldLabelModifier = camelTo2 '-', omitNothingFields = True}
+-- We drop the starting _ so that fields for lenses don't keep it
+projectOptions = defaultOptions {fieldLabelModifier = camelTo2 '-' . dropInitial '_', omitNothingFields = True}
 
 fromScientific :: Fractional a => Scientific -> a
 fromScientific = fromRational . toRational
@@ -35,6 +41,7 @@ data ParsingLibrary = ParsingLibrary
     { _images :: Map Text Image
     , _countingIDs :: Map Text (Map Text Int) -- First key is category, second is individual id and associated index
     , _items :: Map Text Item
+    , _damageProfiles :: Map Text DamageProfile
     , _workingDirectory :: String
     , _renderer :: SDL.Renderer
     }
@@ -45,6 +52,7 @@ mkEmptyPL renderer = ParsingLibrary
     { _images = Map.empty
     , _countingIDs = Map.empty
     , _items = Map.empty
+    , _damageProfiles = Map.empty
     , _workingDirectory = ""
     , _renderer = renderer
     }
@@ -124,6 +132,8 @@ lookupSingle getter key = gets (view getter) >>= pure . (flip (Map.!)) key
 insertSL :: Ord k => Lens' ParsingLibrary (Map k a) -> k -> a -> SystemLink a
 insertSL getter key val = modify (over getter $ Map.insert key val) $> val
 
+-- Parsing for SystemLink values
+
 parseListSLWith :: (Value -> Parser (SystemLink a)) -> Value -> Parser (SystemLink [a])
 parseListSLWith parser (Array a) = foldM append (pure []) a
     where append acc cur = parser cur >>= pure . (flip (liftM2 (:))) acc
@@ -131,3 +141,13 @@ parseListSLWith _ v              = typeMismatch "[SystemLink a]" v
 
 parseListSL :: FromJSON (SystemLink a) => Value -> Parser (SystemLink [a])
 parseListSL = parseListSLWith parseJSON
+
+parseMapSLWith :: Ord k => (Value -> Parser (SystemLink k)) -> (Value -> Parser (SystemLink a)) -> Value -> Parser (SystemLink (Map k a))
+parseMapSLWith keyParser parser (Object v) = (foldM append (pure []) . map toValue . Hash.toList $ v) >>>= pure . Map.fromList
+    where append acc (key, val) = makeTuple key val >>= pure . (flip (liftM2 (:))) acc 
+          makeTuple key val  = (liftM2 . liftM2) (,) (keyParser key) (parser val)
+          toValue (k, v) = (String k, v)
+parseMapSLWith _ _ v            = typeMismatch "Map k (SystemLink a)" v
+
+parseMapSL :: FromJSON (SystemLink a) => Value -> Parser (SystemLink (Map Text a))
+parseMapSL = parseMapSLWith (fmap pure . parseJSON) parseJSON

@@ -1,24 +1,37 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TupleSections #-}
 
 module Kathu.Graphics.Color where
 
 import Data.Word
 import GHC.Generics
 import Linear.V4 (V4(..))
+import Numeric (readHex, showHex)
 
-type Color = V4 Word8
+newtype Color = Color (V4 Word8) deriving (Eq, Generic)
+
+instance Show Color where
+    show (Color (V4 r g b a)) = ('#':) . showHex r . showHex g . showHex b . showHex a $ ""
+instance Read Color where
+    readsPrec _ str =
+        let pair a b = fst . head . readHex $ (a:b:[])
+            mkParse r g b a = pure . (, []) $ mkColor r g b a
+        in case str of
+            ('#':r1:r2:g1:g2:b1:b2:a1:a2:[]) -> mkParse (pair r1 r2) (pair g1 g2) (pair b1 b2) (pair a1 a2)
+            ('#':r1:r2:g1:g2:b1:b2:[])       -> mkParse (pair r1 r2) (pair g1 g2) (pair b1 b2) 0
+            _                                 -> error "Unable to parse color format"
 
 mkColor :: Word8 -> Word8 -> Word8 -> Word8 -> Color
-mkColor = V4
+mkColor r g b a = Color $ V4 r g b a
 
 red :: Color -> Word8
-red   (V4 r _ _ _) = r
+red   (Color (V4 r _ _ _)) = r
 green :: Color -> Word8
-green (V4 _ g _ _) = g
+green (Color (V4 _ g _ _)) = g
 blue :: Color -> Word8
-blue  (V4 _ _ b _) = b
+blue  (Color (V4 _ _ b _)) = b
 alpha :: Color -> Word8
-alpha (V4 _ _ _ a) = a
+alpha (Color (V4 _ _ _ a)) = a
 
 data HSVColor = HSVColor
     { hue        :: Float

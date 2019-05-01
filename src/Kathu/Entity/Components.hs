@@ -9,13 +9,12 @@
 module Kathu.Entity.Components where
 
 import Apecs
-import qualified Data.Map as M
 import Data.Text (Text)
 import Data.Word
 import GHC.Generics
 import Kathu.Entity.Action
+import Kathu.Entity.ActorState
 import Kathu.Entity.Item
-import qualified Kathu.Entity.Resource as R
 import Kathu.Graphics.Drawable
 import Kathu.Physics.Body
 import Linear.V3 (V3)
@@ -53,20 +52,11 @@ instance Component Tags where type Storage Tags = Map Tags
 newtype Render = Render {sprites :: Vector RenderSprite}
 instance Component Render where type Storage Render = Map Render
 
-newtype Team = Team (Int) deriving (Show, Eq, Generic)
-data ActorState = ActorState
-    { team    :: Team
-    , health  :: R.Dynamic Float
-    , mana    :: R.Dynamic Float
-    , armor   :: R.Static Float
-    , aura    :: R.Static Float
-    , resists :: M.Map Text (R.Static Float)
-    } deriving (Show, Eq, Generic)
-instance Component ActorState where type Storage ActorState = Map ActorState
-
 ----------------------------------
 -- For external component types --
 ----------------------------------
+
+instance Component ActorState where type Storage ActorState = Map ActorState
 
 instance Component ActionSet where type Storage ActionSet = Map ActionSet
 
@@ -88,14 +78,14 @@ instance Component Camera where type Storage Camera = Unique Camera
 -- selects all unique and non-unique components that an individual entity might have
 type AllComponents =
     ( (Identity, Position, Velocity, MovingSpeed, (Body Entity))
-    , (Tags, Render, Team, ActorState, Inventory)
+    , (Tags, Render, ActorState, Inventory)
     , (Render, Local, Camera)
     )
 
 -- these components can be serialized from Strings without any monads
-pureSerialComponents = [''SpecialEntity, ''Identity, ''Position, ''Velocity, ''MovingSpeed, ''Tags, ''ActorState]
+pureSerialComponents = [''SpecialEntity, ''Identity, ''Position, ''Velocity, ''MovingSpeed, ''Tags]
 -- these require the SystemLink monad to be deserialized, and so they are kept separate
-linkedSerialComponents = [''Render, ''Inventory]
+linkedSerialComponents = [''Render, ''Inventory, ''ActorState]
 allSerialComponents = pureSerialComponents ++ linkedSerialComponents
 
 generalComponents = allSerialComponents ++ [''ActionSet, ''Body']

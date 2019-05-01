@@ -14,6 +14,7 @@ import Foreign.C.Types (CInt)
 import Kathu.Entity.Action
 import Kathu.Entity.Components
 import Kathu.Entity.System
+import Kathu.Graphics.Color
 import Kathu.Graphics.Drawable
 import Kathu.Graphics.RenderBuffer
 import Kathu.IO.Settings
@@ -103,7 +104,7 @@ runRender !window !renBuf !dT = do
 
     screen   <- SDL.getWindowSurface window
     settings <- get global
-    (BackgroundColor bckColor) <- get global
+    (BackgroundColor (Color bckColor)) <- get global
     
     -- clears background
     SDL.surfaceFillRect screen Nothing bckColor

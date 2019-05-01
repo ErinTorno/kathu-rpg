@@ -11,6 +11,7 @@ import Data.Text (Text)
 import Kathu.Entity.Item
 import Kathu.IO.Graphics
 import Kathu.IO.Parsing
+import Kathu.Util ((>>>=))
 
 -- need custom implementation, as even with project options the type isn't converted to the correct case
 instance ToJSON Slot where
@@ -30,19 +31,9 @@ instance FromJSON Slot where
     parseJSON (String "accessory") = pure Accessory
     parseJSON (String "no-slot")   = pure NoSlot
     parseJSON v = typeMismatch "Slot" v
-
-    {-
-slotPriority UseItem   = 0
-slotPriority Weapon    = 1
-slotPriority Head      = 2
-slotPriority Torso     = 3
-slotPriority Legs      = 4
-slotPriority Accessory = 5
-slotPriority NoSlot    = 6
--}
-
+    
 instance FromJSON (SystemLink Item) where
-    parseJSON (Object v) = itemPar >>= \itemSL -> pure (itemSL >>= \it -> insertSL items (itemID it) $ it) 
+    parseJSON (Object v) = itemPar >>>= \it -> insertSL items (itemID it) it
         where itemPar :: Parser (SystemLink Item)
               itemPar = getCompose $ Item
                   <$> v .:^ "id"

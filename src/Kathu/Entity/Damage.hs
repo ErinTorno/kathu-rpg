@@ -1,16 +1,31 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Kathu.Entity.Damage where
 
 import Data.Text (Text)
-import Graphics.Color (Color)
-import qualified SDL
+import Data.Word
+import GHC.Generics
+import Kathu.Graphics.Color (Color)
+import Kathu.Graphics.Drawable (RenderSprite)
 
-data Defense = NoDefense | Armor | Aura
+newtype DamageID = DamageID Word16 deriving (Show, Eq, Ord, Generic)
+
+data Defense = NoDefense | Armor | Aura deriving (Show, Eq)
+
+data DamageTarget = TgtHealth | TgtMana deriving (Show, Eq)
 
 data DamageProfile = DamageProfile
-    { dmgName :: Text
-    , dmgIcon :: SDL.Surface
-    , dmgColor :: Color
+    { dmgID     :: DamageID
+    , dmgTextID :: Text
+    , dmgName   :: Text
+    , dmgIcon   :: RenderSprite
+    , dmgColor  :: Color
     , targetDefense :: Defense
     }
+
+data DamagePacket = DamagePacket
+    { damageProfile :: DamageProfile
+    , targetResource :: DamageTarget
+    , magnitude :: Float
+    } 

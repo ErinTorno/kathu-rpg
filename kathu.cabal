@@ -16,12 +16,13 @@ library
   exposed-modules:   Kathu.App
   other-modules:     Kathu.Game, Kathu.Init, Kathu.Render, Kathu.SDLCommon, Kathu.Util, Kathu.Templates,
 
-                     Kathu.Entity.Action, Kathu.Entity.Components, Kathu.Entity.Item, Kathu.Entity.Player,
+                     Kathu.Entity.Action, Kathu.Entity.ActorState, Kathu.Entity.Components, Kathu.Entity.Damage,
+                     Kathu.Entity.Item, Kathu.Entity.Player,
                      Kathu.Entity.Prototype, Kathu.Entity.Resource, Kathu.Entity.System, Kathu.Entity.Timing,
 
                      Kathu.Graphics.Color, Kathu.Graphics.Drawable, Kathu.Graphics.RenderBuffer,
 
-                     Kathu.IO.Components, Kathu.IO.File, Kathu.IO.Graphics, Kathu.IO.Item, Kathu.IO.Library,
+                     Kathu.IO.Components, Kathu.IO.Entity Kathu.IO.File, Kathu.IO.Graphics, Kathu.IO.Item, Kathu.IO.Library,
                      Kathu.IO.Misc, Kathu.IO.Parsing, Kathu.IO.Settings, Kathu.IO.World,
 
                      Kathu.Physics.Body, Kathu.Physics.System,
@@ -29,7 +30,7 @@ library
                      Kathu.World.Field, Kathu.World.Tile
   build-depends:     base >=4.11 && <4.12,
                      text, bytestring,
-                     containers, lens, linear, mtl, random, scientific, template-haskell, vector, vector-algorithms,
+                     containers, lens, linear, mtl, random, scientific, template-haskell, unordered-containers, vector, vector-algorithms,
                      sdl2 >=2.4.1 && <2.4.2, sdl2-image, apecs,
                      directory, filepath,
                      aeson, cereal, yaml

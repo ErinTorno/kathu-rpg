@@ -27,6 +27,10 @@ mapPair f (v1, v2) = (f v1, f v2)
 
 -- Monad functions
 
+(>>>=) :: (Monad m, Monad n) => m (n a) -> (a -> n b) -> m (n b)
+(>>>=) v f = v >>= \v' -> return (v' >>= f)
+infixl 1 >>>=
+
 whileM :: Monad m => m Bool -> m ()
 whileM b = b >>= bool (return ()) (whileM b)
 
@@ -47,6 +51,11 @@ growMVecIfNeeded s i vec
 
 showText :: Show a => a -> Text
 showText = T.pack . show
+
+dropInitial :: Char -> String -> String
+dropInitial _ [] = []
+dropInitial p st@(c:cs) | p == c = cs
+                        | otherwise = st
 
 toPascalCase :: String -> String
 toPascalCase []     = []

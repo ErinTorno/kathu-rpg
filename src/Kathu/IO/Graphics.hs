@@ -60,3 +60,11 @@ instance FromJSON (SystemLink RenderSprite) where
     parseJSON (String s)     = pure $ loadImage s >>= \i -> liftSL (getSurfaceBounds i) >>= \bnds -> pure . RSStatic $ StaticSprite i bnds
     parseJSON obj@(Object _) = (parseJSON obj :: Parser (SystemLink Animation)) >>= \img -> pure $ img >>= \a -> pure . RSAnimated $ AnimatedSprite a 0 0 0
     parseJSON v              = typeMismatch "RenderSprite" v
+
+-- Color
+
+instance ToJSON Color where
+    toJSON = toJSON . show
+instance FromJSON Color where
+    parseJSON (String s) = pure . read . T.unpack $ s
+    parseJSON e = typeMismatch "SpecialEntity" e
