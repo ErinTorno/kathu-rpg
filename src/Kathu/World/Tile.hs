@@ -6,7 +6,7 @@
 module Kathu.World.Tile where
 
 import Control.Lens
-import Data.Text
+import Data.Text (Text)
 import Data.Word
 import GHC.Generics
 import qualified Kathu.Entity.Resource as R

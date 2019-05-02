@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Kathu.IO.Library (loadLibrary) where
 
@@ -18,17 +19,19 @@ import Kathu.IO.File
 import Kathu.IO.Parsing
 import Kathu.IO.World
 import Kathu.World.Tile
+import Kathu.World.WorldSpace
 import qualified SDL
 import System.FilePath
 
 addEntities :: [EntityPrototype] -> Library -> Library
-addEntities ety lib = lib {prototypes = etyMap ety}
+addEntities ety = set prototypes (etyMap ety)
     where etyMap = Map.fromList . fmap (\p -> (getID . identity $ p, p))
           getID (Just ident) = identifier ident
           getID Nothing      = error "Attempted to load entity from file without an id"
 
-addTiles :: [Tile] -> Library -> Library
-addTiles tls lib = lib {tiles = Map.fromList $ (\t -> (view tileTextID t, t)) <$> tls}
+addAll :: Setter Library Library (Map Text a) (Map Text a) -> (a -> Text) -> [a] -> Library -> Library
+addAll setter getKey elems = set setter map'
+    where map' = Map.fromList . fmap (\e -> (getKey e, e)) $ elems
 
 loadLibrary :: SDL.Renderer -> FilePath -> IO Library
 loadLibrary renderer fldr = fst <$> process
@@ -42,4 +45,5 @@ loadLibrary renderer fldr = fst <$> process
           start = (mempty, mkEmptyPL renderer)
           process = pure start
                     >>= psSL ("entity", addEntities)
-                    >>= psSL ("tile", addTiles)
+                    >>= psSL ("tile", addAll tiles (view tileTextID))
+                    >>= psSL ("world", addAll worldSpaces worldID)

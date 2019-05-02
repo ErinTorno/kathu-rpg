@@ -4,12 +4,10 @@
 
 module Kathu.App (start) where
 
-import Apecs (runWith, lift)
+import Apecs (runWith)
 import Control.Monad (replicateM_, unless)
-import Control.Monad.IO.Class (MonadIO)
 import Data.Bool
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Word
 import Kathu.Entity.System
 import qualified Kathu.Init as Init
@@ -18,22 +16,21 @@ import Kathu.Graphics.RenderBuffer (RenderBuffer, mkRenderBuffer)
 import Kathu.IO.Settings
 import Kathu.Render (runRender)
 import qualified Kathu.SDLCommon as SDLC
-import Kathu.Util
 import qualified SDL
 import SDL (($=))
-import System.Environment
 
+appName :: Text
 appName = "Kathu"
 
 updateDelay :: Word32
-updateDelay = floor $ 1000.0 / 60.0 -- 60 ticks per second is ideal
+updateDelay = floor $ 1000.0 / (60.0 :: Double) -- 60 ticks per second is ideal
 
 -- determines the millisecond delay needed to hit goal fps. Will disregard fps goals beneath the physics delay
 renderDelay :: Settings -> Word32
 renderDelay = max updateDelay . floor . (1000.0/) . targetFPS
 
 run :: Word32 -> SystemT' IO Bool -> SDL.Window -> RenderBuffer -> Word32 -> Word32 -> SystemT' IO ()
-run renderDelay b window renBuf !prevPhysTime !prevRendTime = b >>= go
+run renDelay b window renBuf !prevPhysTime !prevRendTime = b >>= go
     where go False = pure ()
           go True  = do
               startTime <- SDL.ticks
@@ -45,13 +42,13 @@ run renderDelay b window renBuf !prevPhysTime !prevRendTime = b >>= go
               renderStartTime <- SDL.ticks
               let renderDiffer = renderStartTime - prevRendTime
               -- we delay unless physics took enough time that we should draw it again
-              unless (renderDiffer >= renderDelay) $ SDL.delay (renderDelay - renderDiffer)
+              unless (renderDiffer >= renDelay) $ SDL.delay (renDelay - renderDiffer)
               -- render steps in variable time, so we must reflect that
               newRenBuf <- runRender window renBuf renderDiffer
               --lift runRenderGL
               
               -- Physics steps back to ensure next update is on time; render goes whenever it can
-              run renderDelay b window newRenBuf (startTime - remainder) renderStartTime
+              run renDelay b window newRenBuf (startTime - remainder) renderStartTime
 
 start :: IO ()
 start = do

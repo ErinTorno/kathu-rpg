@@ -17,9 +17,7 @@ import Data.Functor.Compose
 import qualified Data.HashMap.Strict as Hash
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Scientific
 import Kathu.Entity.Damage (DamageProfile)
 import Kathu.Entity.Item (Item)
@@ -30,12 +28,13 @@ import qualified SDL
 import System.FilePath
 
 -- We drop the starting _ so that fields for lenses don't keep it
+projectOptions :: Options
 projectOptions = defaultOptions {fieldLabelModifier = camelTo2 '-' . dropInitial '_', omitNothingFields = True}
 
 fromScientific :: Fractional a => Scientific -> a
 fromScientific = fromRational . toRational
 
--- Helpers for desparseSLerialization that works with state
+-- Helpers for stateful deserialization
 
 data ParsingLibrary = ParsingLibrary
     { _images :: Map Text Image
@@ -48,25 +47,22 @@ data ParsingLibrary = ParsingLibrary
 makeLenses ''ParsingLibrary
 
 mkEmptyPL :: SDL.Renderer -> ParsingLibrary
-mkEmptyPL renderer = ParsingLibrary
+mkEmptyPL ren = ParsingLibrary
     { _images = Map.empty
     , _countingIDs = Map.empty
     , _items = Map.empty
     , _damageProfiles = Map.empty
     , _workingDirectory = ""
-    , _renderer = renderer
+    , _renderer = ren
     }
 
 newtype SystemLink a = SystemLink (StateT ParsingLibrary IO a) deriving (Functor, Applicative, Monad, MonadState ParsingLibrary)
-
-resultList (l, _) = l
-resultLib (_, lb) = lb
 
 runSL :: ParsingLibrary -> SystemLink a -> IO (a, ParsingLibrary)
 runSL lib (SystemLink st) = runStateT st lib
 
 foldSL :: ParsingLibrary -> [SystemLink a] -> IO ([a], ParsingLibrary)
-foldSL lib = foldM (\(!v, !lib) cur -> (\(nv, nlib) -> (nv:v, nlib)) <$> runSL lib cur) ([], lib)
+foldSL initLib = foldM (\(!v, !lib) cur -> (\(nv, lib') -> (nv:v, lib')) <$> runSL lib cur) ([], initLib)
 
 parseSL :: ParsingLibrary -> IO [SystemLink a] -> IO ([a], ParsingLibrary)
 parseSL lib ls = ls >>= foldSL lib
@@ -81,8 +77,6 @@ loadFromFileSL file = loadWithHandlers (loadError file) (modWDir>>) file
 
 parseAllSL :: FromJSON (SystemLink a) => String -> FilePath -> IO [SystemLink a]
 parseAllSL = parseAllWith loadFromFileSL
-
--- instance MonadState SystemLink where
 
 liftSL :: IO a -> SystemLink a
 liftSL = SystemLink . lift
@@ -101,7 +95,7 @@ liftSL = SystemLink . lift
 
 -- same as .:~, but returns a Maybe
 (.:~?) :: (Monad m, FromJSON (m a)) => Object -> Text -> Compose Parser m (Maybe a)
-(.:~?) v t = Compose (nestedChange <$> v .:? t)
+(.:~?) obj t = Compose (nestedChange <$> obj .:? t)
     where nestedChange = maybe (return Nothing) (\v -> v >>= return . Just)
 
 parseUrl :: FilePath -> SystemLink String

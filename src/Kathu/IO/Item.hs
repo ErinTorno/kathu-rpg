@@ -36,7 +36,7 @@ instance FromJSON (SystemLink Item) where
     parseJSON (Object v) = itemPar >>>= \it -> insertSL items (itemID it) it
         where itemPar :: Parser (SystemLink Item)
               itemPar = getCompose $ Item
-                  <$> v .:^ "id"
+                  <$> v .:^ "item-id"
                   <*> v .:^ "name"
                   <*> v .:^ "description"
                   <*> v .:^ "slot"

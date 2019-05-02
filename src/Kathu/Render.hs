@@ -3,10 +3,7 @@
 module Kathu.Render where
 
 import Apecs hiding (($=))
-import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.ST (RealWorld)
-import Data.Functor
 import qualified Data.Vector as Vec
 import qualified Data.Vector.Mutable as MVec
 import Data.Word
@@ -14,16 +11,17 @@ import Foreign.C.Types (CInt)
 import Kathu.Entity.Action
 import Kathu.Entity.Components
 import Kathu.Entity.System
+import Kathu.Graphics.Camera
 import Kathu.Graphics.Color
 import Kathu.Graphics.Drawable
 import Kathu.Graphics.RenderBuffer
 import Kathu.IO.Settings
+import Kathu.World.WorldSpace
 import qualified Kathu.SDLCommon as SDLC
 import Kathu.Util
 import Linear.V2 (V2(..))
 import Linear.V3 (V3(..))
 import qualified SDL
-import SDL (($=))
 
 cameraAngle :: Floating a => a
 cameraAngle = 35.0
@@ -78,18 +76,18 @@ updateAnimations dT = do
         updateFramesIfAnim (RSAnimated anim) = RSAnimated $ updateFrames dT anim
         updateWithoutController :: (Render, Not ActionSet) -> Render
         updateWithoutController (Render sprites, _) = Render $ updateFramesIfAnim <$> sprites
-        updateAnimations :: (Render, ActionSet) -> Render
-        updateAnimations (ren@(Render sprites), ActionSet {_moving = m, _lastMoving = lm}) = Render $ updateEach <$> sprites
-            where updateEach s@(RSStatic _)      = s
-                  updateEach a@(RSAnimated anim) = RSAnimated $ update m lm anim
+        updateAnimated :: (Render, ActionSet) -> Render
+        updateAnimated ((Render sprites), ActionSet {_moving = m, _lastMoving = lm}) = Render $ updateEach <$> sprites
+            where updateEach s@(RSStatic _)    = s
+                  updateEach (RSAnimated anim) = RSAnimated $ update m lm anim
                   update Nothing _ anim = anim {currentFrame = 0, animTime = 0} -- we ensure that this is paused and waiting on first frame
-                  update m@(Just d) lm anim
-                      | m == lm   = updateFrames dT anim -- if same direction, we just update its frames
+                  update mv@(Just d) lmv anim
+                      | mv == lmv = updateFrames dT anim -- if same direction, we just update its frames
                       | otherwise = switchAnimation (dirToAnimIndex d) anim -- we switch to new animation and reset
     -- only update frames for those without any controller for them
     cmap updateWithoutController
     -- if it has an ActionSet, we have to deal with swapping animations
-    cmap updateAnimations
+    cmap updateAnimated
 
 ----------------------
 -- main render loop --
@@ -104,20 +102,19 @@ runRender !window !renBuf !dT = do
 
     screen   <- SDL.getWindowSurface window
     settings <- get global
-    (BackgroundColor (Color bckColor)) <- get global
-    
+    world <- get global
+
     -- clears background
-    SDL.surfaceFillRect screen Nothing bckColor
+    let (Color bgColor) = worldBgColor world
+    SDL.surfaceFillRect screen Nothing bgColor
 
     let scale   = (fromIntegral . resolutionY $ settings) / (pixelsPerUnit * unitsPerHeight)
-        resToCenter@(V2 resX resY) = ((*) 0.5 . fromIntegral) <$> resolution settings
-        aspect = aspectRatio . fmap fromIntegral . resolution $ settings
-        unitsPerWidth = aspect * unitsPerHeight
+        resToCenter = ((*) 0.5 . fromIntegral) <$> resolution settings
         -- this collects all renders into our buffer with their positions
         -- this takes transformed V3, rather than logical, since z is fully depth, rather than up down
         gatherRender :: (Int, RenderBuffer) -> (Camera, Position) -> SystemT' IO (Int, RenderBuffer)
-        gatherRender (i, buf) (cam, Position camera) =
-            let convPos = logicCoordToRender scale
+        gatherRender (i, buf) (Camera zoom, Position camera) =
+            let convPos = logicCoordToRender (scale * zoom)
             in (flip cfoldM) (i, buf) $ \(!i, !renBuf) (render, Position pos) -> do
                 -- in future, we won't draw off screen objects
                 let renderPos = convPos camera pos

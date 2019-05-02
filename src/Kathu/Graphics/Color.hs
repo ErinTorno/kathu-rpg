@@ -3,6 +3,7 @@
 
 module Kathu.Graphics.Color where
 
+import Data.Fixed (mod')
 import Data.Word
 import GHC.Generics
 import Linear.V4 (V4(..))
@@ -40,7 +41,26 @@ data HSVColor = HSVColor
     , hsvAlpha   :: Float
     } deriving (Show, Eq, Generic)
 
--- Manipulation functions
+--------------------
+-- Manipulate RGB --
+--------------------
+
+desaturate :: Color -> Color
+desaturate (Color (V4 r g b a)) = Color $ V4 luminosity luminosity luminosity a
+    where -- no set reason other than these values appear nicely to the human eye
+          luminosity = floor $ 0.21 * fromIntegral r + 0.72 * fromIntegral g + 0.07 * fromIntegral b
+
+desaturateBy :: Float -> Color -> Color
+desaturateBy percent color = blendColor percent (desaturate color) color
+
+-- ratio is ratio of 2nd color to 1st; so 1.0 is only 2nd color, etc.
+blendColor :: Float -> Color -> Color -> Color
+blendColor ratio (Color (V4 r1 g1 b1 a1)) (Color (V4 r2 g2 b2 a2)) = Color $ V4 (blEach r1 r2) (blEach g1 g2) (blEach b1 b2) (blEach a1 a2) 
+    where blEach x y = floor $ (1.0 - ratio) * fromIntegral x + ratio * fromIntegral y 
+
+--------------------
+-- Manipulate HSV --
+--------------------
 
 getHSVDifference :: HSVColor -> HSVColor -> HSVColor
 getHSVDifference primary col = HSVColor {hue = difVal hue, saturation = difVal saturation, value = difVal value, hsvAlpha = difVal hsvAlpha}
@@ -50,32 +70,43 @@ applyHSVDifference :: HSVColor -> HSVColor -> HSVColor
 applyHSVDifference template col = HSVColor {hue = (restrictHue . addVal) hue, saturation = addVal saturation, value = addVal value, hsvAlpha = addVal hsvAlpha}
     where addVal getter = getter col + getter template
 
--- Conversion functions
-
 -- Hue should always be between 0 and 360
 restrictHue :: Float -> Float
 restrictHue h | h < 0.0   = restrictHue (h + 360.0)
               | h > 360.0 = restrictHue (h - 360.0)
               | otherwise = h
 
+shiftHue :: Float -> HSVColor -> HSVColor
+shiftHue p (HSVColor h s v a) = HSVColor h' s v a
+            where h' = (h + p * 180.0) `mod'` 360.0
+
+invertHue :: HSVColor -> HSVColor
+invertHue = shiftHue 0.5 -- shift to exactly across color wheel
+
+-- Conversion functions
+
+fromHSVFunction :: (HSVColor -> HSVColor) -> (Color -> Color)
+fromHSVFunction f = fromHSV . f . fromRGB
+
+fromRGBFunction :: (Color -> Color) -> (HSVColor -> HSVColor)
+fromRGBFunction f = fromRGB . f . fromHSV
+
 -- Converts an RGB color into an HSV color
 fromRGB :: Color -> HSVColor
-fromRGB col = HSVColor h s v (fromWord . alpha $ col)
+fromRGB (Color vec@(V4 r g b _)) = HSVColor h s v af
     where -- we convert from an byte to a float between 1 and zero for intensity
           fromWord :: Word8 -> Float
           fromWord w = fromIntegral w / 255.0
           -- get max and min components in our color
-          maxcomp = max (red col) $ max (blue col) (green col)
-          mincomp = min (red col) $ min (blue col) (green col)
+          maxcomp = max r $ max b g
+          mincomp = min r $ min b g
           -- get red, green, and blue intensities
-          r = fromWord . red $ col
-          g = fromWord . green $ col
-          b = fromWord . blue $ col
+          (V4 rf gf bf af) = fromWord <$> vec
           delta   = fromWord maxcomp - fromWord mincomp
           getHue 0.0 _ = 0.0
-          getHue _ m | m == red col   = (g - b) / delta
-                     | m == green col = (b - r) / delta + 2.0
-                     | otherwise      = (r - g) / delta + 4.0
+          getHue _ m | m == r    = (gf - bf) / delta
+                     | m == g    = (bf - rf) / delta + 2.0
+                     | otherwise = (rf - gf) / delta + 4.0
           -- we want to restrict the hue to within 0 and 360
           h = restrictHue . (*60.0) . getHue delta $ maxcomp
           s = if maxcomp == 0 then 0.0 else 1.0 - (fromIntegral mincomp / fromIntegral maxcomp)

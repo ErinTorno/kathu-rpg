@@ -20,14 +20,14 @@ library
                      Kathu.Entity.Item, Kathu.Entity.Player,
                      Kathu.Entity.Prototype, Kathu.Entity.Resource, Kathu.Entity.System, Kathu.Entity.Timing,
 
-                     Kathu.Graphics.Color, Kathu.Graphics.Drawable, Kathu.Graphics.RenderBuffer,
+                     Kathu.Graphics.Camera, Kathu.Graphics.Color, Kathu.Graphics.Drawable, Kathu.Graphics.Palette, Kathu.Graphics.RenderBuffer,
 
                      Kathu.IO.Components, Kathu.IO.Entity Kathu.IO.File, Kathu.IO.Graphics, Kathu.IO.Item, Kathu.IO.Library,
                      Kathu.IO.Misc, Kathu.IO.Parsing, Kathu.IO.Settings, Kathu.IO.World,
 
                      Kathu.Physics.Body, Kathu.Physics.System,
 
-                     Kathu.World.Field, Kathu.World.Tile
+                     Kathu.World.Field, Kathu.World.Tile, Kathu.World.WorldSpace
   build-depends:     base >=4.11 && <4.12,
                      text, bytestring,
                      containers, lens, linear, mtl, random, scientific, template-haskell, unordered-containers, vector, vector-algorithms,

@@ -8,20 +8,17 @@
 module Kathu.Entity.System where
 
 import Apecs hiding (Map)
+import Control.Lens
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe (maybe)
-import Data.Monoid
 import Data.Semigroup (Semigroup)
 import Data.Text (Text)
 import Data.Word
-import GHC.Generics
-import Kathu.Entity.Action
 import Kathu.Entity.Components
 import Kathu.Entity.Prototype
-import Kathu.Graphics.Color (Color, mkColor)
 import Kathu.IO.Settings
-import Kathu.World.Tile
+import Kathu.World.Tile (Tile)
+import Kathu.World.WorldSpace (WorldSpace, emptyWorldSpace)
 import qualified System.Random as R
 
 
@@ -53,24 +50,25 @@ instance Semigroup Settings where (<>) = mappend
 instance Monoid Settings where mempty = defaultSettings
 instance Component Settings where type Storage Settings = Global Settings
 
-newtype BackgroundColor = BackgroundColor Color
-instance Semigroup BackgroundColor where (<>) = mappend
-instance Monoid BackgroundColor where mempty = BackgroundColor $ mkColor 0 0 0 maxBound
-instance Component BackgroundColor where type Storage BackgroundColor = Global BackgroundColor
+instance Semigroup WorldSpace where (<>) = mappend
+instance Monoid WorldSpace where mempty = emptyWorldSpace
+instance Component WorldSpace where type Storage WorldSpace = Global WorldSpace
 
 -- | This data type plays the role as a collection of named values for the game to read from when loading a level
 data Library = Library
-    { prototypes :: Map Text EntityPrototype
-    , tiles :: Map Text Tile
+    { _prototypes  :: Map Text EntityPrototype
+    , _tiles       :: Map Text Tile
+    , _worldSpaces :: Map Text WorldSpace
     }
+makeLenses ''Library
 
 instance Semigroup Library where (<>) = mappend
-instance Monoid Library where mempty = Library Map.empty Map.empty
+instance Monoid Library where mempty = Library Map.empty Map.empty Map.empty
 instance Component Library where type Storage Library = Global Library
 
 -- World
 
-makeWorld "EntityWorld" $ allNonGlobal ++ [''LogicTime, ''RenderTime, ''Random, ''Settings, ''BackgroundColor, ''Library]
+makeWorld "EntityWorld" $ allNonGlobal ++ [''LogicTime, ''RenderTime, ''Random, ''Settings, ''WorldSpace, ''Library]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a

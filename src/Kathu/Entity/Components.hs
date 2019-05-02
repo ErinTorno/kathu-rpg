@@ -16,6 +16,7 @@ import Kathu.Entity.Action
 import Kathu.Entity.ActorState
 import Kathu.Entity.Item
 import Kathu.Graphics.Drawable
+import Kathu.Graphics.Camera
 import Kathu.Physics.Body
 import Linear.V3 (V3)
 import Data.Vector (Vector)
@@ -49,7 +50,7 @@ instance Component MovingSpeed where type Storage MovingSpeed = Map MovingSpeed
 newtype Tags = Tags [Text] deriving (Show, Eq, Generic)
 instance Component Tags where type Storage Tags = Map Tags
 
-newtype Render = Render {sprites :: Vector RenderSprite}
+newtype Render = Render (Vector RenderSprite)
 instance Component Render where type Storage Render = Map Render
 
 ----------------------------------
@@ -71,7 +72,6 @@ instance Component Inventory where type Storage Inventory = Map Inventory
 data Local = Local {actionPressed :: ActionPressed}
 instance Component Local where type Storage Local = Unique Local
 
-data Camera = Camera {width :: Word32, height :: Word32, zoom :: Float}
 instance Component Camera where type Storage Camera = Unique Camera
 
 -- ECS Util

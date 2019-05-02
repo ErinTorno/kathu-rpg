@@ -15,6 +15,7 @@ import Kathu.IO.Components
 import Kathu.IO.Graphics
 import Kathu.IO.Parsing
 import Kathu.World.Tile
+import Kathu.World.WorldSpace
 
 -- these all use SystemLink, due to the conversion from Strings to IDs requiring state known
 
@@ -33,10 +34,20 @@ instance FromJSON (SystemLink BreakBehavior) where
     
 instance FromJSON (SystemLink Tile) where
     parseJSON (Object v) = getCompose $ Tile
-        <$> v .:~ "id" -- this uses the id to parse SystemLink TileID
-        <*> v .:^ "id" -- this is used for the text name
+        <$> v .:~ "tile-id" -- this uses the id to parse SystemLink TileID
+        <*> v .:^ "tile-id" -- this is used for the text name
         <*> v .:^ "name"
         <*> v .:~ "render"
         <*> v .:^ "is-solid"
         <*> v .:~ "break-behavior"
     parseJSON v          = typeMismatch "Tile" v
+
+----------------
+-- WorldSpace --
+----------------
+
+instance FromJSON (SystemLink WorldSpace) where
+    parseJSON (Object v) = getCompose $ WorldSpace
+        <$> v .:^ "world-id"
+        <*> v .:^ "background"
+    parseJSON v          = typeMismatch "WorldSpace" v
