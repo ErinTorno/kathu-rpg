@@ -14,6 +14,7 @@ import Kathu.Entity.System
 import Kathu.Graphics.Camera
 import Kathu.Graphics.Color
 import Kathu.Graphics.Drawable
+import Kathu.Graphics.Palette
 import Kathu.Graphics.RenderBuffer
 import Kathu.IO.Settings
 import Kathu.World.WorldSpace

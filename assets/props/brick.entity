@@ -1,10 +1,10 @@
 identity:
-  id: boulder
-  name: Boulder
-  description: A large rock
+  id: brick
+  name: Brick
+  description: A block of brick and mortar
 tags: [stone]
 position: default
-render: ["boulder.png"] # since this isn't animated, we can just give the file name
+render: ["/tiles/brick-wall.png"]
 actorState:
   team: object
   health: 60.0 # 3 hearts at start

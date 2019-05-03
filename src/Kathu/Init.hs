@@ -42,5 +42,7 @@ system renderer settings = do
     localPlayer playerEty
     
     _ <- newFromPrototype $ getLib prototypes "boulder"
-
+    brick <- newFromPrototype $ getLib prototypes "brick"
+    brick $= Position (SDL.V3 15 15 0)
+    
     pure ()
