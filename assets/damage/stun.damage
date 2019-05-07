@@ -1,0 +1,6 @@
+damage-id: stun
+name:      Stun
+icon:      "empty.png"
+color:     "#f1ed79"
+defense:   armor
+default-resist: 0.0 # immune by default to actually taking damage from stunning

@@ -2,7 +2,8 @@ module Kathu.Graphics.Drawable where
 
 import Data.Text (Text)
 import Data.Word
-import Data.Vector (Vector, (!))
+import Data.Vector (Vector)
+import qualified Data.Vector as Vec
 import Foreign.C.Types (CInt)
 import qualified Kathu.SDLCommon as SDLC
 import qualified SDL
@@ -19,17 +20,23 @@ data Animation = Animation
     { animAtlas  :: ImageID
     , animStrips :: Vector AnimationStrip
     , animBounds :: SDL.V2 CInt
-    }
+    } deriving (Show, Eq)
 
-data StaticSprite = StaticSprite {staticSurface :: ImageID, staticBounds :: SDL.Rectangle CInt}
+data StaticSprite = StaticSprite {staticSurface :: ImageID, staticBounds :: SDL.Rectangle CInt} deriving (Show, Eq)
+
 data AnimatedSprite = AnimatedSprite
     { animation    :: Animation
     , activeAnim   :: Int
     , currentFrame :: Int
     , animTime     :: Word32
-    }
+    } deriving (Show, Eq)
 
-data RenderSprite = RSStatic StaticSprite | RSAnimated AnimatedSprite
+data RenderSprite = RSStatic StaticSprite | RSAnimated AnimatedSprite deriving (Show, Eq)
+
+-- we use this so that rapidly starting and stopping moving in one direction is still animated
+timeBeforeFrameChange :: AnimatedSprite -> Word32
+timeBeforeFrameChange animspr = (subtract 1) . delay . (Vec.!curAnim) . animStrips . animation $ animspr
+    where curAnim = activeAnim animspr
 
 currentBounds :: RenderSprite -> SDL.Rectangle CInt
 currentBounds (RSStatic (StaticSprite _ bnd)) = bnd
@@ -51,5 +58,5 @@ switchAnimation i anim = anim {activeAnim = i, currentFrame = 0, animTime = 0}
 updateFrames :: Word32 -> AnimatedSprite -> AnimatedSprite
 updateFrames dT d@(AnimatedSprite {animTime = animT, activeAnim = act, currentFrame = frame, animation = anim}) = d {animTime = newTime, currentFrame = newFrame}
     where newTime  = animT + dT
-          curStrip = (animStrips anim) ! act
+          curStrip = (animStrips anim) Vec.! act
           newFrame = fromIntegral (newTime `quot` (delay curStrip)) `rem` (frameCount curStrip)

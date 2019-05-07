@@ -64,8 +64,8 @@ instance FromJSON (SystemLink DamageProfile) where
     parseJSON (Object v) = damagePar >>>= \dam -> insertSL damageProfiles (dmgTextID dam) dam
         where getID = lookupOrAdd "DamageProfile"
               damagePar = getCompose $ DamageProfile
-                  <$> v .:~ "id"
-                  <*> v .:^ "id"
+                  <$> v .:~ "damage-id"
+                  <*> v .:^ "damage-id"
                   <*> v .:^ "name"
                   <*> v .:~ "icon"
                   <*> v .:^ "color"

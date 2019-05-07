@@ -42,10 +42,11 @@ emptyTile = Tile
     }
 
 mkTileState :: Tile -> TileState
-mkTileState = (flip TileState) 0
+mkTileState t = TileState t 0 0
 
 data TileState = TileState
     { _tile :: Tile
-    , _metadata :: Word16
+    , _surroundingTiles :: Word8
+    , _metadata :: Word8
     }
 makeLenses ''TileState

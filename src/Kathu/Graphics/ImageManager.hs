@@ -95,11 +95,12 @@ backgroundColor (ImageManager i bkg _) = bkg Vec.! i
 loadPalettes :: MonadIO m => Vector Palette -> ImageManager -> m ImageManager
 loadPalettes thms im@(ImageManager _ _ sets) = (resetImageManager im) >>= ((mVecMapM_ resetIndv sets)>>) . pure . set backgrounds (background <$> thms)
     where resetIndv (SurfaceSet _ base surs) = copySurface 0 surs
-          copySurface !i surs | i == thmLen = pure ()
+          copySurface !i surs | i >= thmLen = pure ()
                               | otherwise   = do
                                   surface <- (liftIO . MVec.read surs) i
                                   let theme = thms Vec.! i
                                   replaceSurfaceColor backgroundMask (background theme) surface
+                                  copySurface (i + 1) surs
           thmLen = let l = Vec.length thms in if l > maxPalettes then failure l else l
           failure l = (error . concat) ["Attempted to load theme set past max limit (max: ", show maxPalettes, " given length: ", show l, ")"]
 

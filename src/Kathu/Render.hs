@@ -30,9 +30,20 @@ cameraAngle = 35.0
 cameraZMult :: Floating a => a
 cameraZMult = sin cameraAngle
 
--- the camera itself is 10.0 units tall (although due to perspective, shown might be different)
-unitsPerHeight :: Floating a => a
-unitsPerHeight = 14.0
+-- the height of the screen in units; depending on screen size, more or less is included
+
+minUnitsPerHeight :: Floating a => a
+minUnitsPerHeight = 8.0
+
+maxUnitsPerHeight :: Floating a => a
+maxUnitsPerHeight = 14.0
+
+pixelsForMinUnits :: Integral a => a
+pixelsForMinUnits = 360
+
+pixelsForMaxUnits :: Integral a => a
+pixelsForMaxUnits = 1080
+
 
 -- if sprite position is more than this many units from left or right, or from bottom, we don't draw
 -- we don't draw anything above the top of the screen, however, since sprites draw out and upwards
@@ -49,6 +60,10 @@ cameraShiftUpPx = -(0.5 * spriteHeightPx)
 aspectRatio :: Floating a => SDL.V2 a -> a
 aspectRatio (SDL.V2 x y) = x / y
 
+-- sprite dimensions are multiplied by this to prevent tiny streaks between adjacent sprites
+edgeBleedScaling :: Floating a => a
+edgeBleedScaling = 1.01
+
 logicCoordToRender :: Floating a => a -> V3 a -> V3 a -> V3 a
 logicCoordToRender scale (V3 topX topY topZ) (V3 tarX tarY tarZ) = V3 x' y' z'
     where topY' = cameraShiftUpPx + topY
@@ -59,7 +74,7 @@ logicCoordToRender scale (V3 topX topY topZ) (V3 tarX tarY tarZ) = V3 x' y' z'
 
 
 mkRenderRect :: V2 Float -> Float -> V2 Float -> SDL.Rectangle CInt -> SDL.Rectangle CInt
-mkRenderRect (V2 shiftX shiftY) scale (V2 x y) (SDL.Rectangle _ (V2 w h)) = SDLC.mkRectWith floor x' y' (scale * fromIntegral w) (scale * fromIntegral h)
+mkRenderRect (V2 shiftX shiftY) scale (V2 x y) (SDL.Rectangle _ (V2 w h)) = SDLC.mkRectWith round x' y' (edgeBleedScaling * scale * fromIntegral w) (edgeBleedScaling * scale * fromIntegral h)
     where x' = x - scale * 0.5 * fromIntegral w + shiftX
           y' = y - scale * fromIntegral h + shiftY
 
@@ -78,13 +93,15 @@ updateAnimations dT = do
         updateWithoutController :: (Render, Not ActionSet) -> Render
         updateWithoutController (Render sprites, _) = Render $ updateFramesIfAnim <$> sprites
         updateAnimated :: (Render, ActionSet) -> Render
-        updateAnimated ((Render sprites), ActionSet {_moving = m, _lastMoving = lm}) = Render $ updateEach <$> sprites
+        updateAnimated ((Render sprites), ActionSet {_moving = m, _lastMoving = lm, _facingDirection = fac}) = Render $ updateEach <$> sprites
             where updateEach s@(RSStatic _)    = s
-                  updateEach (RSAnimated anim) = RSAnimated $ update m lm anim
-                  update Nothing _ anim = anim {currentFrame = 0, animTime = 0} -- we ensure that this is paused and waiting on first frame
-                  update mv@(Just d) lmv anim
-                      | mv == lmv = updateFrames dT anim -- if same direction, we just update its frames
-                      | otherwise = switchAnimation (dirToAnimIndex d) anim -- we switch to new animation and reset
+                  updateEach (RSAnimated anim) = RSAnimated $ update m lm fac anim
+                  update Nothing _ fc anim = anim {activeAnim = dirToAnimIndex fc, currentFrame = 0, animTime = timeBeforeFrameChange anim} -- we ensure that this is paused and waiting on first frame
+                  update mv@(Just d) lmv _ anim
+                      | mv == lmv || dir == act = updateFrames dT anim -- if same direction, we just update its frames
+                      | otherwise               = switchAnimation dir anim -- we switch to new animation and reset
+                          where dir = dirToAnimIndex d
+                                act = activeAnim anim
     -- only update frames for those without any controller for them
     cmap updateWithoutController
     -- if it has an ActionSet, we have to deal with swapping animations
@@ -111,13 +128,22 @@ runRender !window !renBuf !dT = do
     SDL.surfaceFillRect screen Nothing bgColor
 
     let scale   = (fromIntegral . resolutionY $ settings) / (pixelsPerUnit * unitsPerHeight)
+        (V2 _ resY) = resolution settings
         resToCenter = ((*) 0.5 . fromIntegral) <$> resolution settings
+        unitsPerHeight = minUnitsPerHeight + (maxUnitsPerHeight - minUnitsPerHeight) * pixMult
+            where pixMult = fromIntegral (clampBetween pixelsForMinUnits pixelsForMaxUnits resY) / fromIntegral pixelsForMaxUnits
+        unitsPerWidth = unitsPerHeight * aspectRatio resToCenter
         -- this collects all renders into our buffer with their positions
         -- this takes transformed V3, rather than logical, since z is fully depth, rather than up down
         gatherRender :: (Int, RenderBuffer) -> (Camera, Position) -> SystemT' IO (Int, RenderBuffer)
-        gatherRender (i, buf) (Camera zoom, Position camera) =
+        gatherRender (i, buf) (Camera zoom, Position camera@(V3 camX camY _)) =
             let convPos = logicCoordToRender (scale * zoom)
-            in (flip cfoldM) (i, buf) $ \(!i, !renBuf) (render, Position pos) -> do
+                minY = camY + ((-0.5) * unitsPerHeight) * pixelsPerUnit
+                maxY = camY + (0.5    * unitsPerHeight + renderBorderUnits) * pixelsPerUnit
+                minX = camX + ((-0.5) * unitsPerWidth  - renderBorderUnits) * pixelsPerUnit
+                maxX = camX + (0.5    * unitsPerWidth  + renderBorderUnits) * pixelsPerUnit
+                isOffScreen (V3 x y z) = y < minY || y > maxY || x < minX || x > maxX
+            in (flip cfoldM) (i, buf) $ \(!i, !renBuf) (render, Position pos) -> if isOffScreen pos then pure (i, renBuf) else do
                 -- in future, we won't draw off screen objects
                 let renderPos = convPos camera pos
                     shouldDraw = True

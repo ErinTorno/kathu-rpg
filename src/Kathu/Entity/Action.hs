@@ -31,11 +31,11 @@ emptyActionSet = ActionSet id Nothing Nothing South Nothing Nothing
 
 -- unlike NPCs, the player gives input that is later combined
 data ActionPressed = ActionPressed
-    { _moveNorth :: TimeStamped Bool
-    , _moveEast :: TimeStamped Bool
-    , _moveSouth :: TimeStamped Bool
-    , _moveWest :: TimeStamped Bool
-    , _usePrimary :: TimeStamped Bool
+    { _moveNorth    :: TimeStamped Bool
+    , _moveEast     :: TimeStamped Bool
+    , _moveSouth    :: TimeStamped Bool
+    , _moveWest     :: TimeStamped Bool
+    , _usePrimary   :: TimeStamped Bool
     , _useSecondary :: TimeStamped Bool
     } deriving (Show, Eq)
 makeLenses ''ActionPressed

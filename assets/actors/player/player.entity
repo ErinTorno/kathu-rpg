@@ -10,17 +10,17 @@ position: default # these are given here with "default", to state that we have i
 velocity: default # same for this; this component will be dropped in the future, with the "physics" type likely replacing it
 moving-speed: 2.5 # 2.5/16 of a tile each tick; each tile is 16 units
 render:
-- atlas: "test.png"
+- atlas: "player.png"
   bounds: [23, 32] # kind of irregular
   strips:
-  - {id: walk-north,     frames: 4, row: 0, delay: 160} # 160 ms
-  - {id: walk-northeast, frames: 4, row: 1, delay: 160}
-  - {id: walk-east,      frames: 4, row: 2, delay: 160}
-  - {id: walk-southeast, frames: 4, row: 3, delay: 160}
-  - {id: walk-south,     frames: 4, row: 4, delay: 160}
-  - {id: walk-southwest, frames: 4, row: 5, delay: 160}
-  - {id: walk-west,      frames: 4, row: 6, delay: 160}
-  - {id: walk-northwest, frames: 4, row: 7, delay: 160}
+  - {id: walk-north,     frames: 4, row: 0, delay: 250} # in ms
+  - {id: walk-northeast, frames: 4, row: 1, delay: 250}
+  - {id: walk-east,      frames: 4, row: 2, delay: 250}
+  - {id: walk-southeast, frames: 4, row: 3, delay: 250}
+  - {id: walk-south,     frames: 4, row: 4, delay: 250}
+  - {id: walk-southwest, frames: 4, row: 5, delay: 250}
+  - {id: walk-west,      frames: 4, row: 6, delay: 250}
+  - {id: walk-northwest, frames: 4, row: 7, delay: 250}
 actor-state:
   team: ally
   health: 60.0 # 3 hearts at start

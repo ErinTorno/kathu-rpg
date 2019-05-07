@@ -1,6 +1,7 @@
 world-id: test-world
 palettes:
-  - background: "#151831"
+  - background: "#222641"
+  - background: "#47222c"
 time: # if not present, then time doesn't control the style
   morning: 0 # we use theme 0 during morning hours
   day:     0

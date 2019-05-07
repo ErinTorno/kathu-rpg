@@ -1,12 +1,13 @@
 module Kathu.Graphics.RenderBuffer (RenderBuffer, mkRenderBuffer, bufferGrowIncr, sortRenderBuffer) where
 
 import Data.Vector.Algorithms.Intro (sortByBounds)
+import Data.Vector.Mutable (IOVector)
 import qualified Data.Vector.Mutable as MVec
 import Kathu.Entity.Components (Render)
 import Linear.V3 (V3(..))
 
 -- this stores each sprite to draw and its properties, which we will sort before drawing for z depth
-type RenderBuffer = MVec.IOVector (V3 Float, Render)
+type RenderBuffer = IOVector (V3 Float, Render)
 
 mkRenderBuffer :: IO RenderBuffer
 mkRenderBuffer = MVec.new baseSize

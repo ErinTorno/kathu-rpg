@@ -6,5 +6,4 @@ The project was aimed as a rewrite for a previous game written in a different la
 
 ## Status
 
-This project is far from finished, and as of write now the playable segment just involves an animated block that can move around a screen populated with a boulder.
-
+This project is far from finished. As of right now the player is only able to move around the screen with different tiles and props set up.

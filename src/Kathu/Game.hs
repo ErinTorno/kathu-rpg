@@ -16,7 +16,6 @@ import qualified SDL
 
 runPhysics :: System' ()
 runPhysics = do
-    --let updateCheck v = if v == SDL.V3 0.0 0.0 0.0 then v else error . show $ v
     -- Updates ActionSet for the local player based on pressed 
     cmap $ \(as, Local press) ->
         let dir = getDirection press

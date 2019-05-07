@@ -45,14 +45,26 @@ system renderer settings = do
     global $= worldspace
     manager' <- loadPalettes (worldPalettes worldspace) manager
     global $= manager'
-    
+
     -- testing set for now; will change in future to be else where
 
     playerEty <- newFromPrototype $ getLib prototypes "player"
     localPlayer playerEty
     
-    _ <- newFromPrototype $ getLib prototypes "boulder"
-    brick <- newFromPrototype $ getLib prototypes "brick"
-    brick $= Position (SDL.V3 15 15 0)
+    let brickProto = getLib prototypes "brick"
+        grassProto = getLib prototypes "grass"
+    brick1 <- newFromPrototype brickProto
+    brick1 $= Position (SDL.V3 16 (-16) 0)
+    brick2 <- newFromPrototype brickProto
+    brick2 $= Position (SDL.V3 32 (-16) 0)
+    brick3 <- newFromPrototype brickProto
+    brick3 $= Position (SDL.V3 48 (-16) 0)
+
+    grass1 <- newFromPrototype grassProto
+    grass1 $= Position (SDL.V3 (-32) 32 0)
+    grass2 <- newFromPrototype grassProto
+    grass2 $= Position (SDL.V3 (-48) 32 0)
+    grass3 <- newFromPrototype grassProto
+    grass3 $= Position (SDL.V3 (-32) 48 0)
     
     pure ()
