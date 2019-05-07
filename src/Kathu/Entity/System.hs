@@ -13,9 +13,13 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Semigroup (Semigroup)
 import Data.Text (Text)
+import Data.Vector (Vector)
+import qualified Data.Vector as Vec
 import Data.Word
 import Kathu.Entity.Components
 import Kathu.Entity.Prototype
+import Kathu.Graphics.Drawable (Image)
+import Kathu.Graphics.ImageManager
 import Kathu.IO.Settings
 import Kathu.World.Tile (Tile)
 import Kathu.World.WorldSpace (WorldSpace, emptyWorldSpace)
@@ -50,25 +54,30 @@ instance Semigroup Settings where (<>) = mappend
 instance Monoid Settings where mempty = defaultSettings
 instance Component Settings where type Storage Settings = Global Settings
 
+instance Semigroup ImageManager where (<>) = mappend
+instance Monoid ImageManager where mempty = defaultImageManager
+instance Component ImageManager where type Storage ImageManager = Global ImageManager
+
 instance Semigroup WorldSpace where (<>) = mappend
 instance Monoid WorldSpace where mempty = emptyWorldSpace
 instance Component WorldSpace where type Storage WorldSpace = Global WorldSpace
 
 -- | This data type plays the role as a collection of named values for the game to read from when loading a level
 data Library = Library
-    { _prototypes  :: Map Text EntityPrototype
+    { _images :: Vector Image
+    , _prototypes  :: Map Text EntityPrototype
     , _tiles       :: Map Text Tile
     , _worldSpaces :: Map Text WorldSpace
     }
 makeLenses ''Library
 
 instance Semigroup Library where (<>) = mappend
-instance Monoid Library where mempty = Library Map.empty Map.empty Map.empty
+instance Monoid Library where mempty = Library Vec.empty Map.empty Map.empty Map.empty
 instance Component Library where type Storage Library = Global Library
 
 -- World
 
-makeWorld "EntityWorld" $ allNonGlobal ++ [''LogicTime, ''RenderTime, ''Random, ''Settings, ''WorldSpace, ''Library]
+makeWorld "EntityWorld" $ allNonGlobal ++ [''LogicTime, ''RenderTime, ''Random, ''Settings, ''ImageManager, ''WorldSpace, ''Library]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a

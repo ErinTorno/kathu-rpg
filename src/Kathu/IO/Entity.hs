@@ -70,6 +70,7 @@ instance FromJSON (SystemLink DamageProfile) where
                   <*> v .:~ "icon"
                   <*> v .:^ "color"
                   <*> v .:^ "defense"
+                  <*> v .:^? "default-resist" .!=~ 1.0
     parseJSON v          = typeMismatch "DamageProfile" v
     
 -- Resources

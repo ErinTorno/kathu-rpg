@@ -23,12 +23,12 @@ data ActorState = ActorState
     } deriving (Show, Eq, Generic)
 makeLenses ''ActorState
 
-resistTo :: DamageID -> ActorState -> Float
-resistTo id actor = maybe 1.0 total . (Map.lookup id) $ actor^.resists
+resistTo :: DamageProfile -> ActorState -> Float
+resistTo prof actor = maybe (defaultResist prof) total . (Map.lookup (dmgID prof)) $ actor^.resists
 
 applyDamagePacket :: DamagePacket -> ActorState -> ActorState
 applyDamagePacket (DamagePacket prof res magn) =
-    let modAv av actor = over av (modDynCur $ -1.0 * magn * (resistTo (dmgID prof) actor)) actor
+    let modAv av actor = over av (modDynCur $ -1.0 * magn * (resistTo prof actor)) actor
     in case res of
         TgtHealth -> modAv health
         TgtMana   -> modAv mana

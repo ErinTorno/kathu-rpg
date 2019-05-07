@@ -12,8 +12,13 @@ import Kathu.IO.File (assetPath)
 import Kathu.IO.Library
 import Kathu.IO.Settings
 import Kathu.Graphics.Camera
+import Kathu.Graphics.Color
+import Kathu.Graphics.Drawable
+import Kathu.Graphics.ImageManager
+import Kathu.World.WorldSpace
 import qualified SDL
 import qualified System.Random as R
+
 
 entityWorld :: IO EntityWorld
 entityWorld = initEntityWorld
@@ -29,13 +34,18 @@ system :: SDL.Renderer -> Settings -> SystemT' IO ()
 system renderer settings = do
     library <- lift (loadLibrary renderer assetPath)
     seed    <- lift (R.randomIO :: IO Int)
+    manager <- lift $ mkImageManager (view images library)
     global $= library
+    global $= manager
     global $= Random (R.mkStdGen seed)
     global $= settings
     let getLib g t = (view g library) Map.! t
 
-    global $= getLib worldSpaces "test-world"
-
+    let worldspace = getLib worldSpaces "test-world"
+    global $= worldspace
+    manager' <- loadPalettes (worldPalettes worldspace) manager
+    global $= manager'
+    
     -- testing set for now; will change in future to be else where
 
     playerEty <- newFromPrototype $ getLib prototypes "player"

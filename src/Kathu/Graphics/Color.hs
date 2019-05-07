@@ -19,20 +19,12 @@ instance Read Color where
             mkParse r g b a = pure . (, []) $ mkColor r g b a
         in case str of
             ('#':r1:r2:g1:g2:b1:b2:a1:a2:[]) -> mkParse (pair r1 r2) (pair g1 g2) (pair b1 b2) (pair a1 a2)
-            ('#':r1:r2:g1:g2:b1:b2:[])       -> mkParse (pair r1 r2) (pair g1 g2) (pair b1 b2) 0
+            ('#':r1:r2:g1:g2:b1:b2:[])       -> mkParse (pair r1 r2) (pair g1 g2) (pair b1 b2) 255
             _                                 -> error "Unable to parse color format"
 
 mkColor :: Word8 -> Word8 -> Word8 -> Word8 -> Color
 mkColor r g b a = Color $ V4 r g b a
 
-red :: Color -> Word8
-red   (Color (V4 r _ _ _)) = r
-green :: Color -> Word8
-green (Color (V4 _ g _ _)) = g
-blue :: Color -> Word8
-blue  (Color (V4 _ _ b _)) = b
-alpha :: Color -> Word8
-alpha (Color (V4 _ _ _ a)) = a
 
 data HSVColor = HSVColor
     { hue        :: Float
@@ -130,3 +122,31 @@ fromHSV hsv = let fromFloat :: Float -> Word8
                   3 -> mkColor p q v alph
                   4 -> mkColor t p v alph
                   _ -> mkColor v p q alph
+
+-------------------
+-- Common Colors --
+-------------------
+
+black :: Color
+black = mkColor 0 0 0 255
+
+white :: Color
+white = mkColor 255 255 255 255
+
+red :: Color
+red = mkColor 255 0 0 255
+
+green :: Color
+green = mkColor 0 255 0 255
+
+blue :: Color
+blue = mkColor 0 0 255 255
+
+yellow :: Color
+yellow = mkColor 255 255 0 255
+
+cyan :: Color
+cyan = mkColor 0 255 255 255
+
+purple :: Color
+purple = mkColor 255 0 255 255

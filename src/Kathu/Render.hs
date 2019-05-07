@@ -14,7 +14,7 @@ import Kathu.Entity.System
 import Kathu.Graphics.Camera
 import Kathu.Graphics.Color
 import Kathu.Graphics.Drawable
-import Kathu.Graphics.Palette
+import Kathu.Graphics.ImageManager
 import Kathu.Graphics.RenderBuffer
 import Kathu.IO.Settings
 import Kathu.World.WorldSpace
@@ -63,12 +63,12 @@ mkRenderRect (V2 shiftX shiftY) scale (V2 x y) (SDL.Rectangle _ (V2 w h)) = SDLC
     where x' = x - scale * 0.5 * fromIntegral w + shiftX
           y' = y - scale * fromIntegral h + shiftY
 
-drawRenderSprite :: MonadIO m => (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite -> SDL.Surface -> m SDL.Surface
-drawRenderSprite mkRect ren scr = blit ren >> pure scr
-    where blit (RSStatic (StaticSprite !img !bnd)) = SDL.surfaceBlitScaled img (Just bnd) scr (Just . mkRect $ bnd)
-          blit dyn@(RSAnimated (AnimatedSprite {animation = anim})) = draw
+drawRenderSprite :: MonadIO m => ImageManager -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite -> SDL.Surface -> m SDL.Surface
+drawRenderSprite im mkRect ren scr = blit ren >> pure scr
+    where draw bnd img = SDL.surfaceBlitScaled img (Just bnd) scr (Just . mkRect $ bnd)
+          blit (RSStatic (StaticSprite !iid !bnd)) = fetchImage iid im >>= draw bnd
+          blit dyn@(RSAnimated (AnimatedSprite {animation = anim})) = fetchImage (animAtlas anim) im >>= draw bounds
               where bounds = currentBounds dyn
-                    draw   = SDL.surfaceBlitScaled (animAtlas anim) (Just bounds) scr (Just . mkRect $ bounds)
 
 updateAnimations :: Word32 -> System' ()
 updateAnimations dT = do
@@ -103,10 +103,11 @@ runRender !window !renBuf !dT = do
 
     screen   <- SDL.getWindowSurface window
     settings <- get global
-    world <- get global
+    -- world <- get global
+    imageManager <- get global
 
     -- clears background
-    let (Color bgColor) = worldBgColor world
+    let (Color bgColor) = backgroundColor imageManager
     SDL.surfaceFillRect screen Nothing bgColor
 
     let scale   = (fromIntegral . resolutionY $ settings) / (pixelsPerUnit * unitsPerHeight)
@@ -129,7 +130,7 @@ runRender !window !renBuf !dT = do
         renderEvery !i !len !buf !sur | i == len  = pure ()
                                       | otherwise = MVec.unsafeRead buf i >>= drawRender >> renderEvery (i + 1) len buf sur
             where drawRender (V3 x y _, Render sprs) = Vec.foldM_ (drawEach $ V2 x y) sur sprs
-                  drawEach pos scr ren = drawRenderSprite (mkRenderRect resToCenter scale pos) ren scr
+                  drawEach pos scr ren = drawRenderSprite imageManager (mkRenderRect resToCenter scale pos) ren scr
 
     (sprCount, renBuf') <- cfoldM gatherRender (0, renBuf)
     if sprCount > 0 then

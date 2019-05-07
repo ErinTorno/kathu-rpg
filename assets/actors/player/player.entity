@@ -11,9 +11,6 @@ velocity: default # same for this; this component will be dropped in the future,
 moving-speed: 2.5 # 2.5/16 of a tile each tick; each tile is 16 units
 render:
 - atlas: "test.png"
-  atlas-colors:
-    "#000000": background
-    "#ffdfb1": outline
   bounds: [23, 32] # kind of irregular
   strips:
   - {id: walk-north,     frames: 4, row: 0, delay: 160} # 160 ms

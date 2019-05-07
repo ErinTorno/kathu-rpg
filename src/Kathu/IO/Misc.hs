@@ -5,7 +5,7 @@
 module Kathu.IO.Misc where
 
 import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
+import Data.Aeson.Types (Parser, typeMismatch)
 import Data.Text (Text)
 import qualified Data.Vector as Vec
 import Foreign.C.Types (CInt)
@@ -15,6 +15,11 @@ import Linear.V2 (V2(..))
 import Linear.V3 (V3(..))
 import Linear.V4 (V4(..))
 import qualified SDL
+
+instance ToJSON CInt where
+    toJSON i = toJSON $ (fromIntegral i :: Int)
+instance FromJSON CInt where
+    parseJSON a = fromIntegral <$> (parseJSON a :: Parser Int)
 
 -- Range
 

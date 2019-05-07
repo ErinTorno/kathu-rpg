@@ -1,4 +1,10 @@
 world-id: test-world
-background: "#111533"
-
+palettes:
+  - background: "#151831"
+time: # if not present, then time doesn't control the style
+  morning: 0 # we use theme 0 during morning hours
+  day:     0
+  evening: 0
+  night:   0
+  
 # nothing else as of now

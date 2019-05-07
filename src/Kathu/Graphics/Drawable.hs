@@ -8,6 +8,7 @@ import qualified Kathu.SDLCommon as SDLC
 import qualified SDL
 
 type Image = SDL.Surface
+newtype ImageID = ImageID Int deriving (Show, Eq, Ord)
 
 data AnimStyle = Single | StandardActor deriving (Show, Eq)
 
@@ -15,12 +16,12 @@ data AnimStyle = Single | StandardActor deriving (Show, Eq)
 data AnimationStrip = AnimationStrip {animID :: Text, frameCount :: Int, row :: Int, delay :: Word32} deriving (Show, Eq)
 
 data Animation = Animation
-    { animAtlas  :: Image
+    { animAtlas  :: ImageID
     , animStrips :: Vector AnimationStrip
     , animBounds :: SDL.V2 CInt
     }
 
-data StaticSprite = StaticSprite {staticSurface :: Image, staticBounds :: SDL.Rectangle CInt}
+data StaticSprite = StaticSprite {staticSurface :: ImageID, staticBounds :: SDL.Rectangle CInt}
 data AnimatedSprite = AnimatedSprite
     { animation    :: Animation
     , activeAnim   :: Int
@@ -39,9 +40,9 @@ isAnimated :: RenderSprite -> Bool
 isAnimated (RSStatic _)   = False
 isAnimated (RSAnimated _) = True
 
-getImage :: RenderSprite -> Image
-getImage (RSStatic (StaticSprite img _)) = img
-getImage (RSAnimated anim) = animAtlas . animation $ anim
+getImageID :: RenderSprite -> ImageID
+getImageID (RSStatic (StaticSprite img _)) = img
+getImageID (RSAnimated anim) = animAtlas . animation $ anim
 
 switchAnimation :: Int -> AnimatedSprite -> AnimatedSprite
 switchAnimation i anim = anim {activeAnim = i, currentFrame = 0, animTime = 0}

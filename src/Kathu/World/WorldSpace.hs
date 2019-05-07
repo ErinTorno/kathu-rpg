@@ -4,13 +4,16 @@ module Kathu.World.WorldSpace where
 
 import Control.Lens
 import Data.Text (Text)
-import Kathu.Graphics.Color (Color, mkColor)
+import Data.Vector (Vector)
+import qualified Data.Vector as Vec
+import Kathu.Graphics.Color (black)
+import Kathu.Graphics.Palette
 
 data WorldSpace = WorldSpace
     { worldID :: Text
-    , worldBgColor :: Color
+    , worldPalettes :: Vector Palette
     -- Some way to hold the fields that it possesses
     }
 
 emptyWorldSpace :: WorldSpace
-emptyWorldSpace = WorldSpace "" (mkColor 0 0 0 0)
+emptyWorldSpace = WorldSpace "" $ Vec.singleton (Palette black id)

@@ -49,5 +49,5 @@ instance FromJSON (SystemLink Tile) where
 instance FromJSON (SystemLink WorldSpace) where
     parseJSON (Object v) = getCompose $ WorldSpace
         <$> v .:^ "world-id"
-        <*> v .:^ "background"
+        <*> v .:^ "palettes"
     parseJSON v          = typeMismatch "WorldSpace" v

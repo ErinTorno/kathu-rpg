@@ -1,5 +1,5 @@
 name:                kathu
-version:             0.1.3.0
+version:             0.1.4.0
 -- synopsis:
 -- description:
 license:             BSD3
@@ -20,7 +20,8 @@ library
                      Kathu.Entity.Item, Kathu.Entity.Player,
                      Kathu.Entity.Prototype, Kathu.Entity.Resource, Kathu.Entity.System, Kathu.Entity.Timing,
 
-                     Kathu.Graphics.Camera, Kathu.Graphics.Color, Kathu.Graphics.Drawable, Kathu.Graphics.Palette, Kathu.Graphics.RenderBuffer,
+                     Kathu.Graphics.Camera, Kathu.Graphics.Color, Kathu.Graphics.Drawable, Kathu.Graphics.ImageManager
+                     Kathu.Graphics.Palette, Kathu.Graphics.RenderBuffer,
 
                      Kathu.IO.Components, Kathu.IO.Entity Kathu.IO.File, Kathu.IO.Graphics, Kathu.IO.Item, Kathu.IO.Library,
                      Kathu.IO.Misc, Kathu.IO.Parsing, Kathu.IO.Settings, Kathu.IO.World,

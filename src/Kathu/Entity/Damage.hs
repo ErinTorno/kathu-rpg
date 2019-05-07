@@ -22,6 +22,7 @@ data DamageProfile = DamageProfile
     , dmgIcon   :: RenderSprite
     , dmgColor  :: Color
     , targetDefense :: Defense
+    , defaultResist :: Float
     }
 
 data DamagePacket = DamagePacket

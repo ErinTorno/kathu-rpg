@@ -2,11 +2,12 @@
 
 module Kathu.SDLCommon where
 
-import qualified SDL
-
 import Data.Word
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
+import Foreign.Storable (peek)
+import qualified SDL
+import qualified SDL.Raw.Types as SDLRaw
                              
 isOpen :: Maybe SDL.Event -> Bool
 isOpen = maybe True (not . isQuitEvent)
@@ -47,3 +48,8 @@ zeroV2 = SDL.V2 0 0
 
 zeroV3 :: Num a => SDL.V3 a
 zeroV3 = SDL.V3 0 0 0
+
+-- Lower level
+
+surfacePixelFormat :: MonadIO m => SDL.Surface -> m SDLRaw.PixelFormat
+surfacePixelFormat (SDL.Surface sur _) = liftIO (peek . SDLRaw.surfaceFormat =<< peek sur)

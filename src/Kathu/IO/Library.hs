@@ -33,6 +33,9 @@ addAll :: Setter Library Library (Map Text a) (Map Text a) -> (a -> Text) -> [a]
 addAll setter getKey elems = set setter map'
     where map' = Map.fromList . fmap (\e -> (getKey e, e)) $ elems
 
+setImages :: (Library, ParsingLibrary) -> IO (Library, ParsingLibrary)
+setImages (lib, plLib) = pure (set images (view plImages plLib) lib, plLib)
+
 loadLibrary :: SDL.Renderer -> FilePath -> IO Library
 loadLibrary renderer fldr = fst <$> process
     where -- parses all files of a type requiring SystemLink
@@ -47,3 +50,4 @@ loadLibrary renderer fldr = fst <$> process
                     >>= psSL ("entity", addEntities)
                     >>= psSL ("tile", addAll tiles (view tileTextID))
                     >>= psSL ("world", addAll worldSpaces worldID)
+                    >>= setImages
