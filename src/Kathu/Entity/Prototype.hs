@@ -11,7 +11,7 @@ import Data.Maybe (maybe)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Kathu.IO.Parsing
-import qualified Kathu.Util as Util
+import qualified Kathu.Util.Misc as Util
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 

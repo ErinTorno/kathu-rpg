@@ -10,7 +10,7 @@ import Data.Text (Text)
 import qualified Data.Vector as Vec
 import Foreign.C.Types (CInt)
 import GHC.Generics
-import Kathu.Util
+import Kathu.Util.Misc
 import Linear.V2 (V2(..))
 import Linear.V3 (V3(..))
 import Linear.V4 (V4(..))

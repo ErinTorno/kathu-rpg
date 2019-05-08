@@ -21,7 +21,7 @@ import Kathu.Graphics.Drawable
 import Kathu.Graphics.Palette
 import Kathu.IO.Misc
 import Kathu.IO.Parsing
-import Kathu.Util ((>>>=))
+import Kathu.Util.Misc ((>>>=))
 import qualified SDL
 import qualified SDL.Image as SDLI
 

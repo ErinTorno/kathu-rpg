@@ -26,7 +26,8 @@ import Kathu.Entity.Damage (DamageProfile)
 import Kathu.Entity.Item (Item)
 import Kathu.Graphics.Drawable
 import Kathu.IO.File
-import Kathu.Util (dropInitial, (>>>=))
+import Kathu.Util.Misc (dropInitial, (>>>=))
+import Kathu.World.Tile (Tile)
 import qualified SDL
 import System.FilePath
 
@@ -42,7 +43,8 @@ fromScientific = fromRational . toRational
 data ParsingLibrary = ParsingLibrary
     { _plImages :: Vector Image
     , _countingIDs :: Map Text (Map Text Int) -- First key is category, second is individual id and associated index
-    , _items :: Map Text Item
+    , _plItems :: Map Text Item
+    , _plTiles :: Map Text Tile
     , _damageProfiles :: Map Text DamageProfile
     , _workingDirectory :: String
     , _renderer :: SDL.Renderer
@@ -53,7 +55,8 @@ mkEmptyPL :: SDL.Renderer -> ParsingLibrary
 mkEmptyPL ren = ParsingLibrary
     { _plImages = Vec.empty
     , _countingIDs = Map.empty
-    , _items = Map.empty
+    , _plItems = Map.empty
+    , _plTiles = Map.empty
     , _damageProfiles = Map.empty
     , _workingDirectory = ""
     , _renderer = ren

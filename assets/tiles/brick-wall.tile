@@ -1,0 +1,5 @@
+tile-id:  brick-wall
+name:     Brick Wall
+render:   "brick-wall.png"
+is-solid: true
+break-behavior: unbreakable

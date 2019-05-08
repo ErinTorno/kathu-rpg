@@ -4,7 +4,7 @@ module Kathu.Entity.Action where
 
 import Control.Lens
 import Data.Bool
-import Kathu.Entity.Timing
+import Kathu.Util.Timing
 import Linear.V3 (V3(..))
 
 getDiagonalSpeed :: Float -> Float

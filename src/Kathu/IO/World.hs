@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Kathu.IO.World where
 
@@ -11,9 +12,11 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Serialize
 import Data.Text (Text)
+import qualified Data.Text as T
 import Kathu.IO.Components
 import Kathu.IO.Graphics
 import Kathu.IO.Parsing
+import Kathu.Util.Misc ((>>>=))
 import Kathu.World.Tile
 import Kathu.World.WorldSpace
 
@@ -33,13 +36,14 @@ instance FromJSON (SystemLink BreakBehavior) where
     parseJSON v          = typeMismatch "BreakBehavior" v
     
 instance FromJSON (SystemLink Tile) where
-    parseJSON (Object v) = getCompose $ Tile
-        <$> v .:~ "tile-id" -- this uses the id to parse SystemLink TileID
-        <*> v .:^ "tile-id" -- this is used for the text name
-        <*> v .:^ "name"
-        <*> v .:~ "render"
-        <*> v .:^ "is-solid"
-        <*> v .:~ "break-behavior"
+    parseJSON (Object v) = tilePar >>>= \tl -> insertSL plTiles (tl ^. tileTextID) tl
+        where tilePar = getCompose $ Tile
+                  <$> v .:~ "tile-id" -- this uses the id to parse SystemLink TileID
+                  <*> v .:^ "tile-id" -- this is used for the text name
+                  <*> v .:^ "name"
+                  <*> v .:~ "render"
+                  <*> v .:^ "is-solid"
+                  <*> v .:~ "break-behavior"
     parseJSON v          = typeMismatch "Tile" v
 
 ----------------
@@ -47,7 +51,15 @@ instance FromJSON (SystemLink Tile) where
 ----------------
 
 instance FromJSON (SystemLink WorldSpace) where
-    parseJSON (Object v) = getCompose $ WorldSpace
-        <$> v .:^ "world-id"
-        <*> v .:^ "palettes"
+    parseJSON (Object v) = do
+        id       <- v .: "world-id"
+        palettes <- v .: "palettes"
+        {-
+        size     <- v .: "map-size"
+        layers :: [[[Char]]] <- v .: "layers"
+        legend :: SystemLink (Map Char Tile) <- do
+            (keys, vals) :: ([Text], [Text]) <- ((unzip . Map.toList) <$> v .: "legend")
+            pure . fmap (Map.fromList . zip (T.head <$> keys)) . lookupEach plTiles $ vals
+        -}
+        pure . pure $ WorldSpace id palettes Map.empty
     parseJSON v          = typeMismatch "WorldSpace" v

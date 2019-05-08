@@ -6,7 +6,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics
 import Kathu.Graphics.Drawable (RenderSprite)
-import Kathu.Util
+import Kathu.Util.Misc
 
 data Slot = UseItem | Weapon | Head | Torso | Legs | Accessory | NoSlot deriving (Show, Eq, Generic)
 

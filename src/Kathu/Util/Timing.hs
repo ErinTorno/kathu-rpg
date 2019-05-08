@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 
-module Kathu.Entity.Timing where
+module Kathu.Util.Timing where
 
 import Data.Word
 

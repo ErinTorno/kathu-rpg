@@ -12,7 +12,7 @@ import Kathu.Entity.Damage
 import Kathu.Entity.Resource
 import Kathu.IO.Graphics
 import Kathu.IO.Parsing
-import Kathu.Util ((>>>=))
+import Kathu.Util.Misc ((>>>=))
 
 -- ActorState
 

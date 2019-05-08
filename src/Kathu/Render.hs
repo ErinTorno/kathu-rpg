@@ -18,8 +18,8 @@ import Kathu.Graphics.ImageManager
 import Kathu.Graphics.RenderBuffer
 import Kathu.IO.Settings
 import Kathu.World.WorldSpace
-import qualified Kathu.SDLCommon as SDLC
-import Kathu.Util
+import qualified Kathu.Util.SDLCommon as SDLC
+import Kathu.Util.Misc
 import Linear.V2 (V2(..))
 import Linear.V3 (V3(..))
 import qualified SDL
@@ -53,10 +53,6 @@ renderBorderUnits = 4.0
 pixelsPerUnit :: Floating a => a
 pixelsPerUnit = 16.0
 
-cameraShiftUpPx :: Floating a => a
-cameraShiftUpPx = -(0.5 * spriteHeightPx)
-    where spriteHeightPx = 32.0
-
 aspectRatio :: Floating a => SDL.V2 a -> a
 aspectRatio (SDL.V2 x y) = x / y
 
@@ -66,11 +62,10 @@ edgeBleedScaling = 1.01
 
 logicCoordToRender :: Floating a => a -> V3 a -> V3 a -> V3 a
 logicCoordToRender scale (V3 topX topY topZ) (V3 tarX tarY tarZ) = V3 x' y' z'
-    where topY' = cameraShiftUpPx + topY
-          x' = (tarX - topX) * scale
+    where x' = (tarX - topX) * scale
           -- this ensures that the z angle is factored into where it appears
-          y' = (tarY - topY' + cameraZMult * (tarZ - topZ)) * scale
-          z' = tarY - topY' -- used only for sorting, closer along y coord is only consideration
+          y' = (tarY - topY + cameraZMult * (tarZ - topZ)) * scale
+          z' = tarY - topY -- used only for sorting, closer along y coord is only consideration
 
 
 mkRenderRect :: V2 Float -> Float -> V2 Float -> SDL.Rectangle CInt -> SDL.Rectangle CInt
@@ -133,19 +128,21 @@ runRender !window !renBuf !dT = do
         unitsPerHeight = minUnitsPerHeight + (maxUnitsPerHeight - minUnitsPerHeight) * pixMult
             where pixMult = fromIntegral (clampBetween pixelsForMinUnits pixelsForMaxUnits resY) / fromIntegral pixelsForMaxUnits
         unitsPerWidth = unitsPerHeight * aspectRatio resToCenter
+        camShiftUp = 12
         -- this collects all renders into our buffer with their positions
         -- this takes transformed V3, rather than logical, since z is fully depth, rather than up down
         gatherRender :: (Int, RenderBuffer) -> (Camera, Position) -> SystemT' IO (Int, RenderBuffer)
-        gatherRender (i, buf) (Camera zoom, Position camera@(V3 camX camY _)) =
-            let convPos = logicCoordToRender (scale * zoom)
-                minY = camY + ((-0.5) * unitsPerHeight) * pixelsPerUnit
-                maxY = camY + (0.5    * unitsPerHeight + renderBorderUnits) * pixelsPerUnit
-                minX = camX + ((-0.5) * unitsPerWidth  - renderBorderUnits) * pixelsPerUnit
-                maxX = camX + (0.5    * unitsPerWidth  + renderBorderUnits) * pixelsPerUnit
+        gatherRender (i, buf) (Camera zoom, Position (V3 camX camY camZ)) =
+            let cam'@(V3 camX' camY' _) = V3 camX (camY - camShiftUp) camZ
+                convPos = logicCoordToRender (scale * zoom) cam'
+                minY = camY' + ((-0.5) * unitsPerHeight) * pixelsPerUnit
+                maxY = camY' + (0.5    * unitsPerHeight + renderBorderUnits) * pixelsPerUnit
+                minX = camX' + ((-0.5) * unitsPerWidth  - renderBorderUnits) * pixelsPerUnit
+                maxX = camX' + (0.5    * unitsPerWidth  + renderBorderUnits) * pixelsPerUnit
                 isOffScreen (V3 x y z) = y < minY || y > maxY || x < minX || x > maxX
             in (flip cfoldM) (i, buf) $ \(!i, !renBuf) (render, Position pos) -> if isOffScreen pos then pure (i, renBuf) else do
                 -- in future, we won't draw off screen objects
-                let renderPos = convPos camera pos
+                let renderPos = convPos pos
                     shouldDraw = True
                 renBuf' <- lift $ growMVecIfNeeded bufferGrowIncr i buf
                 if shouldDraw then

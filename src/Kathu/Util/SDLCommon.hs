@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Kathu.SDLCommon where
+module Kathu.Util.SDLCommon where
 
 import Data.Word
 import Control.Monad.IO.Class (MonadIO, liftIO)

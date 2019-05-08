@@ -10,8 +10,8 @@ import Data.Word
 import Kathu.Entity.Action
 import Kathu.Entity.Components
 import Kathu.Entity.System
-import Kathu.Entity.Timing
-import qualified Kathu.SDLCommon as SDLC
+import qualified Kathu.Util.SDLCommon as SDLC
+import Kathu.Util.Timing
 import qualified SDL
 
 runPhysics :: System' ()

@@ -15,7 +15,7 @@ import Kathu.Game (runGame)
 import Kathu.Graphics.RenderBuffer (RenderBuffer, mkRenderBuffer)
 import Kathu.IO.Settings
 import Kathu.Render (runRender)
-import qualified Kathu.SDLCommon as SDLC
+import qualified Kathu.Util.SDLCommon as SDLC
 import qualified SDL
 import SDL (($=))
 

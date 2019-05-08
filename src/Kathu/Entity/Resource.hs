@@ -5,7 +5,7 @@ module Kathu.Entity.Resource where
 
 import Control.Lens
 import GHC.Generics
-import Kathu.Util
+import Kathu.Util.Misc
 
 -- | A resource that is not expected to change frequently
 data Static a = Static {_stcBase :: a, _stcBonus :: a} deriving (Show, Eq, Functor, Generic)

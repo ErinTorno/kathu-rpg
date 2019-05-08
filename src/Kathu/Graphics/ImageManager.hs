@@ -34,7 +34,7 @@ import Foreign.Storable
 import Kathu.Graphics.Color
 import Kathu.Graphics.Drawable
 import Kathu.Graphics.Palette
-import qualified Kathu.SDLCommon as SDLC
+import qualified Kathu.Util.SDLCommon as SDLC
 import Linear.V2 (V2(..))
 import Linear.V4 (V4(..))
 import qualified SDL

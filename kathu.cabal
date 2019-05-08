@@ -1,5 +1,5 @@
 name:                kathu
-version:             0.1.4.1
+version:             0.1.4.2
 -- synopsis:
 -- description:
 license:             BSD3
@@ -14,11 +14,11 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:   Kathu.App
-  other-modules:     Kathu.Game, Kathu.Init, Kathu.Render, Kathu.SDLCommon, Kathu.Util, Kathu.Templates,
+  other-modules:     Kathu.Game, Kathu.Init, Kathu.Render, Kathu.Templates,
 
                      Kathu.Entity.Action, Kathu.Entity.ActorState, Kathu.Entity.Components, Kathu.Entity.Damage,
                      Kathu.Entity.Item, Kathu.Entity.Player,
-                     Kathu.Entity.Prototype, Kathu.Entity.Resource, Kathu.Entity.System, Kathu.Entity.Timing,
+                     Kathu.Entity.Prototype, Kathu.Entity.Resource, Kathu.Entity.System,
 
                      Kathu.Graphics.Camera, Kathu.Graphics.Color, Kathu.Graphics.Drawable, Kathu.Graphics.ImageManager
                      Kathu.Graphics.Palette, Kathu.Graphics.RenderBuffer,
@@ -27,6 +27,8 @@ library
                      Kathu.IO.Misc, Kathu.IO.Parsing, Kathu.IO.Settings, Kathu.IO.World,
 
                      Kathu.Physics.Body, Kathu.Physics.System,
+
+                     Kathu.Util.Misc, Kathu.Util.SDLCommon, Kathu.Util.Timing,
 
                      Kathu.World.Field, Kathu.World.Tile, Kathu.World.WorldSpace
   build-depends:     base >=4.11 && <4.12,

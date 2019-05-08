@@ -11,7 +11,7 @@ import Data.Text (Text)
 import Kathu.Entity.Item
 import Kathu.IO.Graphics
 import Kathu.IO.Parsing
-import Kathu.Util ((>>>=))
+import Kathu.Util.Misc ((>>>=))
 
 -- need custom implementation, as even with project options the type isn't converted to the correct case
 instance ToJSON Slot where
@@ -33,7 +33,7 @@ instance FromJSON Slot where
     parseJSON v = typeMismatch "Slot" v
     
 instance FromJSON (SystemLink Item) where
-    parseJSON (Object v) = itemPar >>>= \it -> insertSL items (itemID it) it
+    parseJSON (Object v) = itemPar >>>= \it -> insertSL plItems (itemID it) it
         where itemPar :: Parser (SystemLink Item)
               itemPar = getCompose $ Item
                   <$> v .:^ "item-id"
@@ -48,13 +48,13 @@ instance FromJSON (SystemLink Item) where
 instance FromJSON (SystemLink ItemStack) where
     parseJSON (Object v) = getCompose $ ItemStack <$> item <*> v .:^ "count"
         where item :: Compose Parser SystemLink Item
-              item = Compose $ lookupSingle items <$> v .: "item"
+              item = Compose $ lookupSingle plItems <$> v .: "item"
     parseJSON v          = typeMismatch "ItemStack" v
 
 instance FromJSON (SystemLink ContainerSlot) where
     parseJSON (Object v) = getCompose $ ContainerSlot <$> v .:^? "slot" <*> item
         where maybeLookup :: Maybe Text -> SystemLink (Maybe Item)
-              maybeLookup = maybe (pure Nothing) (fmap Just . lookupSingle items)
+              maybeLookup = maybe (pure Nothing) (fmap Just . lookupSingle plItems)
               item :: Compose Parser SystemLink (Maybe Item)
               item = Compose $ maybeLookup <$> v .:? "item"
     parseJSON v          = typeMismatch "ContainerSlot" v
@@ -74,7 +74,7 @@ instance FromJSON (SystemLink Container) where
 instance FromJSON (SystemLink DeathDrop) where
     parseJSON (Object v) = getCompose $ DeathDrop <$> v .:^ "chance" <*> v .:^ "count" <*> item
         where item :: Compose Parser SystemLink Item
-              item = Compose $ lookupSingle items <$> v .: "item"
+              item = Compose $ lookupSingle plItems <$> v .: "item"
     parseJSON v          = typeMismatch "DeathDrop" v
 
 instance FromJSON (SystemLink Inventory) where

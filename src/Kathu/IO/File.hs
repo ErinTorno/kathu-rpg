@@ -19,7 +19,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.Text.Lazy.IO as IL
 import qualified Data.Yaml as Y
-import Kathu.Util
+import Kathu.Util.Misc
 import System.Directory
 import System.FilePath
 

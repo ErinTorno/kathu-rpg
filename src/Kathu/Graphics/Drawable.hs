@@ -5,7 +5,7 @@ import Data.Word
 import Data.Vector (Vector)
 import qualified Data.Vector as Vec
 import Foreign.C.Types (CInt)
-import qualified Kathu.SDLCommon as SDLC
+import qualified Kathu.Util.SDLCommon as SDLC
 import qualified SDL
 
 type Image = SDL.Surface

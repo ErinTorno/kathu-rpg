@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveFunctor #-}
 
-module Kathu.Util where
+module Kathu.Util.Misc where
 
 import Data.Bool
 import Data.Char
