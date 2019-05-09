@@ -1,24 +1,33 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module Kathu.IO.World where
 
 import Control.Lens
+import Control.Monad
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch, Parser)
 import Data.Functor.Compose
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.Maybe
 import Data.Serialize
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Vector as Vec
+import Kathu.Entity.Item
 import Kathu.IO.Components
+import Kathu.IO.Item
 import Kathu.IO.Graphics
 import Kathu.IO.Parsing
 import Kathu.Util.Misc ((>>>=))
+import Kathu.Util.MultiDimVector (fromList3D)
+import Kathu.World.Field
 import Kathu.World.Tile
 import Kathu.World.WorldSpace
+import Linear.V3 (V3(..))
 
 -- these all use SystemLink, due to the conversion from Strings to IDs requiring state known
 
@@ -54,12 +63,22 @@ instance FromJSON (SystemLink WorldSpace) where
     parseJSON (Object v) = do
         id       <- v .: "world-id"
         palettes <- v .: "palettes"
-        {-
-        size     <- v .: "map-size"
+        loadPnt  <- v .: "load-point"
         layers :: [[[Char]]] <- v .: "layers"
         legend :: SystemLink (Map Char Tile) <- do
             (keys, vals) :: ([Text], [Text]) <- ((unzip . Map.toList) <$> v .: "legend")
             pure . fmap (Map.fromList . zip (T.head <$> keys)) . lookupEach plTiles $ vals
-        -}
-        pure . pure $ WorldSpace id palettes Map.empty
+        let parseItems :: Value -> Parser (SystemLink [(V3 Float, ItemStack)])
+            parseItems (Array vec) = foldM parsePlacement (pure []) vec
+            parseItems v           = typeMismatch "ItemPlacement" v
+            parsePlacement :: SystemLink [(V3 Float, ItemStack)] -> Value -> Parser (SystemLink [(V3 Float, ItemStack)])
+            parsePlacement acc val@(Object v) = do
+                pos   <- v .: "position"
+                stack :: SystemLink ItemStack <- parseJSON val
+                pure $ acc >>= \ls -> ((:ls) . (pos,)) <$> stack
+            parsePlacement _ v                = typeMismatch "ItemPlacement" v
+        items <- v .: "items" >>= parseItems >>>= pure . Vec.fromList
+        let layersVec = (\lgnd -> fromList3D . fmap (fmap (fmap (fromMaybe fail . (flip Map.lookup) lgnd))) $ layers) <$> legend
+            fail = error "Attempted to tile without a listing in the WorldSpace's legend"
+        pure $ WorldSpace id palettes loadPnt <$> items <*> (liftSL . fromTileList =<< layersVec)
     parseJSON v          = typeMismatch "WorldSpace" v

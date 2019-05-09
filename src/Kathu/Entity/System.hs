@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- Required for Apecs
@@ -17,6 +18,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vec
 import Data.Word
 import Kathu.Entity.Components
+import Kathu.Entity.Item
 import Kathu.Entity.Prototype
 import Kathu.Graphics.Drawable (Image)
 import Kathu.Graphics.ImageManager
@@ -62,22 +64,28 @@ instance Semigroup WorldSpace where (<>) = mappend
 instance Monoid WorldSpace where mempty = emptyWorldSpace
 instance Component WorldSpace where type Storage WorldSpace = Global WorldSpace
 
+newtype Debug = Debug Bool
+instance Semigroup Debug where (<>) = mappend
+instance Monoid Debug where mempty = Debug False
+instance Component Debug where type Storage Debug = Global Debug
+
 -- | This data type plays the role as a collection of named values for the game to read from when loading a level
 data Library = Library
     { _images :: Vector Image
     , _prototypes  :: Map Text EntityPrototype
+    , _items       :: Map Text Item
     , _tiles       :: Map Text Tile
     , _worldSpaces :: Map Text WorldSpace
     }
 makeLenses ''Library
 
 instance Semigroup Library where (<>) = mappend
-instance Monoid Library where mempty = Library Vec.empty Map.empty Map.empty Map.empty
+instance Monoid Library where mempty = Library Vec.empty Map.empty Map.empty Map.empty Map.empty
 instance Component Library where type Storage Library = Global Library
 
 -- World
 
-makeWorld "EntityWorld" $ allNonGlobal ++ [''LogicTime, ''RenderTime, ''Random, ''Settings, ''ImageManager, ''WorldSpace, ''Library]
+makeWorld "EntityWorld" $ allNonGlobal ++ [''LogicTime, ''RenderTime, ''Random, ''Settings, ''ImageManager, ''WorldSpace, ''Library, ''Debug]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a

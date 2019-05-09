@@ -1,0 +1,40 @@
+world-id: test-world
+palettes:
+  - background: "#222641"
+  - background: "#47222c"
+load-point: [256, 64, 0]
+legend:
+  " ": empty
+  "#": brick-wall
+  ",": tall-grass
+layers:
+- - "##########   , ,,    "
+  - "#   #    #   ,,,     "
+  - "#   #   ###        ##"
+  - "#       ,           #"
+  - "#      , ,   ,      #"
+  - "#        # ,  ,    ##"
+  - "#  ####  #         ,#"
+  - "#        #  ,, ,,   #"
+  - "#        #  ,,,,    #"
+  - "#        #  ,,,,   ,#"
+  - "#        #   ,,,    #"
+  - "#        #  , ,,   ,#"
+  - "#        #  ,,,,   ,#"
+  - "########## ,,, ,    #"
+items:
+- item:     apple
+  count:    1
+  position: [256, 32, 0] # using 16 units for each tile
+- item:     apple
+  count:    1
+  position: [230, 70, 0] # using 16 units for each tile
+- item:     potion-health
+  count:    1
+  position: [32, 32, 0] # using 16 units for each tile
+- item:     key-silver
+  count:    1
+  position: [48, 144, 0]
+- item:     key-gold
+  count:    1
+  position: [64, 154, 0]

@@ -12,6 +12,8 @@ module Kathu.Graphics.ImageManager
     , backgroundColor
     , loadPalettes
     , setPalette
+    , currentPalette
+    , availablePaletteCount
     , maxPalettes
     ) where
 
@@ -85,6 +87,12 @@ resetImageManager (ImageManager _ bkg sets) = (mVecMapM_ resetIndiv sets) >> (pu
     
 setPalette :: Int -> ImageManager -> ImageManager
 setPalette = set currentSet
+
+currentPalette :: ImageManager -> Int
+currentPalette im = im^.currentSet
+
+availablePaletteCount :: ImageManager -> Int
+availablePaletteCount im = im^.backgrounds.to Vec.length
 
 fetchImage :: MonadIO m => ImageID -> ImageManager -> m SDL.Surface
 fetchImage (ImageID iid) (ImageManager curS _ surSets) = liftIO $ MVec.read surSets iid >>= (flip MVec.read) curS . view convSurfaces

@@ -13,7 +13,7 @@ isOpen :: Maybe SDL.Event -> Bool
 isOpen = maybe True (not . isQuitEvent)
 
 isQuitEvent :: SDL.Event -> Bool
-isQuitEvent (SDL.Event _t SDL.QuitEvent) = True
+isQuitEvent (SDL.Event _ SDL.QuitEvent) = True
 isQuitEvent _ = False
 
 conditionalRun :: MonadIO m => m a -> Bool -> m Bool

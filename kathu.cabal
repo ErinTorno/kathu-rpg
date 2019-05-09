@@ -1,5 +1,5 @@
 name:                kathu
-version:             0.1.4.2
+version:             0.1.5.0
 -- synopsis:
 -- description:
 license:             BSD3
@@ -28,12 +28,12 @@ library
 
                      Kathu.Physics.Body, Kathu.Physics.System,
 
-                     Kathu.Util.Misc, Kathu.Util.SDLCommon, Kathu.Util.Timing,
+                     Kathu.Util.Misc, Kathu.Util.MultiDimVector, Kathu.Util.SDLCommon, Kathu.Util.Timing,
 
-                     Kathu.World.Field, Kathu.World.Tile, Kathu.World.WorldSpace
+                     Kathu.World.Field, Kathu.World.Tile, Kathu.World.WorldSpace, Kathu.World.WorldSystem
   build-depends:     base >=4.11 && <4.12,
                      text, bytestring,
-                     containers, lens, linear, mtl, random, scientific, template-haskell, unordered-containers, vector, vector-algorithms,
+                     containers, lens, linear, mtl, primitive, random, scientific, template-haskell, unordered-containers, vector, vector-algorithms,
                      sdl2 >=2.4.1 && <2.4.2, sdl2-image, apecs,
                      directory, filepath,
                      aeson, cereal, yaml

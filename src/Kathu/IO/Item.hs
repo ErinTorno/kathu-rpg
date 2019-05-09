@@ -30,6 +30,7 @@ instance FromJSON Slot where
     parseJSON (String "legs")      = pure Legs
     parseJSON (String "accessory") = pure Accessory
     parseJSON (String "no-slot")   = pure NoSlot
+    parseJSON (String "misc")      = pure NoSlot
     parseJSON v = typeMismatch "Slot" v
     
 instance FromJSON (SystemLink Item) where

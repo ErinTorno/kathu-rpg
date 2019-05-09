@@ -27,7 +27,7 @@ import Kathu.Entity.Item (Item)
 import Kathu.Graphics.Drawable
 import Kathu.IO.File
 import Kathu.Util.Misc (dropInitial, (>>>=))
-import Kathu.World.Tile (Tile)
+import Kathu.World.Tile (Tile, emptyTile)
 import qualified SDL
 import System.FilePath
 
@@ -54,9 +54,9 @@ makeLenses ''ParsingLibrary
 mkEmptyPL :: SDL.Renderer -> ParsingLibrary
 mkEmptyPL ren = ParsingLibrary
     { _plImages = Vec.empty
-    , _countingIDs = Map.empty
+    , _countingIDs = Map.fromList [("TileID", Map.fromList [("empty", 0)])]
     , _plItems = Map.empty
-    , _plTiles = Map.empty
+    , _plTiles = Map.fromList [("empty", emptyTile)]
     , _damageProfiles = Map.empty
     , _workingDirectory = ""
     , _renderer = ren
@@ -129,11 +129,15 @@ incrUpdateIDs typ k m = Map.adjust updateInner typ newMap
     where updateInner inmap = Map.insert k (Map.size inmap + 1) inmap
           newMap = if Map.member typ m then m else Map.insert typ Map.empty m
 
-lookupEach :: (Ord k, MonadState s m) => Getter s (Map k a) -> [k] -> m [a]
-lookupEach getter keys = gets (view getter) >>= \sMap -> pure . foldl (\acc key -> ((Map.!) sMap key): acc) [] $ keys
+failWithKeyNotFound :: (Show k) => k -> a
+failWithKeyNotFound = error . ("Couldn't find element with key "++) . show
 
-lookupSingle :: (Ord k, MonadState s m) => Getter s (Map k a) -> k -> m a
-lookupSingle getter key = gets (view getter) >>= pure . (flip (Map.!)) key
+lookupEach :: (Show k, Ord k, MonadState s m) => Getter s (Map k a) -> [k] -> m [a]
+lookupEach getter keys = gets (view getter) >>= \sMap -> pure . reverse . foldl (foldFn sMap) [] $ keys
+    where foldFn sMap acc key = (:acc) . fromMaybe (failWithKeyNotFound key) . Map.lookup key $ sMap
+
+lookupSingle :: (Show k, Ord k, MonadState s m) => Getter s (Map k a) -> k -> m a
+lookupSingle getter key = fromMaybe (failWithKeyNotFound key) . Map.lookup key <$> gets (view getter)
 
 insertSL :: Ord k => Lens' ParsingLibrary (Map k a) -> k -> a -> SystemLink a
 insertSL getter key val = modify (over getter $ Map.insert key val) $> val

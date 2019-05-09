@@ -1,0 +1,7 @@
+item-id:        potion-health
+name:           health potion
+description:    an elixer that restores your health
+slot:           misc
+icon:           "potion-health.png"
+max-stack-size: 64
+price:          30

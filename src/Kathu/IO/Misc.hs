@@ -34,8 +34,10 @@ instance FromJSON a => FromJSON (Range a) where
 
 -- Keys
 
-instance ToJSON SDL.Scancode
-instance FromJSON SDL.Scancode
+instance ToJSON SDL.Scancode where
+    toJSON (SDL.Scancode un) = toJSON un
+instance FromJSON SDL.Scancode where
+    parseJSON o = SDL.Scancode <$> parseJSON o
 
 instance ToJSON SDL.Keycode
 instance FromJSON SDL.Keycode

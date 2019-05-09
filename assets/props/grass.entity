@@ -1,7 +1,0 @@
-identity:
-  id: grass
-  name: Grass
-  description: ""
-tags: [plant]
-position: default
-render: ["/tiles/tall-grass.png"]

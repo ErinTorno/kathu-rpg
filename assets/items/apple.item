@@ -1,0 +1,7 @@
+item-id:        apple
+name:           apple
+description:    a common fruit with a crisp bite
+slot:           misc
+icon:           "apple.png"
+max-stack-size: 64
+price:          10

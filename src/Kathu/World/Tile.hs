@@ -9,6 +9,7 @@ import Control.Lens
 import Data.Text (Text)
 import Data.Word
 import GHC.Generics
+import Kathu.Entity.Components (Render)
 import qualified Kathu.Entity.Resource as R
 import Kathu.Graphics.Drawable
 
@@ -26,14 +27,17 @@ data Tile = Tile
     { _tileID :: TileID
     , _tileTextID :: Text
     , _tileName :: Text
-    , _tileRender :: RenderSprite
+    , _tileRender :: Render
     , _isSolid :: Bool
     , _breakBehavior :: BreakBehavior
     }
 makeLenses ''Tile
 
+emptyTileID :: TileID
+emptyTileID = TileID 0
+
 emptyTile = Tile
-    { _tileID = TileID 0
+    { _tileID = emptyTileID
     , _tileTextID = ""
     , _tileName = ""
     , _tileRender = error "Attempted to draw an empty tile"

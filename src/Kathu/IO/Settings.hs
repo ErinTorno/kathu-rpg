@@ -14,6 +14,7 @@ import Kathu.IO.File
 import Kathu.IO.Misc
 import Kathu.IO.Parsing (projectOptions)
 import Linear.V2
+import qualified SDL
 
 data Settings = Settings
     { targetFPS :: Float
@@ -23,6 +24,8 @@ data Settings = Settings
     , modDir :: Text
     , baseSaveDir :: Text
     , moddedSaveDir :: Text
+    , canUseDebug :: Bool
+    , controls :: Controls
     , misc :: Map Text Text
     } deriving (Generic)
 
@@ -38,7 +41,36 @@ defaultSettings = Settings
     , modDir        = "/mods"
     , baseSaveDir   = "/saves"
     , moddedSaveDir = "/modded-saves"
+    , canUseDebug   = False
+    , controls      = defaultControls
     , misc = Map.empty
+    }
+
+data Controls = Controls
+    { keyMoveNorth :: SDL.Scancode
+    , keyMoveEast  :: SDL.Scancode
+    , keyMoveSouth :: SDL.Scancode
+    , keyMoveWest  :: SDL.Scancode
+    , keyToggleDebug  :: SDL.Scancode
+    , keyDebugZoomIn  :: SDL.Scancode
+    , keyDebugZoomOut :: SDL.Scancode
+    , keyDebugNextPalette :: SDL.Scancode
+    } deriving (Generic)
+
+instance ToJSON Controls where
+    toJSON = genericToJSON projectOptions
+instance FromJSON Controls where
+    parseJSON = genericParseJSON projectOptions
+
+defaultControls = Controls
+    { keyMoveNorth = SDL.ScancodeW
+    , keyMoveEast  = SDL.ScancodeD
+    , keyMoveSouth = SDL.ScancodeS
+    , keyMoveWest  = SDL.ScancodeA
+    , keyToggleDebug  = SDL.ScancodeF3
+    , keyDebugZoomIn  = SDL.ScancodeKPMinus
+    , keyDebugZoomOut = SDL.ScancodeKPPlus
+    , keyDebugNextPalette = SDL.ScancodeF5
     }
 
 loadSettings :: IO Settings

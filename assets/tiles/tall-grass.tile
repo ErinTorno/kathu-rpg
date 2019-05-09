@@ -1,5 +1,5 @@
 tile-id:  tall-grass
-name:     Tall Grass
-render:   "tall-grass.png"
+name:     tall grass
+render:   ["tall-grass.png"]
 is-solid: false
 break-behavior: unbreakable

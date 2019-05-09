@@ -1,5 +1,14 @@
 # Revision history for kathu
 
+## 0.1.5.0 -- 2019-05-09
+
+* World Spaces can now be properly loaded and drawn to the screen; currently only the field in which the player is in is drawn
+* The world can contain dropped items now; picking them up is not yet implemented
+* Keyboard controls can be customized using the settings.config file; you can set each with the appropriate SDL Scancode integer value
+* Added debug option; to allow, set can-use-debug to true in settings.config
+  While enabled, you can use Numpad + and Numpad - to zoom in or out, and use F5 to switch to the next display palette
+* Stripped unneccessary data from .png files; this should fix warnings when Libpng-1.6 is used
+
 ## 0.1.4.2 -- 2019-05-07
 
 * Fixed sprites being hidden when very close but not entirely offscreen from the top

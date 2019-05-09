@@ -3,7 +3,10 @@
 module Kathu.Render where
 
 import Apecs hiding (($=))
+import Control.Lens
+import Control.Monad (foldM)
 import Control.Monad.IO.Class (MonadIO)
+import Data.Vector (Vector)
 import qualified Data.Vector as Vec
 import qualified Data.Vector.Mutable as MVec
 import Data.Word
@@ -17,6 +20,8 @@ import Kathu.Graphics.Drawable
 import Kathu.Graphics.ImageManager
 import Kathu.Graphics.RenderBuffer
 import Kathu.IO.Settings
+import Kathu.World.Field
+import Kathu.World.Tile
 import Kathu.World.WorldSpace
 import qualified Kathu.Util.SDLCommon as SDLC
 import Kathu.Util.Misc
@@ -58,7 +63,7 @@ aspectRatio (SDL.V2 x y) = x / y
 
 -- sprite dimensions are multiplied by this to prevent tiny streaks between adjacent sprites
 edgeBleedScaling :: Floating a => a
-edgeBleedScaling = 1.01
+edgeBleedScaling = 1.005
 
 logicCoordToRender :: Floating a => a -> V3 a -> V3 a -> V3 a
 logicCoordToRender scale (V3 topX topY topZ) (V3 tarX tarY tarZ) = V3 x' y' z'
@@ -115,14 +120,16 @@ runRender !window !renBuf !dT = do
 
     screen   <- SDL.getWindowSurface window
     settings <- get global
-    -- world <- get global
+    world    <- get global
     imageManager <- get global
 
     -- clears background
     let (Color bgColor) = backgroundColor imageManager
     SDL.surfaceFillRect screen Nothing bgColor
 
-    let scale   = (fromIntegral . resolutionY $ settings) / (pixelsPerUnit * unitsPerHeight)
+    zoom <- cfold (\z (Camera zoom) -> zoom) 1.0
+
+    let scale   = (fromIntegral . resolutionY $ settings) / (zoom * pixelsPerUnit * unitsPerHeight)
         (V2 _ resY) = resolution settings
         resToCenter = ((*) 0.5 . fromIntegral) <$> resolution settings
         unitsPerHeight = minUnitsPerHeight + (maxUnitsPerHeight - minUnitsPerHeight) * pixMult
@@ -132,27 +139,39 @@ runRender !window !renBuf !dT = do
         -- this collects all renders into our buffer with their positions
         -- this takes transformed V3, rather than logical, since z is fully depth, rather than up down
         gatherRender :: (Int, RenderBuffer) -> (Camera, Position) -> SystemT' IO (Int, RenderBuffer)
-        gatherRender (i, buf) (Camera zoom, Position (V3 camX camY camZ)) =
+        gatherRender (i, buf) (Camera _, Position cam@(V3 camX camY camZ)) =
             let cam'@(V3 camX' camY' _) = V3 camX (camY - camShiftUp) camZ
-                convPos = logicCoordToRender (scale * zoom) cam'
-                minY = camY' + ((-0.5) * unitsPerHeight) * pixelsPerUnit
-                maxY = camY' + (0.5    * unitsPerHeight + renderBorderUnits) * pixelsPerUnit
-                minX = camX' + ((-0.5) * unitsPerWidth  - renderBorderUnits) * pixelsPerUnit
-                maxX = camX' + (0.5    * unitsPerWidth  + renderBorderUnits) * pixelsPerUnit
-                isOffScreen (V3 x y z) = y < minY || y > maxY || x < minX || x > maxX
-            in (flip cfoldM) (i, buf) $ \(!i, !renBuf) (render, Position pos) -> if isOffScreen pos then pure (i, renBuf) else do
-                -- in future, we won't draw off screen objects
-                let renderPos = convPos pos
-                    shouldDraw = True
-                renBuf' <- lift $ growMVecIfNeeded bufferGrowIncr i buf
-                if shouldDraw then
-                    (lift . MVec.unsafeWrite renBuf i) (renderPos, render)
-                    >> pure (i + 1, renBuf)
-                else pure (i, renBuf)
+                convPos = logicCoordToRender scale cam'
+
+                minY = camY' + ((-0.5) * zoom * unitsPerHeight) * pixelsPerUnit
+                maxY = camY' + (0.5    * zoom * unitsPerHeight + renderBorderUnits) * pixelsPerUnit
+                minX = camX' + ((-0.5) * zoom * unitsPerWidth  - renderBorderUnits) * pixelsPerUnit
+                maxX = camX' + (0.5    * zoom * unitsPerWidth  + renderBorderUnits) * pixelsPerUnit
+
+                isOffScreen (V3 !x !y !z) = y < minY || y > maxY || x < minX || x > maxX
+                -- adds to RenderBuffer and increments if judged to be drawable; expands the buffer if needed
+                addToBuffer :: (Int, RenderBuffer) -> Vector RenderSprite -> V3 Float -> SystemT' IO (Int, RenderBuffer)
+                addToBuffer (!i, !renBuf) render pos = if isOffScreen pos then pure (i, renBuf) else do
+                    -- in future, we won't draw off screen objects
+                    let renderPos = convPos pos
+                        shouldDraw = True
+                    renBuf' <- lift $ growMVecIfNeeded bufferGrowIncr i buf
+                    if shouldDraw then
+                        (lift . MVec.unsafeWrite renBuf i) (renderPos, render)
+                        >> pure (i + 1, renBuf)
+                    else pure (i, renBuf)
+                foldFnField :: (Int, RenderBuffer) -> (V3 Int, Field) -> SystemT' IO (Int, RenderBuffer)
+                foldFnField pair (!pos, !field) = fieldFoldM (addTile pos) pair field
+                addTile :: V3 Int -> (Int, RenderBuffer) -> V3 Int -> TileState -> SystemT' IO (Int, RenderBuffer)
+                addTile fpos pair pos t | t^.tile.tileID == emptyTileID = pure pair
+                                        | otherwise = addToBuffer pair (t^.tile.tileRender.to unRender) (worldCoordFromTile fpos pos)
+
+            in ((flip cfoldM) (i, buf) $ \pair (Render render, Position pos) -> addToBuffer pair render pos)
+               >>= \acc -> foldM foldFnField acc (fieldsSurrounding cam world) 
         renderEvery :: Int -> Int -> RenderBuffer -> SDL.Surface -> IO ()
         renderEvery !i !len !buf !sur | i == len  = pure ()
                                       | otherwise = MVec.unsafeRead buf i >>= drawRender >> renderEvery (i + 1) len buf sur
-            where drawRender (V3 x y _, Render sprs) = Vec.foldM_ (drawEach $ V2 x y) sur sprs
+            where drawRender (V3 x y _, sprs) = Vec.foldM_ (drawEach $ V2 x y) sur sprs
                   drawEach pos scr ren = drawRenderSprite imageManager (mkRenderRect resToCenter scale pos) ren scr
 
     (sprCount, renBuf') <- cfoldM gatherRender (0, renBuf)

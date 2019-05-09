@@ -13,6 +13,7 @@ import qualified Data.Text as T
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Kathu.Entity.Components
+import Kathu.Entity.Item
 import Kathu.Entity.System
 import Kathu.IO.Components
 import Kathu.IO.File
@@ -48,6 +49,7 @@ loadLibrary renderer fldr = fst <$> process
           start = (mempty, mkEmptyPL renderer)
           process = pure start
                     >>= psSL ("entity", addEntities)
+                    >>= psSL ("item", addAll items itemID)
                     >>= psSL ("tile", addAll tiles (view tileTextID))
                     >>= psSL ("world", addAll worldSpaces worldID)
                     >>= setImages

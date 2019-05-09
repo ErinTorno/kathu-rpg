@@ -50,7 +50,7 @@ instance Component MovingSpeed where type Storage MovingSpeed = Map MovingSpeed
 newtype Tags = Tags [Text] deriving (Show, Eq, Generic)
 instance Component Tags where type Storage Tags = Map Tags
 
-newtype Render = Render (Vector RenderSprite)
+newtype Render = Render {unRender :: Vector RenderSprite}
 instance Component Render where type Storage Render = Map Render
 
 ----------------------------------
