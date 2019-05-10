@@ -25,6 +25,12 @@ clampRange (Range min max) = clampBetween min max
 mapPair :: (a -> b) -> (a, a) -> (b, b)
 mapPair f (v1, v2) = (f v1, f v2)
 
+mapFst :: (a -> c) -> (a, b) -> (c, b)
+mapFst f (a, b) = (f a, b)
+
+mapSnd :: (b -> c) -> (a, b) -> (a, c)
+mapSnd f (a, b) = (a, f b)
+
 -- Monad functions
 
 (>>>=) :: (Monad m, Monad n) => m (n a) -> (a -> n b) -> m (n b)

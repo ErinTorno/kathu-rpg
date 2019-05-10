@@ -73,7 +73,7 @@ instance FromJSON (SystemLink WorldSpace) where
             parseItems v           = typeMismatch "ItemPlacement" v
             parsePlacement :: SystemLink [(V3 Float, ItemStack)] -> Value -> Parser (SystemLink [(V3 Float, ItemStack)])
             parsePlacement acc val@(Object v) = do
-                pos   <- v .: "position"
+                pos   <- (*unitsPerTile) <$> v .: "position"
                 stack :: SystemLink ItemStack <- parseJSON val
                 pure $ acc >>= \ls -> ((:ls) . (pos,)) <$> stack
             parsePlacement _ v                = typeMismatch "ItemPlacement" v

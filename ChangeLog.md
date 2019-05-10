@@ -1,5 +1,10 @@
 # Revision history for kathu
 
+## 0.1.5.1 -- 2019-05-09
+
+* Added support for loading filters from JSON
+* Units for items and entities in maps now use 1.0 for each tile, rather than 16.0
+
 ## 0.1.5.0 -- 2019-05-09
 
 * World Spaces can now be properly loaded and drawn to the screen; currently only the field in which the player is in is drawn

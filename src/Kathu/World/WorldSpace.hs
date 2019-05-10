@@ -28,7 +28,7 @@ data WorldSpace = WorldSpace
     }
 
 emptyWorldSpace :: WorldSpace
-emptyWorldSpace = WorldSpace "" (Vec.singleton (Palette black id)) (V3 0 0 0) Vec.empty Map.empty
+emptyWorldSpace = WorldSpace "" (Vec.singleton (Palette black (Filter id))) (V3 0 0 0) Vec.empty Map.empty
 
 -- right now we only get the one in range; later we will get surrounding so that even on borders everything will be drawn
 fieldsSurrounding :: RealFrac a => V3 a -> WorldSpace -> [(V3 Int, Field)]

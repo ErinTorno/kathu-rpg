@@ -13,6 +13,7 @@ import Data.Functor.Compose
 import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Vector (Vector)
 import qualified Data.Vector as Vec
 import Foreign.C.Types (CInt)
 import GHC.Generics
@@ -75,4 +76,17 @@ instance FromJSON Color where
     parseJSON e = typeMismatch "SpecialEntity" e
 
 instance FromJSON Palette where
-    parseJSON = withObject "Palette" $ \v -> Palette <$> v .: "background" <*> pure id
+    parseJSON (Object v) = Palette <$> v .: "background" <*> filter
+        where filter = composeFilters <$> ((v .:? "filter" .!= Vec.empty) :: Parser (Vector Filter))
+    parseJSON e          = typeMismatch "Palette" e
+
+instance FromJSON Filter where
+    parseJSON (Object v) = v .: "fn" >>= parseFn
+        where parseFn str = fmap Filter $ case str of
+                  "desaturate"    -> pure desaturate
+                  "desaturate-by" -> desaturateBy <$> v .: "percent"
+                  "blend-color"   -> blendColor <$> v .: "percent" <*> v .: "color"
+                  "shift-hue"     -> fromHSVFunction <$> shiftHue <$> v .: "angle"
+                  "invert-hue"    -> pure . fromHSVFunction $ invertHue
+                  f               -> error $ "Attempted to parse unknown filter " ++ f
+    parseJSON v = typeMismatch "Filter" v
