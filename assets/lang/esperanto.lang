@@ -1,0 +1,13 @@
+items:
+  potion-health:
+    name:        sanomagikuracilo
+    description: kuracilo ke restaŭri vian sanon
+  apple:
+    name:        pomo
+    description: ordinara frukto kun freŝiga gusto
+  key-gold:
+    name:        ora ŝlosilo
+    description: granda ŝlosilo por grava pordo
+  key-silver:
+    name:        arĝenta ŝlosilo
+    description: malgranda ŝlosilo ke povas malfermi ŝlositan pordon

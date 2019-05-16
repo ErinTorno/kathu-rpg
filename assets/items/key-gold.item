@@ -1,6 +1,6 @@
 item-id:        key-gold
 name:           gold key
-description:    a large ornate key for an important locked door
+description:    a large key for an important locked door
 slot:           misc
 icon:           "key-gold.png"
 max-stack-size: 99

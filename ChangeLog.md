@@ -1,5 +1,11 @@
 # Revision history for kathu
 
+## 0.1.6.0 -- 2019-05-16
+
+* Palette sets can be loaded and are fully functional, changing all colors in a scene
+* All horizontal fields within the player's view are drawn, even if the player isn't within them
+* Debug mode now changes on key just pressed, so that it doesn't scroll or toggle too quickly
+
 ## 0.1.5.1 -- 2019-05-09
 
 * Added support for loading filters from JSON

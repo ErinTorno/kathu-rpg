@@ -22,6 +22,7 @@ import Kathu.Entity.Item
 import Kathu.Entity.Prototype
 import Kathu.Graphics.Drawable (Image)
 import Kathu.Graphics.ImageManager
+import Kathu.Graphics.UI
 import Kathu.IO.Settings
 import Kathu.World.Tile (Tile)
 import Kathu.World.WorldSpace (WorldSpace, emptyWorldSpace)
@@ -60,6 +61,10 @@ instance Semigroup ImageManager where (<>) = mappend
 instance Monoid ImageManager where mempty = defaultImageManager
 instance Component ImageManager where type Storage ImageManager = Global ImageManager
 
+instance Semigroup UIConfig where (<>) = mappend
+instance Monoid UIConfig where mempty = error "Attempted to use UIConfig before it has been loaded"
+instance Component UIConfig where type Storage UIConfig = Global UIConfig
+
 instance Semigroup WorldSpace where (<>) = mappend
 instance Monoid WorldSpace where mempty = emptyWorldSpace
 instance Component WorldSpace where type Storage WorldSpace = Global WorldSpace
@@ -71,7 +76,8 @@ instance Component Debug where type Storage Debug = Global Debug
 
 -- | This data type plays the role as a collection of named values for the game to read from when loading a level
 data Library = Library
-    { _images :: Vector Image
+    { _images      :: Vector Image
+    , _uiConfig    :: UIConfig
     , _prototypes  :: Map Text EntityPrototype
     , _items       :: Map Text Item
     , _tiles       :: Map Text Tile
@@ -80,12 +86,12 @@ data Library = Library
 makeLenses ''Library
 
 instance Semigroup Library where (<>) = mappend
-instance Monoid Library where mempty = Library Vec.empty Map.empty Map.empty Map.empty Map.empty
+instance Monoid Library where mempty = Library Vec.empty mempty Map.empty Map.empty Map.empty Map.empty
 instance Component Library where type Storage Library = Global Library
 
 -- World
 
-makeWorld "EntityWorld" $ allNonGlobal ++ [''LogicTime, ''RenderTime, ''Random, ''Settings, ''ImageManager, ''WorldSpace, ''Library, ''Debug]
+makeWorld "EntityWorld" $ allNonGlobal ++ [''LogicTime, ''RenderTime, ''Random, ''Settings, ''ImageManager, ''UIConfig, ''WorldSpace, ''Library, ''Debug]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a

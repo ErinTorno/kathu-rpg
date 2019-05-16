@@ -7,7 +7,9 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
 import Foreign.Storable (peek)
 import qualified SDL
-import qualified SDL.Raw.Types as SDLRaw
+import qualified SDL.Internal.Types as SDLIn.Types
+import qualified SDL.Raw.Types as SDLRaw.Types
+import qualified SDL.Raw.Video as SDLRaw.Video
                              
 isOpen :: Maybe SDL.Event -> Bool
 isOpen = maybe True (not . isQuitEvent)
@@ -19,6 +21,9 @@ isQuitEvent _ = False
 conditionalRun :: MonadIO m => m a -> Bool -> m Bool
 conditionalRun f True  = True <$ f
 conditionalRun _ False = pure False
+
+setWindowIcon :: MonadIO m => SDL.Window -> SDL.Surface -> m ()
+setWindowIcon (SDLIn.Types.Window window) (SDL.Surface sur _) = SDLRaw.Video.setWindowIcon window sur
 
 -- working with SDL data types
 
@@ -51,5 +56,5 @@ zeroV3 = SDL.V3 0 0 0
 
 -- Lower level
 
-surfacePixelFormat :: MonadIO m => SDL.Surface -> m SDLRaw.PixelFormat
-surfacePixelFormat (SDL.Surface sur _) = liftIO (peek . SDLRaw.surfaceFormat =<< peek sur)
+surfacePixelFormat :: MonadIO m => SDL.Surface -> m SDLRaw.Types.PixelFormat
+surfacePixelFormat (SDL.Surface sur _) = liftIO (peek . SDLRaw.Types.surfaceFormat =<< peek sur)

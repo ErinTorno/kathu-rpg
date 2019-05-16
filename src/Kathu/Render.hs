@@ -17,6 +17,7 @@ import Kathu.Entity.System
 import Kathu.Graphics.Camera
 import Kathu.Graphics.Color
 import Kathu.Graphics.Drawable
+import Kathu.Graphics.Drawing
 import Kathu.Graphics.ImageManager
 import Kathu.Graphics.RenderBuffer
 import Kathu.IO.Settings
@@ -29,8 +30,9 @@ import Linear.V2 (V2(..))
 import Linear.V3 (V3(..))
 import qualified SDL
 
+-- right now we stick with 45 degrees, as tiles are not stretched to accommodate other angles
 cameraAngle :: Floating a => a
-cameraAngle = 35.0
+cameraAngle = 45.0
 
 cameraZMult :: Floating a => a
 cameraZMult = sin cameraAngle
@@ -71,19 +73,6 @@ logicCoordToRender scale (V3 topX topY topZ) (V3 tarX tarY tarZ) = V3 x' y' z'
           -- this ensures that the z angle is factored into where it appears
           y' = (tarY - topY + cameraZMult * (tarZ - topZ)) * scale
           z' = tarY - topY -- used only for sorting, closer along y coord is only consideration
-
-
-mkRenderRect :: V2 Float -> Float -> V2 Float -> SDL.Rectangle CInt -> SDL.Rectangle CInt
-mkRenderRect (V2 shiftX shiftY) scale (V2 x y) (SDL.Rectangle _ (V2 w h)) = SDLC.mkRectWith round x' y' (edgeBleedScaling * scale * fromIntegral w) (edgeBleedScaling * scale * fromIntegral h)
-    where x' = x - scale * 0.5 * fromIntegral w + shiftX
-          y' = y - scale * fromIntegral h + shiftY
-
-drawRenderSprite :: MonadIO m => ImageManager -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite -> SDL.Surface -> m SDL.Surface
-drawRenderSprite im mkRect ren scr = blit ren >> pure scr
-    where draw bnd img = SDL.surfaceBlitScaled img (Just bnd) scr (Just . mkRect $ bnd)
-          blit (RSStatic (StaticSprite !iid !bnd)) = fetchImage iid im >>= draw bnd
-          blit dyn@(RSAnimated (AnimatedSprite {animation = anim})) = fetchImage (animAtlas anim) im >>= draw bounds
-              where bounds = currentBounds dyn
 
 updateAnimations :: Word32 -> System' ()
 updateAnimations dT = do
@@ -160,6 +149,12 @@ runRender !window !renBuf !dT = do
                         (lift . MVec.unsafeWrite renBuf i) (renderPos, render)
                         >> pure (i + 1, renBuf)
                     else pure (i, renBuf)
+
+                -- this call to fieldFoldM is (as of when this is written) the most time intensive process in the program
+                -- if we start to have too many problems, we should like into implementing caching each individual sprite into larger ones
+                -- that represent each layer in a field
+                -- although to preserve z-depth we might want to split each field into "strips" of tiles with same y and z positions
+                -- close to this was "surfaceBlitScaled", which would dramatically have its number of calls cut down by this too
                 foldFnField :: (Int, RenderBuffer) -> (V3 Int, Field) -> SystemT' IO (Int, RenderBuffer)
                 foldFnField pair (!pos, !field) = fieldFoldM (addTile pos) pair field
                 addTile :: V3 Int -> (Int, RenderBuffer) -> V3 Int -> TileState -> SystemT' IO (Int, RenderBuffer)
@@ -172,7 +167,7 @@ runRender !window !renBuf !dT = do
         renderEvery !i !len !buf !sur | i == len  = pure ()
                                       | otherwise = MVec.unsafeRead buf i >>= drawRender >> renderEvery (i + 1) len buf sur
             where drawRender (V3 x y _, sprs) = Vec.foldM_ (drawEach $ V2 x y) sur sprs
-                  drawEach pos scr ren = drawRenderSprite imageManager (mkRenderRect resToCenter scale pos) ren scr
+                  drawEach pos scr ren = blitRenderSprite imageManager (mkRenderRect edgeBleedScaling resToCenter scale pos) ren scr
 
     (sprCount, renBuf') <- cfoldM gatherRender (0, renBuf)
     if sprCount > 0 then

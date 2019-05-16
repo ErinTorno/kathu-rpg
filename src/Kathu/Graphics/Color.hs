@@ -8,11 +8,12 @@ import Data.Word
 import GHC.Generics
 import Linear.V4 (V4(..))
 import Numeric (readHex, showHex)
+import Kathu.Util.Misc (padShowHex)
 
 newtype Color = Color (V4 Word8) deriving (Eq, Generic)
 
 instance Show Color where
-    show (Color (V4 r g b a)) = ('#':) . showHex r . showHex g . showHex b . showHex a $ ""
+    show (Color (V4 r g b a)) = ('#':) . padShowHex 2 r . padShowHex 2 g . padShowHex 2 b . padShowHex 2 a $ ""
 instance Read Color where
     readsPrec _ str =
         let pair a b = fst . head . readHex $ (a:b:[])
@@ -69,11 +70,11 @@ restrictHue h | h < 0.0   = restrictHue (h + 360.0)
               | otherwise = h
 
 shiftHue :: Float -> HSVColor -> HSVColor
-shiftHue p (HSVColor h s v a) = HSVColor h' s v a
-            where h' = (h + p * 180.0) `mod'` 360.0
+shiftHue angle (HSVColor h s v a) = HSVColor h' s v a
+            where h' = (h + angle) `mod'` 360.0
 
 invertHue :: HSVColor -> HSVColor
-invertHue = shiftHue 0.5 -- shift to exactly across color wheel
+invertHue = shiftHue 180 -- shift to exactly across color wheel
 
 -- Conversion functions
 
@@ -111,10 +112,10 @@ fromHSV hsv = let fromFloat :: Float -> Word8
                   alph = fromFloat . hsvAlpha $ hsv
                   hi   = (`mod`6) . floor . (/60.0) . hue $ hsv
                   f    = (hue hsv / 60.0) - (fromInteger . floor) (hue hsv / 60.0)
-                  v = fromFloat . (*(value hsv)) . (*255.0) $ 1.0
-                  p = fromFloat . (*(value hsv)) . (*255.0) $ 1.0 - saturation hsv
-                  q = fromFloat . (*(value hsv)) . (*255.0) $ 1.0 - f * saturation hsv
-                  t = fromFloat . (*(value hsv)) . (*255.0) $ 1.0 - (1.0 - f) * saturation hsv in
+                  v = fromFloat . (*(value hsv)) $ 1.0
+                  p = fromFloat . (*(value hsv)) $ 1.0 - saturation hsv
+                  q = fromFloat . (*(value hsv)) $ 1.0 - f * saturation hsv
+                  t = fromFloat . (*(value hsv)) $ 1.0 - (1.0 - f) * saturation hsv in
               case hi of
                   0 -> mkColor v t p alph
                   1 -> mkColor q v p alph

@@ -5,6 +5,6 @@ module Kathu.Physics.System where
 import Apecs
 import Kathu.Physics.Body
 
-runPhysics :: forall w m. (Get w m (Body Entity), Set w m (Body Entity)) => SystemT w m ()
+runPhysics :: forall w m. (Get w m Body, Set w m Body) => SystemT w m ()
 runPhysics = do
-    return ()
+    pure ()

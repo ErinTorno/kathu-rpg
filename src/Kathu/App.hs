@@ -11,7 +11,7 @@ import Data.Text (Text)
 import Data.Word
 import Kathu.Entity.System
 import qualified Kathu.Init as Init
-import Kathu.Game (runGame)
+import Kathu.Game
 import Kathu.Graphics.RenderBuffer (RenderBuffer, mkRenderBuffer)
 import Kathu.IO.Settings
 import Kathu.Render (runRender)
@@ -29,26 +29,27 @@ updateDelay = floor $ 1000.0 / (60.0 :: Double) -- 60 ticks per second is ideal
 renderDelay :: Settings -> Word32
 renderDelay = max updateDelay . floor . (1000.0/) . targetFPS
 
-run :: Word32 -> SystemT' IO Bool -> SDL.Window -> RenderBuffer -> Word32 -> Word32 -> SystemT' IO ()
-run renDelay b window renBuf !prevPhysTime !prevRendTime = b >>= go
-    where go False = pure ()
-          go True  = do
-              startTime <- SDL.ticks
-              let (n, remainder) = (startTime - prevPhysTime) `divMod` updateDelay
+run :: Word32 -> SDL.Window -> RenderBuffer -> Word32 -> Word32 -> SystemT' IO ()
+run renDelay window renBuf !prevPhysTime !prevRendTime = do
+    startTime <- SDL.ticks
+    let (n, remainder) = (startTime - prevPhysTime) `divMod` updateDelay
 
-              -- physics steps as a constant rate as given by the update delay
-              replicateM_ (fromIntegral n) $ do runGame updateDelay
+    -- physics steps as a constant rate as given by the update delay
+    replicateM_ (fromIntegral n) $ do runGame updateDelay
+    shouldContinue <- runEvents
 
-              renderStartTime <- SDL.ticks
-              let renderDiffer = renderStartTime - prevRendTime
-              -- we delay unless physics took enough time that we should draw it again
-              unless (renderDiffer >= renDelay) $ SDL.delay (renDelay - renderDiffer)
-              -- render steps in variable time, so we must reflect that
-              newRenBuf <- runRender window renBuf renderDiffer
-              --lift runRenderGL
-              
-              -- Physics steps back to ensure next update is on time; render goes whenever it can
-              run renDelay b window newRenBuf (startTime - remainder) renderStartTime
+    renderStartTime <- SDL.ticks
+    let renderDiffer = renderStartTime - prevRendTime
+    -- we delay unless physics took enough time that we should draw it again
+    unless (renderDiffer >= renDelay) $ SDL.delay (renDelay - renderDiffer)
+    -- render steps in variable time, so we must reflect that
+    newRenBuf <- runRender window renBuf renderDiffer
+    
+    -- Physics steps back to ensure next update is on time; render goes whenever it can
+    if not shouldContinue then
+        pure ()
+    else
+        run renDelay window newRenBuf (startTime - remainder) renderStartTime
 
 start :: IO ()
 start = do
@@ -69,7 +70,7 @@ start = do
     -- the main loop
     runWith world $
         Init.system renderer settings
-        >> run (floor $ 1000.0 / (targetFPS settings)) (SDLC.isOpen <$> SDL.pollEvent) window renderBuffer curTime curTime
+        >> run (floor $ 1000.0 / (targetFPS settings)) window renderBuffer curTime curTime
 
     -- dispose of resources
     SDL.destroyWindow window

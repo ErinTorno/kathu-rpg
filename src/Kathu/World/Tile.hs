@@ -49,8 +49,8 @@ mkTileState :: Tile -> TileState
 mkTileState t = TileState t 0 0
 
 data TileState = TileState
-    { _tile :: Tile
-    , _surroundingTiles :: Word8
-    , _metadata :: Word8
+    { _tile :: !Tile
+    , _surroundingTiles :: !Word8
+    , _metadata :: !Word8
     }
 makeLenses ''TileState

@@ -84,6 +84,10 @@ loadFromFileSL file = loadWithHandlers (loadError file) (modWDir>>) file
 parseAllSL :: FromJSON (SystemLink a) => String -> FilePath -> IO [SystemLink a]
 parseAllSL = parseAllWith loadFromFileSL
 
+parseExactlyNSL :: FromJSON (SystemLink a) => Int -> String -> FilePath -> IO [SystemLink a]
+parseExactlyNSL n s = fmap (\ls -> let len = length ls in if len /= n then fail len else ls) . parseAllSL s
+    where fail len = error . concat $ ["Attempted to parse ", show n, " for file type .", show s, ", but found ", show len]
+
 liftSL :: IO a -> SystemLink a
 liftSL = SystemLink . lift
 

@@ -2,17 +2,21 @@ world-id: test-world
 palettes:
   - background: "#222641"
   - background: "#47222c"
-    filter:
-    - fn: shift-hue
-      angle: 30
+    shader:
+      fn: shift-hue
+      angle: 45.0
   - background: "#35173c" 
-    filter:
-    - fn: desaturate-by
-      percent: 0.5
-load-point: [256, 64, 0]
+    shader:
+      fn: desaturate
+  - background: "#0a1b0e" 
+    shader:
+      fn: shift-hue
+      angle: -35.0
+load-point: [16, 4, 0]
 legend:
   " ": empty
   "#": brick-wall
+  ".": brick-floor
   ",": tall-grass
 layers:
 - - "##########   , ,,    "

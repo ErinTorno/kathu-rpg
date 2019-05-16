@@ -7,6 +7,7 @@ import Data.Char
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vector.Mutable as MVec
+import Numeric (showHex)
 
 -- Util types
 
@@ -40,6 +41,9 @@ infixl 1 >>>=
 whileM :: Monad m => m Bool -> m ()
 whileM b = b >>= bool (return ()) (whileM b)
 
+whileFstM :: Monad m => m (Bool, a) -> m a
+whileFstM f = f >>= \(b, c) -> bool (return c) (whileFstM f) b
+
 partitionM :: Monad m => (a -> m Bool) -> [a] -> m ([a], [a])
 partitionM _ []      = pure ([], [])
 partitionM fn (x:xs) = fn x >>= app
@@ -53,7 +57,11 @@ growMVecIfNeeded s i vec
     | i < MVec.length vec = pure vec
     | otherwise           = MVec.unsafeGrow vec s
 
--- Text functions
+-- String/Text functions
+
+padShowHex :: (Integral a, Show a) => Int -> a -> ShowS
+padShowHex l a = (++) . pad . showHex a $ ""
+    where pad s = let len = length s in if len <= l then replicate (l - len) '0' ++ s else s
 
 showText :: Show a => a -> Text
 showText = T.pack . show

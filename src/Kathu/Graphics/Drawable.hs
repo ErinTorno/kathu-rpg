@@ -52,7 +52,7 @@ getImageID (RSStatic (StaticSprite img _)) = img
 getImageID (RSAnimated anim) = animAtlas . animation $ anim
 
 switchAnimation :: Int -> AnimatedSprite -> AnimatedSprite
-switchAnimation i anim = anim {activeAnim = i, currentFrame = 0, animTime = 0}
+switchAnimation i anim = anim {activeAnim = i, currentFrame = 0, animTime = timeBeforeFrameChange anim}
 
 -- updates current time, and switches to new frame if we reach it
 updateFrames :: Word32 -> AnimatedSprite -> AnimatedSprite

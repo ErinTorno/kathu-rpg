@@ -14,6 +14,7 @@ import Kathu.IO.Settings
 import Kathu.Graphics.Camera
 import Kathu.Graphics.Color
 import Kathu.Graphics.Drawable
+import Kathu.Graphics.UI
 import Kathu.Graphics.ImageManager
 import Kathu.World.WorldSpace
 import Kathu.World.WorldSystem
@@ -40,6 +41,7 @@ system renderer settings = do
     global $= manager
     global $= Random (R.mkStdGen seed)
     global $= settings
+    global $= library ^. uiConfig
     let getLib g t = (view g library) Map.! t
 
     playerEty <- newFromPrototype $ getLib prototypes "player"

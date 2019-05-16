@@ -20,6 +20,7 @@ import GHC.Generics
 import Kathu.Graphics.Color
 import Kathu.Graphics.Drawable
 import Kathu.Graphics.Palette
+import Kathu.Graphics.UI
 import Kathu.IO.Misc
 import Kathu.IO.Parsing
 import Kathu.Util.Misc ((>>>=))
@@ -67,7 +68,9 @@ instance FromJSON (SystemLink RenderSprite) where
     parseJSON o@(Object _) = parseJSON o >>>= \iid -> pure . RSAnimated $ AnimatedSprite iid 0 0 0 
     parseJSON v            = typeMismatch "RenderSprite" v
 
--- Color
+-----------
+-- Color --
+-----------
 
 instance ToJSON Color where
     toJSON = toJSON . show
@@ -76,17 +79,38 @@ instance FromJSON Color where
     parseJSON e = typeMismatch "SpecialEntity" e
 
 instance FromJSON Palette where
-    parseJSON (Object v) = Palette <$> v .: "background" <*> filter
-        where filter = composeFilters <$> ((v .:? "filter" .!= Vec.empty) :: Parser (Vector Filter))
+    parseJSON (Object v) = Palette <$> v .: "background" <*> v .:? "shader"
     parseJSON e          = typeMismatch "Palette" e
 
-instance FromJSON Filter where
+instance FromJSON Shader where
+    parseJSON (Array a)  = composeShaders <$> (mapM parseJSON a)
     parseJSON (Object v) = v .: "fn" >>= parseFn
-        where parseFn str = fmap Filter $ case str of
+        where parseFn str = fmap Shader $ case str of
                   "desaturate"    -> pure desaturate
                   "desaturate-by" -> desaturateBy <$> v .: "percent"
                   "blend-color"   -> blendColor <$> v .: "percent" <*> v .: "color"
-                  "shift-hue"     -> fromHSVFunction <$> shiftHue <$> v .: "angle"
+                  "shift-hue"     -> (fromHSVFunction . shiftHue) <$> v .: "angle"
                   "invert-hue"    -> pure . fromHSVFunction $ invertHue
                   f               -> error $ "Attempted to parse unknown filter " ++ f
-    parseJSON v = typeMismatch "Filter" v
+    parseJSON v = typeMismatch "Shader" v
+
+--------
+-- UI --
+--------
+
+instance FromJSON (SystemLink DisplayBar) where
+    parseJSON (Object v) = getCompose $ DisplayBar
+        <$> v .:^ "starts-at"
+        <*> v .:^ "points-per-part"
+        <*> v .:~? "cap" <*> (v .:^? "cap-width" .!=~ 0)
+        <*> v .:^ "primary-width" <*> v .:^ "secondary-width"
+        <*> v .:~ "primary-full" <*> v .:~ "primary-3q" <*> v .:~ "primary-half" <*> v .:~ "primary-1q"
+        <*> v .:~ "secondary-full" <*> v .:~ "secondary-empty"
+    parseJSON v = typeMismatch "DisplayBar" v
+
+instance FromJSON (SystemLink UIConfig) where
+    parseJSON (Object v) = getCompose $ UIConfig True
+        <$> v .:~ "game-icon"
+        <*> v .:~ "health-bar"
+        <*> v .:~ "mana-bar"
+    parseJSON v = typeMismatch "UIConfig" v

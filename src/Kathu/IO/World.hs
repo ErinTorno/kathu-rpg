@@ -63,7 +63,7 @@ instance FromJSON (SystemLink WorldSpace) where
     parseJSON (Object v) = do
         id       <- v .: "world-id"
         palettes <- v .: "palettes"
-        loadPnt  <- v .: "load-point"
+        loadPnt  <- (*unitsPerTile) <$> v .: "load-point"
         layers :: [[[Char]]] <- v .: "layers"
         legend :: SystemLink (Map Char Tile) <- do
             (keys, vals) :: ([Text], [Text]) <- ((unzip . Map.toList) <$> v .: "legend")

@@ -62,8 +62,7 @@ instance Component ActorState where type Storage ActorState = Map ActorState
 instance Component ActionSet where type Storage ActionSet = Map ActionSet
 
 -- the body stores an entity as its parent for use during physics calculations
-type Body' = Body Entity
-instance Component (Body a) where type Storage (Body a) = Cache CATCH_SIZE (Map (Body a))
+instance Component Body where type Storage Body = Cache CATCH_SIZE (Map Body)
 
 instance Component Inventory where type Storage Inventory = Map Inventory
 
@@ -77,7 +76,7 @@ instance Component Camera where type Storage Camera = Unique Camera
 -- ECS Util
 -- selects all unique and non-unique components that an individual entity might have
 type AllComponents =
-    ( (Identity, Position, Velocity, MovingSpeed, (Body Entity))
+    ( (Identity, Position, Velocity, MovingSpeed, Body)
     , (Tags, Render, ActorState, Inventory)
     , (Render, Local, Camera)
     )
@@ -88,7 +87,7 @@ pureSerialComponents = [''SpecialEntity, ''Identity, ''Position, ''Velocity, ''M
 linkedSerialComponents = [''Render, ''Inventory, ''ActorState]
 allSerialComponents = pureSerialComponents ++ linkedSerialComponents
 
-generalComponents = allSerialComponents ++ [''ActionSet, ''Body']
+generalComponents = allSerialComponents ++ [''ActionSet, ''Body]
 allNonGlobal = generalComponents ++ [''Local, ''Camera]
 
 -- Misc helper functions for working with these components

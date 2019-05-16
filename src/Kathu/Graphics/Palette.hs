@@ -7,10 +7,10 @@ import Kathu.Graphics.Color
     
 data Palette = Palette
     { background :: Color
-    , filter :: Filter
+    , shader :: Maybe Shader
     }
 
-newtype Filter = Filter {unFilter :: Color -> Color}
+newtype Shader = Shader {unShader :: Color -> Color}
 
-composeFilters :: Foldable f => f Filter -> Filter
-composeFilters = Filter . foldl (\acc -> (.acc) . unFilter) id
+composeShaders :: Foldable f => f Shader -> Shader
+composeShaders = Shader . foldl (\acc -> (.acc) . unShader) id

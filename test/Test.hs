@@ -1,4 +1,11 @@
 module Main where
 
+import Test.HUnit
+
+import EntityTests
+import GraphicsTests
+import PhysicsTests
+
 main :: IO ()
-main = putStrLn "Kathu Test Main"
+main = runTestTT tests >>= print
+    where tests = TestList [entityTests, graphicsTests, physicsTests]

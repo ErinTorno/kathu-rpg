@@ -66,14 +66,13 @@ foreachTile f (Field tilest) = go 0
                | otherwise = liftIO (MVec.read tilest i) >>= f >> go (i + 1)
 
 fieldFoldM :: MonadIO m => (a -> V3 Int -> TileState -> m a) -> a -> Field -> m a
-fieldFoldM f acc (Field tiles) = go 0 0 0 acc
+fieldFoldM f !acc (Field tiles) = go 0 0 0 acc
     where go !x !y !z !b | z == fieldHeight = pure b
                          | y == fieldSize   = go 0 0 (z + 1) b
                          | x == fieldSize   = go 0 (y + 1) z b
                          | otherwise        = let v = V3 x y z in liftIO (MVec.read tiles (indexFromCoord v)) >>= f b v >>= go (x + 1) y z
 
 -- Conversion
-
 
 mkFields :: MonadIO m => Int -> Int -> Int -> m (Vector3D Field)
 mkFields x y z = repliVecM z (repliVecM y (repliVecM z mkField))

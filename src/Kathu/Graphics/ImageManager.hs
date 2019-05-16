@@ -49,7 +49,8 @@ backgroundMask :: Color
 backgroundMask = black
 
 data SurfaceSet = SurfaceSet
-    { _isActive :: Bool -- in future we can "drop" or unload 
+    { _isActive :: Bool -- in future we can "drop" or unload
+    , _palette :: Vector Color
     , _baseSurface :: SDL.Surface
     , _convSurfaces :: IOVector SDL.Surface
     }
@@ -78,12 +79,15 @@ defaultImageManager = error "Attempted to access uninitialized ImageManager"
 mkImageManager :: Vector SDL.Surface -> IO ImageManager
 mkImageManager !surs = pure . ImageManager 0 (Vec.singleton (black)) =<< Vec.thaw =<< mapM mkSet surs
         where mkSet :: SDL.Surface -> IO SurfaceSet
-              mkSet sur  = pure . SurfaceSet True sur =<< MVec.replicateM maxPalettes (dupSur sur)
+              mkSet sur  = do
+                  cpy <- MVec.replicateM maxPalettes (dupSur sur)
+                  pal <- mkPalette sur
+                  pure $ SurfaceSet True pal sur cpy
               dupSur sur = SDL.surfaceFormat sur >>= SDL.convertSurface sur
 
 resetImageManager :: MonadIO m => ImageManager -> m ImageManager
 resetImageManager (ImageManager _ bkg sets) = (mVecMapM_ resetIndiv sets) >> (pure $ ImageManager 0 bkg sets)
-    where resetIndiv (SurfaceSet _ base surs) = mVecMapM_ (copySurfaceOver base) surs
+    where resetIndiv (SurfaceSet _ _ base surs) = mVecMapM_ (copySurfaceOver base) surs
     
 setPalette :: Int -> ImageManager -> ImageManager
 setPalette = set currentSet
@@ -102,13 +106,20 @@ backgroundColor (ImageManager i bkg _) = bkg Vec.! i
 
 loadPalettes :: MonadIO m => Vector Palette -> ImageManager -> m ImageManager
 loadPalettes thms im@(ImageManager _ _ sets) = (resetImageManager im) >>= ((mVecMapM_ resetIndv sets)>>) . pure . set backgrounds (background <$> thms)
-    where resetIndv (SurfaceSet _ base surs) = copySurface 0 surs
-          copySurface !i surs | i >= thmLen = pure ()
-                              | otherwise   = do
-                                  surface <- (liftIO . MVec.read surs) i
-                                  let theme = thms Vec.! i
-                                  replaceSurfaceColor backgroundMask (background theme) surface
-                                  copySurface (i + 1) surs
+    where resetIndv :: MonadIO m => SurfaceSet -> m ()
+          resetIndv (SurfaceSet _ pal base surs) = copySurface pal 0 surs
+          copySurface :: MonadIO m => Vector Color -> Int -> IOVector SDL.Surface -> m ()
+          copySurface pal !i surs
+              | i >= thmLen = pure ()
+              | otherwise   = do
+                  surface <- (liftIO . MVec.read surs) i
+                  let theme = thms Vec.! i
+                      maySh = shader theme
+                      runShader Nothing = pure ()
+                      runShader (Just (Shader sh)) = mapM_ (\c -> replaceSurfaceColor c (sh c) surface) pal
+                  replaceSurfaceColor backgroundMask (background theme) surface
+                  runShader maySh
+                  copySurface pal (i + 1) surs
           thmLen = let l = Vec.length thms in if l > maxPalettes then failure l else l
           failure l = (error . concat) ["Attempted to load theme set past max limit (max: ", show maxPalettes, " given length: ", show l, ")"]
 
@@ -133,6 +144,33 @@ replacePaletteColor (Color src) (Color rep) pal = index >>= maybe (pure ()) repl
           index = (join . fmap (V.elemIndex src)) <$> SDL.paletteColors pal
           replace :: MonadIO m => Int -> m ()
           replace = SDL.setPaletteColors pal (V.singleton rep) . fromIntegral
+
+mkPalette :: MonadIO m => SDL.Surface -> m (Vector Color)
+mkPalette !sur = do
+    SDL.lockSurface sur
+    
+    format <- SDLC.surfacePixelFormat sur
+    (V2 w h) <- SDL.surfaceDimensions sur
+    if SDLRaw.pixelFormatBytesPerPixel format /= 4 then
+        error "Attempted to find palette in a surface that doesn't support all color channels"
+    else pure ()
+
+    pixels   <- castPtr <$> SDL.surfacePixels sur
+    let len = fromIntegral (w * h)
+        checkColor acc !i
+            | i >= len  = pure acc
+            | otherwise = do
+                word <- (peekElemOff pixels i) :: IO Word32
+                let col = word32ToColor format word
+                    word' = colorToWord32 format col
+                if col `elem` acc then
+                    checkColor acc (i + 1)
+                else
+                    checkColor (col:acc) (i + 1)
+        removeUnn c@(Color (V4 _ _ _ a)) = c /= backgroundMask && a /= 0
+    colorList <- liftIO . fmap (filter removeUnn) . checkColor [] $ 0
+    SDL.unlockSurface sur
+    pure . Vec.fromList $ colorList
 
 -- | Copies a surface over another surface; both must have same size and pixel format, with 32 bits per pixel
 copySurfaceOver :: MonadIO m => SDL.Surface -> SDL.Surface -> m ()
@@ -167,6 +205,12 @@ replaceSurfaceColor :: MonadIO m => Color -> Color -> SDL.Surface -> m ()
 replaceSurfaceColor !srcColor !repColor sur = do
     SDL.lockSurface sur
 
+    {-
+    if srcColor /= backgroundMask then
+        error . concat $ ["Replacing ", show srcColor, " with ", show repColor]
+    else pure ()
+    -}
+
     format <- SDLC.surfacePixelFormat sur
     if SDLRaw.pixelFormatBytesPerPixel format /= 4 then
         error "Attempted to replace colors in a surface that doesn't support all color channels" 
@@ -190,3 +234,8 @@ colorToWord32 :: SDLRaw.PixelFormat -> Color -> Word32
 colorToWord32 format (Color (V4 !r !g !b !a)) = gp SDLRaw.pixelFormatRMask r .|. gp SDLRaw.pixelFormatGMask g .|. gp SDLRaw.pixelFormatBMask b .|. gp SDLRaw.pixelFormatAMask a
     where gp f b = let w = fromIntegral b
                    in  f format .&. (w .|. (w `shift` 8) .|. (w `shift` 16) .|. (w `shift` 24))
+
+word32ToColor :: SDLRaw.PixelFormat -> Word32 -> Color
+word32ToColor format word = mkColor (getComp SDLRaw.pixelFormatRMask) (getComp SDLRaw.pixelFormatGMask) (getComp SDLRaw.pixelFormatBMask) (getComp SDLRaw.pixelFormatAMask)
+    where getComp mask = let c = (mask format) .&. word -- we get just the component part
+                         in fromIntegral $ (255 .&. c) .|. (255 .&. (c `shift` (-8))) .|. (255 .&. (c `shift` (-16))) .|. (255 .&. (c `shift` (-24))) -- fill up word with it, then cast to Word8 to drop out else

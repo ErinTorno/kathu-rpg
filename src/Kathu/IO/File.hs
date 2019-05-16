@@ -41,18 +41,6 @@ toStrict = B.concat . BL.toChunks
 
 data Format = FormatJSON | FormatYAML
 
-{-
--- the file can specify its format in the extension with use of a char
--- ex: myfile.y#txt is a txt file in the yml format
-formatFromFD :: FileDescriptor -> Maybe Format
-formatFromFD (FileDescriptor _ name) = 
-    let (name, fullExt) = T.breakOnEnd "." name in
-    case T.breakOn "#" of
-        ("j", _) -> Just FormatJSON
-        ("y", _) -> Just FormatYAML
-        (n, _)   -> Nothing
--}
-
 fileExists :: FilePath -> IO Bool
 fileExists = doesFileExist
 
@@ -75,7 +63,6 @@ saveToFile FormatJSON fd config = IL.writeFile fd (encodeToLazyText config)
 saveToFile FormatYAML fd config = B.writeFile fd (Y.encode config)
 
 -- for all files in directory and subdirectory with the given extension, we parse them and return it as a list
---parseAllWith :: FromJSON a => (FilePath -> IO a) -> String -> FilePath -> IO [a]
 parseAllWith loader ext path = ((map (path </>)) <$> listDirectory path) >>= partitionM doesDirectoryExist >>= parseIn
     where -- parses each file, and appends to all parsed files from subdir
           parseIn (dirs, files) = (liftM2 (++)) foldRes . mapM loader . filter (isExtensionOf ext) $ files

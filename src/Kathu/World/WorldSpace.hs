@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -28,10 +29,14 @@ data WorldSpace = WorldSpace
     }
 
 emptyWorldSpace :: WorldSpace
-emptyWorldSpace = WorldSpace "" (Vec.singleton (Palette black (Filter id))) (V3 0 0 0) Vec.empty Map.empty
+emptyWorldSpace = WorldSpace "" (Vec.singleton (Palette black Nothing)) (V3 0 0 0) Vec.empty Map.empty
 
--- right now we only get the one in range; later we will get surrounding so that even on borders everything will be drawn
+-- right now we only consider horizontal fields; ones with different z depths are ignored
 fieldsSurrounding :: RealFrac a => V3 a -> WorldSpace -> [(V3 Int, Field)]
-fieldsSurrounding v ws = catMaybes [readField v]
+fieldsSurrounding v ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
     where fields    = worldFields ws
-          readField v' = let fv = fieldContainingCoord v' in ((fv,) <$> Map.lookup fv fields)
+          (V3 ox oy oz) = fieldContainingCoord v
+          readFields !acc !x !y | y > oy + 1 = acc
+                                | x > ox + 1 = readFields acc 0 (y + 1)
+                                | otherwise  = readFields (((curV,) <$> Map.lookup curV fields):acc) (x + 1) y
+              where curV = V3 x y oz -- only consider same z level right now
