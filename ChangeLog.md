@@ -1,5 +1,10 @@
 # Revision history for kathu
 
+## 0.1.6.1 -- 
+
+* Health and mana are now drawn in the top left corner
+* Layers in a map are now drawn; there are slight overlaying issues with floors as of now
+
 ## 0.1.6.0 -- 2019-05-16
 
 * Palette sets can be loaded and are fully functional, changing all colors in a scene

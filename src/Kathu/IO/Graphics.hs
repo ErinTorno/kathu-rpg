@@ -91,6 +91,7 @@ instance FromJSON Shader where
                   "blend-color"   -> blendColor <$> v .: "percent" <*> v .: "color"
                   "shift-hue"     -> (fromHSVFunction . shiftHue) <$> v .: "angle"
                   "invert-hue"    -> pure . fromHSVFunction $ invertHue
+                  "invert-rgb"    -> pure invertRGB
                   f               -> error $ "Attempted to parse unknown filter " ++ f
     parseJSON v = typeMismatch "Shader" v
 

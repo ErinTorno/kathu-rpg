@@ -51,6 +51,9 @@ blendColor :: Float -> Color -> Color -> Color
 blendColor ratio (Color (V4 r1 g1 b1 a1)) (Color (V4 r2 g2 b2 a2)) = Color $ V4 (blEach r1 r2) (blEach g1 g2) (blEach b1 b2) (blEach a1 a2) 
     where blEach x y = floor $ (1.0 - ratio) * fromIntegral x + ratio * fromIntegral y 
 
+invertRGB :: Color -> Color
+invertRGB (Color (V4 r g b a)) = Color $ V4 (255 - r) (255 - g) (255 - b) a
+
 --------------------
 -- Manipulate HSV --
 --------------------

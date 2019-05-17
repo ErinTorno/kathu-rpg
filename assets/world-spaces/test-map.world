@@ -1,24 +1,44 @@
 world-id: test-world
 palettes:
   - background: "#222641"
+  - background: "#35173c" 
+    shader:
+      - fn: invert-hue
+      - fn: desaturate-by
+        percent: 0.45
+  - background: "#ef7f40"
+    shader:
+      fn: invert-rgb
   - background: "#47222c"
     shader:
       fn: shift-hue
       angle: 45.0
-  - background: "#35173c" 
-    shader:
-      fn: desaturate
-  - background: "#0a1b0e" 
-    shader:
-      fn: shift-hue
-      angle: -35.0
-load-point: [16, 4, 0]
+#  - background: "#0a1b0e" 
+#    shader:
+#      fn: shift-hue
+#      angle: -35.0
+load-point: [16, 4, 0] # [16, 4, 1] # 1 above floor
 legend:
   " ": empty
+  ".": invisible-floor
   "#": brick-wall
-  ".": brick-floor
+  "*": brick-floor
   ",": tall-grass
 layers:
+# - - "....................."
+#   - "....................."
+#   - ".*...**.*............"
+#   - ".....*..............."
+#   - ".....***.*..........."
+#   - "......*.*............"
+#   - "........*............"
+#   - "....................."
+#   - "....................."
+#   - "....................."
+#   - "....................."
+#   - "....................."
+#   - "....................."
+#   - ".*......*............"
 - - "##########   , ,,    "
   - "#   #    #   ,,,     "
   - "#   #   ###        ##"

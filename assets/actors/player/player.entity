@@ -26,7 +26,7 @@ render:
 actor-state:
   team: ally
   health: 60.0 # 3 hearts at start
-  mana: 40.0
+  mana: 60.0
   armor: 0.0
   aura: 0.0
   resists: {}

@@ -12,6 +12,7 @@ import qualified Data.Vector.Mutable as MVec
 import Data.Word
 import Foreign.C.Types (CInt)
 import Kathu.Entity.Action
+import Kathu.Entity.ActorState
 import Kathu.Entity.Components
 import Kathu.Entity.System
 import Kathu.Graphics.Camera
@@ -20,6 +21,7 @@ import Kathu.Graphics.Drawable
 import Kathu.Graphics.Drawing
 import Kathu.Graphics.ImageManager
 import Kathu.Graphics.RenderBuffer
+import Kathu.Graphics.UI
 import Kathu.IO.Settings
 import Kathu.World.Field
 import Kathu.World.Tile
@@ -71,8 +73,8 @@ logicCoordToRender :: Floating a => a -> V3 a -> V3 a -> V3 a
 logicCoordToRender scale (V3 topX topY topZ) (V3 tarX tarY tarZ) = V3 x' y' z'
     where x' = (tarX - topX) * scale
           -- this ensures that the z angle is factored into where it appears
-          y' = (tarY - topY + cameraZMult * (tarZ - topZ)) * scale
-          z' = tarY - topY -- used only for sorting, closer along y coord is only consideration
+          y' = z' * scale
+          z' = (tarY - topY + cameraZMult * (tarZ - topZ))
 
 updateAnimations :: Word32 -> System' ()
 updateAnimations dT = do
@@ -137,7 +139,7 @@ runRender !window !renBuf !dT = do
                 minX = camX' + ((-0.5) * zoom * unitsPerWidth  - renderBorderUnits) * pixelsPerUnit
                 maxX = camX' + (0.5    * zoom * unitsPerWidth  + renderBorderUnits) * pixelsPerUnit
 
-                isOffScreen (V3 !x !y !z) = y < minY || y > maxY || x < minX || x > maxX
+                isOffScreen (V3 !x !y !z) = let y' = y + cameraZMult * z in y' < minY || y' > maxY || x < minX || x > maxX
                 -- adds to RenderBuffer and increments if judged to be drawable; expands the buffer if needed
                 addToBuffer :: (Int, RenderBuffer) -> Vector RenderSprite -> V3 Float -> SystemT' IO (Int, RenderBuffer)
                 addToBuffer (!i, !renBuf) render pos = if isOffScreen pos then pure (i, renBuf) else do
@@ -173,6 +175,9 @@ runRender !window !renBuf !dT = do
     if sprCount > 0 then
         lift $ sortRenderBuffer 0 sprCount renBuf' >> renderEvery 0 sprCount renBuf' screen
     else pure ()
+
+    playerAS <- cfold (\acc (as, Camera _) -> Just as) Nothing
+    renderUI screen scale playerAS
 
     SDL.updateWindowSurface window
     pure renBuf'
