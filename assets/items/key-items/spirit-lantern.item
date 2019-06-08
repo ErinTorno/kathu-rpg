@@ -1,0 +1,8 @@
+item-id:        spirit-lantern
+name:           spirit lantern
+description:    a beacon that illuminates the dark
+slot:           misc
+icon:           "spirit-lantern.png"
+max-stack-size: 1
+price:          -1
+special-category: key-item

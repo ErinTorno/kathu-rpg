@@ -1,5 +1,5 @@
 name:                kathu
-version:             0.1.6.1
+version:             0.1.6.2
 -- synopsis:
 -- description:
 license:             BSD3
@@ -18,19 +18,19 @@ library
 
                      Kathu.Entity.Action, Kathu.Entity.ActorState, Kathu.Entity.Components, Kathu.Entity.Damage,
                      Kathu.Entity.Item, Kathu.Entity.Player,
-                     Kathu.Entity.Prototype, Kathu.Entity.Resource, Kathu.Entity.System,
+                     Kathu.Entity.Prototype, Kathu.Entity.PrototypeTemplate, Kathu.Entity.Resource, Kathu.Entity.System,
 
                      Kathu.Graphics.Camera, Kathu.Graphics.Color, Kathu.Graphics.Drawable, Kathu.Graphics.Drawing, Kathu.Graphics.ImageManager
                      Kathu.Graphics.Palette, Kathu.Graphics.RenderBuffer, Kathu.Graphics.UI,
 
                      Kathu.IO.Components, Kathu.IO.Entity Kathu.IO.File, Kathu.IO.Graphics, Kathu.IO.Item, Kathu.IO.Library,
-                     Kathu.IO.Misc, Kathu.IO.Parsing, Kathu.IO.Settings, Kathu.IO.World,
+                     Kathu.IO.Misc, Kathu.IO.Parsing, Kathu.IO.ParsingLibrary, Kathu.IO.Settings, Kathu.IO.World,
 
                      Kathu.Physics.Body, Kathu.Physics.System,
 
                      Kathu.Util.Misc, Kathu.Util.MultiDimVector, Kathu.Util.SDLCommon, Kathu.Util.Timing,
 
-                     Kathu.World.Field, Kathu.World.Tile, Kathu.World.WorldSpace, Kathu.World.WorldSystem
+                     Kathu.World.Field, Kathu.World.Tile, Kathu.World.Time, Kathu.World.WorldSpace, Kathu.World.WorldSystem
   -- other-modules: all are exposed for testing
   build-depends:     base >=4.11 && <4.12,
                      text, bytestring,

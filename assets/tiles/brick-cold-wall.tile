@@ -1,0 +1,5 @@
+tile-id:  brick-cold-wall
+name:     cold brick wall
+render:   ["brick-cold-wall.png"]
+is-solid: true
+break-behavior: unbreakable

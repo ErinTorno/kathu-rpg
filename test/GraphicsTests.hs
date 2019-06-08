@@ -9,6 +9,8 @@ graphicsTests = TestList
     , TestLabel "Convert RGB HSV 1" convRGBHSV1
     , TestLabel "Convert RGB HSV 2" convRGBHSV2
     , TestLabel "Shift Hue 1" hueShift1
+    , TestLabel "Shift Hue Towards 1" hueShiftTowards1
+    , TestLabel "Shift Hue Towards 2" hueShiftTowards2
     ]
 
 -----------
@@ -29,5 +31,8 @@ convRGBHSV1 = TestCase $ assertEqual "Color RGB to HSV to RGB conversion" col (f
 convRGBHSV2 = TestCase $ assertEqual "Color HSV to RGB conversion" (read "#f7ffb0") (fromHSV $ col)
     where col = (HSVColor 65.4 0.306 1.0 1.0)
 
-
 hueShift1 = TestCase $ assertEqual "Color shift by 30 degrees" (read "#f8ffb1") (fromHSVFunction (shiftHue 30) . read $ "#ffdfb1")
+
+hueShiftTowards1 = TestCase $ assertEqual "Color shift towards hue 35 by 10" (HSVColor 100 1 1 1) (shiftHueTowardsAbs 35 10 $ HSVColor 110 1 1 1)
+
+hueShiftTowards2 = TestCase $ assertEqual "Color shift towards hue 30 by 30" (HSVColor 10 1 1 1) (shiftHueTowardsAbs 30 30 $ HSVColor 340 1 1 1)

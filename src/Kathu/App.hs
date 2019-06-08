@@ -58,9 +58,9 @@ start = do
     settings <- loadSettings
     world    <- Init.entityWorld
     let winConfig = SDL.defaultWindow
-                        { SDL.windowInitialSize = SDL.V2 (fromIntegral . resolutionX $ settings) (fromIntegral . resolutionY $ settings)
-                        , SDL.windowOpenGL = Nothing
-                        }
+                    { SDL.windowInitialSize = SDL.V2 (fromIntegral . resolutionX $ settings) (fromIntegral . resolutionY $ settings)
+                    , SDL.windowOpenGL = Nothing
+                    }
     window   <- SDL.createWindow appName winConfig
     SDL.showWindow window
     renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer

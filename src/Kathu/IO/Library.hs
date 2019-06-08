@@ -14,11 +14,13 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Kathu.Entity.Components
 import Kathu.Entity.Item
+import Kathu.Entity.Prototype
 import Kathu.Entity.System
 import Kathu.IO.Components
 import Kathu.IO.File
 import Kathu.IO.Graphics
 import Kathu.IO.Parsing
+import Kathu.IO.ParsingLibrary
 import Kathu.IO.World
 import Kathu.World.Tile
 import Kathu.World.WorldSpace
@@ -44,14 +46,14 @@ addUnique _ _ _ = error "Attempted to add more than one items that are marked as
 
 loadLibrary :: SDL.Renderer -> FilePath -> IO Library
 loadLibrary renderer fldr = fst <$> process
-    where -- parses all files of a type requiring SystemLink
-          psSL :: FromJSON (SystemLink a) => (String, [a] -> Library -> Library) -> (Library, ParsingLibrary) -> IO (Library, ParsingLibrary) 
-          psSL (ext, adder) (lib, plib) = (parseSL plib . parseAllSL ext $ fldr) >>= \(nset, nplib) -> pure (adder nset lib, nplib)
-          -- parses all files of a type without using SystemLink
+    where -- parses all files of a type requiring SystemLink'
+          psSL :: FromJSON (SystemLink' a) => (String, [a] -> Library -> Library) -> (Library, ParsingLibrary) -> IO (Library, ParsingLibrary) 
+          psSL (ext, adder) (lib, plib) = (parseSL plib . parseAllSL workingDirectory ext $ fldr) >>= \(nset, nplib) -> pure (adder nset lib, nplib)
+          -- parses all files of a type without using SystemLink'
           psNo :: FromJSON a => (String, [a] -> Library -> Library) -> (Library, ParsingLibrary) -> IO (Library, ParsingLibrary)
           psNo (ext, adder) (lib, plib) = parseAll ext fldr >>= \nset -> pure (adder nset lib, plib)
-          psUnique :: FromJSON (SystemLink a) => String -> Setter Library Library a a -> (Library, ParsingLibrary) -> IO (Library, ParsingLibrary) 
-          psUnique ext setter (lib, plib) = (parseSL plib . parseExactlyNSL 1 ext $ fldr) >>= \(nset, nplib) -> pure (addUnique setter nset lib, nplib)
+          psUnique :: FromJSON (SystemLink' a) => String -> Setter Library Library a a -> (Library, ParsingLibrary) -> IO (Library, ParsingLibrary) 
+          psUnique ext setter (lib, plib) = (parseSL plib . parseExactlyNSL workingDirectory 1 ext $ fldr) >>= \(nset, nplib) -> pure (addUnique setter nset lib, nplib)
           -- the set of elements to 
           start = (mempty, mkEmptyPL renderer)
           process = pure start

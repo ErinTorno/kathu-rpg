@@ -1,0 +1,11 @@
+item-id:        bomb
+name:           bomb
+description:    a small but powerful explosive
+slot:           weapon
+#icon:           "bomb.png"
+icon:
+  atlas: "bomb-lit.png"
+  bounds: [14, 16]
+  strips: [{id: idle, frames: 4, row: 0, delay: 200}]
+max-stack-size: 99
+price:          12

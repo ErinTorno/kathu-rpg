@@ -1,0 +1,8 @@
+item-id:          key-chest
+name:             chest key
+description:      a small key for opening locked containers
+slot:             misc
+icon:             "key-chest.png"
+max-stack-size:   99
+price:            0
+special-category: worldspace-shared

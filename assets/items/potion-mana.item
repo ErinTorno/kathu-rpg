@@ -1,0 +1,7 @@
+item-id:        potion-mana
+name:           mana potion
+description:    an elixer that restores your mana
+slot:           misc
+icon:           "potion-mana.png"
+max-stack-size: 99
+price:          30

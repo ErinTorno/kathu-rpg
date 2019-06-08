@@ -1,0 +1,65 @@
+world-id: test
+name:     test world
+palettes:
+  - background: "#431d33"
+#  # day
+#  - background: "#431d33"
+#    shader:
+#      fn: shift-hue-towards
+#      angle: 130
+#      percent: 0.25
+  # night
+  - background: "#151220"
+    shader:
+      fn: shift-hue-towards
+      angle: 250
+      percent: 0.4
+  - background: "#232142" # "#1a1929"
+load-point: [16, 4, 0] # [16, 4, 1] # 1 above floor
+legend:
+  " ": empty
+  "#": brick-wall
+  "%": brick-cold-wall
+  "*": brick-floor
+  ",": tall-grass
+layers:
+- - "##########   , ,,   ##   ,  ,, "
+  - "#   #    #   ,,, ,   #  ,,,  , "
+  - "#   #   ###     ,   ,#   ,,  , "
+  - "#       ,        ,   #,   ,    "
+  - "#      , ,   ,   ,   #,,       "
+  - "#        # ,  ,  ,  ##,    ,   "
+  - "#  ####  #        , ,# ,,  ,   "
+  - "#        #  ,, ,,,          ,  "
+  - "#        #  ,,,, ,   ,         "
+  - "#        #  ,,,,  , ,%%%    %%%"
+  - "#        #   ,,,  ,  %        %"
+  - "#        #  , ,,,   ,%        %"
+  - "#        #  ,,,,,,  ,%        %"
+  - "#        #  , ,,,   ,%        %"
+  - "#        #  ,,,,,,  ,%        %"
+  - "########## ,,, , ,   %%%    %%%"
+entities:
+- entity: chest-locked
+  position: [6, 1, 0]
+- entity: chest-odd
+  position: [25, 12, 0]
+items:
+- item:     apple
+  position: [18, 2.5, 0] # 1.0 is a single tile
+- item:     apple
+  position: [14.5, 8.5, 0]
+- item:     potion-health
+  position: [1.5, 2, 0]
+- item:     potion-mana
+  position: [2.5, 2, 0]
+- item:     key-small
+  position: [3, 8, 0]
+- item:     key-big
+  position: [4, 9, 0]
+- item:     sword
+  position: [4, 4, 0]
+- item:     bomb
+  position: [5, 4, 0]
+
+

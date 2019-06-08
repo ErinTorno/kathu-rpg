@@ -37,6 +37,7 @@ runGame :: Word32 -> System' ()
 runGame !dT = do
     updateActions
     stepLogicTime dT
+    stepWorldTime dT
     runPhysics
     pure ()
 

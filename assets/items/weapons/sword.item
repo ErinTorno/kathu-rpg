@@ -1,0 +1,7 @@
+item-id:        sword
+name:           sword
+description:    a sharp, shiny blade
+slot:           weapon
+icon:           "sword.png"
+max-stack-size: 1
+price:          43

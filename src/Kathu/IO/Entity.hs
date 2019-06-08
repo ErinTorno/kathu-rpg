@@ -12,11 +12,12 @@ import Kathu.Entity.Damage
 import Kathu.Entity.Resource
 import Kathu.IO.Graphics
 import Kathu.IO.Parsing
+import Kathu.IO.ParsingLibrary
 import Kathu.Util.Misc ((>>>=))
 
 -- ActorState
 
-instance FromJSON (SystemLink ActorState) where
+instance FromJSON (SystemLink' ActorState) where
     parseJSON (Object v) = getCompose $ mkActor <*> Compose (parseMapSLWith parseJSON (fmap pure . parseJSON) $ v Hash.! "resists")
         where mkActor = ActorState
                   <$> v .:^ "team"
@@ -38,8 +39,8 @@ instance FromJSON Team where
 
 -- Damage
 
-instance FromJSON (SystemLink DamageID) where
-    parseJSON (String s) = pure $ (DamageID . fromIntegral) <$> lookupOrAdd "DamageID" s (mapInsertIncr s)
+instance FromJSON (SystemLink' DamageID) where
+    parseJSON (String s) = pure $ (DamageID . fromIntegral) <$> lookupOrAdd countingIDs "DamageID" s (mapInsertIncr s)
     parseJSON v          = typeMismatch "DamageID" v
 
 instance ToJSON Defense where
@@ -60,9 +61,9 @@ instance FromJSON DamageTarget where
     parseJSON (String "mana")   = pure TgtMana
     parseJSON v = typeMismatch "DamageTarget" v
 
-instance FromJSON (SystemLink DamageProfile) where
+instance FromJSON (SystemLink' DamageProfile) where
     parseJSON (Object v) = damagePar >>>= \dam -> insertSL damageProfiles (dmgTextID dam) dam
-        where getID = lookupOrAdd "DamageProfile"
+        where getID = lookupOrAdd countingIDs "DamageProfile"
               damagePar = getCompose $ DamageProfile
                   <$> v .:~ "damage-id"
                   <*> v .:^ "damage-id"

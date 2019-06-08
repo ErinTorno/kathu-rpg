@@ -11,6 +11,7 @@ velocity: default # same for this; this component will be dropped in the future,
 # 2.75/16 of a tile each tick; each tile is 16 units
 # 16 is absolute max speed for physics, but hard to control after 5 or 6
 moving-speed: 2.75
+# in future palette will be chosen by the player
 render:
 - atlas: "player.png"
   bounds: [23, 32] # kind of irregular

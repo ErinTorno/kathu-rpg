@@ -23,19 +23,20 @@ import Kathu.Graphics.Palette
 import Kathu.Graphics.UI
 import Kathu.IO.Misc
 import Kathu.IO.Parsing
+import Kathu.IO.ParsingLibrary
 import Kathu.Util.Misc ((>>>=))
 import qualified SDL
 import qualified SDL.Image as SDLI
 
--- most of these use SystemLink as they require loading images with them or other SystemLink required types
+-- most of these use SystemLink' as they require loading images with them or other SystemLink' required types
 
 zeroPoint :: SDL.Point SDL.V2 CInt
 zeroPoint = SDL.P $ SDL.V2 0 0
 
-instance FromJSON (SystemLink ImageID) where
-    parseJSON (String s) = pure $ (ImageID . fromIntegral) <$> ((flip $ lookupOrAddSL category) adder =<< url)
+instance FromJSON (SystemLink' ImageID) where
+    parseJSON (String s) = pure $ (ImageID . fromIntegral) <$> ((flip $ lookupOrAddSL countingIDs category) adder =<< url)
         where category = "ImageID"
-              url = fmap T.pack . parseUrl . T.unpack $ s
+              url = fmap T.pack . parseUrl workingDirectory . T.unpack $ s
               adder = do
                   url' <- url
                   modify $ over countingIDs (Map.adjust (mapInsertIncr url') category)
@@ -43,11 +44,11 @@ instance FromJSON (SystemLink ImageID) where
                   modify $ over plImages ((flip Vec.snoc) image)
     parseJSON v          = typeMismatch "ImageID" v
 
-getSurfaceBounds :: ImageID -> SystemLink (SDL.Rectangle CInt)
+getSurfaceBounds :: ImageID -> SystemLink' (SDL.Rectangle CInt)
 getSurfaceBounds (ImageID iid) = SDL.Rectangle zeroPoint <$> surfaceDim
-    where surfaceDim :: SystemLink (SDL.V2 CInt)
+    where surfaceDim :: SystemLink' (SDL.V2 CInt)
           surfaceDim = image >>= liftSL . SDL.surfaceDimensions
-          image :: SystemLink Image
+          image :: SystemLink' Image
           image = (Vec.!iid) <$> gets (view plImages)
 
 getTextureBounds :: MonadIO m => SDL.Texture -> m (SDL.Rectangle CInt)
@@ -56,14 +57,14 @@ getTextureBounds t = SDL.queryTexture t >>= \t -> pure . SDL.Rectangle zeroPoint
 instance FromJSON AnimationStrip where
     parseJSON = withObject "AnimationStrip" $ \v -> AnimationStrip <$> v .: "id" <*> v .: "frames" <*> v .: "row" <*> v .: "delay"
 
-instance FromJSON (SystemLink Animation) where
+instance FromJSON (SystemLink' Animation) where
     parseJSON (Object v) = getCompose $ Animation
         <$> v .:~ "atlas"
         <*> v .:^ "strips"
         <*> v .:^ "bounds"
     parseJSON v = typeMismatch "Animation" v
 
-instance FromJSON (SystemLink RenderSprite) where
+instance FromJSON (SystemLink' RenderSprite) where
     parseJSON s@(String _) = parseJSON s >>>= \iid -> getSurfaceBounds iid >>= \bnd -> pure . RSStatic . (flip StaticSprite) bnd $ iid
     parseJSON o@(Object _) = parseJSON o >>>= \iid -> pure . RSAnimated $ AnimatedSprite iid 0 0 0 
     parseJSON v            = typeMismatch "RenderSprite" v
@@ -92,6 +93,8 @@ instance FromJSON Shader where
                   "shift-hue"     -> (fromHSVFunction . shiftHue) <$> v .: "angle"
                   "invert-hue"    -> pure . fromHSVFunction $ invertHue
                   "invert-rgb"    -> pure invertRGB
+                  "shift-hue-towards"     -> fromHSVFunction <$> (shiftHueTowards <$> v .: "angle" <*> v .: "percent")
+                  "shift-hue-towards-abs" -> fromHSVFunction <$> (shiftHueTowardsAbs <$> v .: "target-angle" <*> v .: "shift-angle")
                   f               -> error $ "Attempted to parse unknown filter " ++ f
     parseJSON v = typeMismatch "Shader" v
 
@@ -99,7 +102,7 @@ instance FromJSON Shader where
 -- UI --
 --------
 
-instance FromJSON (SystemLink DisplayBar) where
+instance FromJSON (SystemLink' DisplayBar) where
     parseJSON (Object v) = getCompose $ DisplayBar
         <$> v .:^ "starts-at"
         <*> v .:^ "points-per-part"
@@ -109,7 +112,7 @@ instance FromJSON (SystemLink DisplayBar) where
         <*> v .:~ "secondary-full" <*> v .:~ "secondary-empty"
     parseJSON v = typeMismatch "DisplayBar" v
 
-instance FromJSON (SystemLink UIConfig) where
+instance FromJSON (SystemLink' UIConfig) where
     parseJSON (Object v) = getCompose $ UIConfig True
         <$> v .:~ "game-icon"
         <*> v .:~ "health-bar"

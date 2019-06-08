@@ -1,0 +1,9 @@
+item-id:        key-big
+name:           big key
+description:    a large key for an important locked door
+slot:           misc
+icon:           "key-big.png"
+max-stack-size: 99
+price:          0
+# instead of being stored in the inventory, it is stored in a counter for the worldspace
+special-category: worldspace-shared

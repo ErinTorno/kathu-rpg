@@ -1,0 +1,68 @@
+world-id: dungeon-t2-island
+name:     island depths
+palettes:
+  # normal palette; a teal background with slightly orange/reddish sprites
+  - background: "#0c2031"
+    shader:
+      fn: shift-hue-towards-abs
+      target-angle: 35.0
+      shift-angle:  5.0 # everything will get slightly closer to orange
+  # darkness palette: for dark rooms (which first appear here)
+  - background: "#0f0312" 
+    shader:
+      - fn: invert-hue
+      - fn: desaturate-by
+        percent: 0.4
+      - fn: blend-color
+        percent: 0.25
+        color: "#000010"
+  # darkness palette after room has been lit
+  - background: "#140617" 
+    shader:
+      - fn: invert-hue
+      - fn: desaturate-by
+        percent: 0.2
+load-point: [16, 4, 0] # [16, 4, 1] # 1 above floor
+legend:
+  " ": empty
+  "#": brick-wall
+  "*": brick-floor
+  ",": tall-grass
+layers:
+- - "#######################,,,,#####"
+  - ",,, , #        #           ,   ,"
+  - " ,,   #        #       ,    ,,, "
+  - "      #        #           ,,   "
+  - "      #        #     , ,,,      "
+  - "  ,   #        #      ,,,,,,   ,"
+  - "      ####,,####   , ,,         "
+  - "   ,                            "
+  - "     ,,             ,,,     ,,,,"
+  - "                   ,,,       ,, "
+  - "     ,,               ,         "
+  - "     ,,,     ##  ##        ,,   "
+  - "             #    #             "
+  - "  ,          #    #    ,        "
+  - "   ,,        #    #       ,     "
+  - "             ######            #"
+  - "      ,,              ,,,      #"
+  - "          ,,     ,,   ,,    ####"
+  - "    ,     ,   ,,  ,,,, ,       #"
+  - "      ,,         ,,  ,,,,,,,   #"
+  - "                  ,,,,   ,,,,,,#"
+  - "                         #######"
+entities: []
+items:
+- item:     magic-lantern
+  position: [3, 6, 0]
+- item:     apple
+  count:    3
+  position: [18, 2.5, 0] # 1.0 is a single tile
+- item:     apple
+  position: [14.5, 8.5, 0]
+- item:     potion-health
+  position: [2, 2.3, 0]
+- item:     key-small
+  position: [3, 8, 0]
+- item:     key-big
+  position: [4, 9, 0]

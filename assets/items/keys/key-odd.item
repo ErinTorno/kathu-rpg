@@ -1,0 +1,12 @@
+# this key will likely be used to open a locked door of a higher tier than small keys rarely in some dungeons
+# so you can allow players many small keys at once and access to an odd-locked door
+# or be used to open a locked chest that contains mandatory items, unlike normal locked chests
+
+item-id:          key-odd
+name:             odd key
+description:      a strangely shaped key
+slot:             misc
+icon:             "key-odd.png"
+max-stack-size:   99
+price:            0
+special-category: worldspace-shared

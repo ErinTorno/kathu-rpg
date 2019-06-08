@@ -17,16 +17,18 @@ import Linear.V2
 import qualified SDL
 
 data Settings = Settings
-    { targetFPS :: Float
-    , resolution :: V2 Word32
-    , serverPort :: Word32
+    { targetFPS     :: Float
+    , resolution    :: V2 Word32
+    , serverPort    :: Word32
     --, language :: 
-    , modDir :: Text
-    , baseSaveDir :: Text
+    , modDir        :: Text
+    , baseSaveDir   :: Text
     , moddedSaveDir :: Text
-    , canUseDebug :: Bool
-    , controls :: Controls
-    , misc :: Map Text Text
+    , canUseDebug   :: Bool
+    , controls      :: Controls
+    , misc          :: Map Text Text
+    -- this is for testing purposes, and will be removed later
+    , initialWorld  :: Text
     } deriving (Generic)
 
 instance ToJSON Settings where
@@ -43,7 +45,8 @@ defaultSettings = Settings
     , moddedSaveDir = "/modded-saves"
     , canUseDebug   = False
     , controls      = defaultControls
-    , misc = Map.empty
+    , misc          = Map.empty
+    , initialWorld  = "test-world"
     }
 
 data Controls = Controls

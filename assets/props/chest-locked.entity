@@ -1,0 +1,11 @@
+identity:
+  id: chest-locked
+  name: locked chest
+  description: a locked box
+tags: [container]
+position: default
+render: ["chest-locked.png"]
+inventory:
+  type: container
+  equip-slots: []
+  misc-slots: [{count: 10}]

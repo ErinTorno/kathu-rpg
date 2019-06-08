@@ -7,6 +7,7 @@ import Control.Lens
 import qualified Data.Map as Map
 import Kathu.Entity.Action
 import Kathu.Entity.Components
+import Kathu.Entity.Prototype
 import Kathu.Entity.System
 import Kathu.IO.File (assetPath)
 import Kathu.IO.Library
@@ -47,7 +48,7 @@ system renderer settings = do
     playerEty <- newFromPrototype $ getLib prototypes "player"
     localPlayer playerEty
 
-    let worldspace = getLib worldSpaces "test-world"
+    let worldspace = getLib worldSpaces . initialWorld $ settings
     initWorldSpace worldspace
 
     -- testing set for now; will change in future to be else where

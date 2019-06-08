@@ -1,8 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes, TemplateHaskell #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
 
 module Kathu.IO.Parsing where
@@ -22,13 +21,8 @@ import Data.Text (Text)
 import Data.Scientific
 import Data.Vector (Vector)
 import qualified Data.Vector as Vec
-import Kathu.Entity.Damage (DamageProfile)
-import Kathu.Entity.Item (Item)
-import Kathu.Graphics.Drawable
 import Kathu.IO.File
 import Kathu.Util.Misc (dropInitial, (>>>=))
-import Kathu.World.Tile (Tile, emptyTile)
-import qualified SDL
 import System.FilePath
 
 -- We drop the starting _ so that fields for lenses don't keep it
@@ -40,55 +34,29 @@ fromScientific = fromRational . toRational
 
 -- Helpers for stateful deserialization
 
-data ParsingLibrary = ParsingLibrary
-    { _plImages :: Vector Image
-    , _countingIDs :: Map Text (Map Text Int) -- First key is category, second is individual id and associated index
-    , _plItems :: Map Text Item
-    , _plTiles :: Map Text Tile
-    , _damageProfiles :: Map Text DamageProfile
-    , _workingDirectory :: String
-    , _renderer :: SDL.Renderer
-    }
-makeLenses ''ParsingLibrary
+newtype SystemLink l a = SystemLink (StateT l IO a) deriving (Functor, Applicative, Monad, MonadState l)
 
-mkEmptyPL :: SDL.Renderer -> ParsingLibrary
-mkEmptyPL ren = ParsingLibrary
-    { _plImages = Vec.empty
-    , _countingIDs = Map.fromList [("TileID", Map.fromList [("empty", 0)])]
-    , _plItems = Map.empty
-    , _plTiles = Map.fromList [("empty", emptyTile)]
-    , _damageProfiles = Map.empty
-    , _workingDirectory = ""
-    , _renderer = ren
-    }
-
-newtype SystemLink a = SystemLink (StateT ParsingLibrary IO a) deriving (Functor, Applicative, Monad, MonadState ParsingLibrary)
-
-runSL :: ParsingLibrary -> SystemLink a -> IO (a, ParsingLibrary)
+runSL :: l -> SystemLink l a -> IO (a, l)
 runSL lib (SystemLink st) = runStateT st lib
 
-foldSL :: ParsingLibrary -> [SystemLink a] -> IO ([a], ParsingLibrary)
+foldSL :: l -> [SystemLink l a] -> IO ([a], l)
 foldSL initLib = foldM (\(!v, !lib) cur -> (\(nv, lib') -> (nv:v, lib')) <$> runSL lib cur) ([], initLib)
 
-parseSL :: ParsingLibrary -> IO [SystemLink a] -> IO ([a], ParsingLibrary)
+parseSL :: l -> IO [SystemLink l a] -> IO ([a], l)
 parseSL lib ls = ls >>= foldSL lib
 
-showWD :: SystemLink ()
-showWD = gets (view workingDirectory) >>= pure . error
+loadFromFileSL :: FromJSON (SystemLink l a) => Lens' l String -> FilePath -> IO (SystemLink l a)
+loadFromFileSL workingDirectory file = loadWithHandlers (loadError file) (modWDir>>) file
+    where modWDir = modify (set workingDirectory $ takeDirectory file)
 
-loadFromFileSL :: FromJSON (SystemLink a) => FilePath -> IO (SystemLink a)
-loadFromFileSL file = loadWithHandlers (loadError file) (modWDir>>) file
-    where modWDir :: SystemLink ()
-          modWDir = modify (set workingDirectory $ takeDirectory file)
+parseAllSL :: FromJSON (SystemLink l a) => Lens' l String -> String -> FilePath -> IO [SystemLink l a]
+parseAllSL wd = parseAllWith (loadFromFileSL wd)
 
-parseAllSL :: FromJSON (SystemLink a) => String -> FilePath -> IO [SystemLink a]
-parseAllSL = parseAllWith loadFromFileSL
-
-parseExactlyNSL :: FromJSON (SystemLink a) => Int -> String -> FilePath -> IO [SystemLink a]
-parseExactlyNSL n s = fmap (\ls -> let len = length ls in if len /= n then fail len else ls) . parseAllSL s
+parseExactlyNSL :: FromJSON (SystemLink l a) => Lens' l String -> Int -> String -> FilePath -> IO [SystemLink l a]
+parseExactlyNSL wd n s = fmap (\ls -> let len = length ls in if len /= n then fail len else ls) . parseAllSL wd s
     where fail len = error . concat $ ["Attempted to parse ", show n, " for file type .", show s, ", but found ", show len]
 
-liftSL :: IO a -> SystemLink a
+liftSL :: IO a -> SystemLink l a
 liftSL = SystemLink . lift
 
 -- gets a normal type from Parser and raises it to a Compose
@@ -111,19 +79,19 @@ liftSL = SystemLink . lift
 (.!=~) :: Monad m => Compose Parser m (Maybe a) -> a -> Compose Parser m a
 (.!=~) p def = fmap (fromMaybe def) p
 
-parseUrl :: FilePath -> SystemLink String
-parseUrl path = gets (view workingDirectory) >>= \dir -> pure . resolveAssetPath dir $ path
+parseUrl :: Getter l String -> FilePath -> SystemLink l String
+parseUrl workingDirectory path = (flip resolveAssetPath) path <$> gets (view workingDirectory)
 
-lookupOrAddSL :: Text -> Text -> (SystemLink ()) -> SystemLink Int
-lookupOrAddSL cat key adder = (Map.lookup cat <$> gets (view countingIDs)) >>= checkCat
+lookupOrAddSL :: Lens' l (Map Text (Map Text Int)) -> Text -> Text -> (SystemLink l ()) -> SystemLink l Int
+lookupOrAddSL countingIDs cat key adder = (Map.lookup cat <$> gets (view countingIDs)) >>= checkCat
     where checkCat (Just v) = check . Map.lookup key $ v
           checkCat Nothing  = modify (over countingIDs (Map.insert cat Map.empty)) >> check Nothing          
           check (Just v) = pure v
-          check Nothing  = adder >> lookupOrAdd cat key failure
+          check Nothing  = adder >> lookupOrAdd countingIDs cat key failure
           failure = pure . error . concat $ ["Attempting to add value during look up more than once (key: ", show key, ", category: ", show cat, ")"]
 
-lookupOrAdd :: Text -> Text -> (Map Text Int -> Map Text Int) -> SystemLink Int
-lookupOrAdd cat key adder = lookupOrAddSL cat key (modify $ over countingIDs (Map.adjust adder cat))
+lookupOrAdd :: Lens' l (Map Text (Map Text Int)) -> Text -> Text -> (Map Text Int -> Map Text Int) -> SystemLink l Int
+lookupOrAdd countingIDs cat key adder = lookupOrAddSL countingIDs cat key (modify $ over countingIDs (Map.adjust adder cat))
 
 mapInsertIncr :: Ord k => k -> Map k Int -> Map k Int
 mapInsertIncr k m = Map.insert k (Map.size m) m
@@ -143,25 +111,25 @@ lookupEach getter keys = gets (view getter) >>= \sMap -> pure . reverse . foldl 
 lookupSingle :: (Show k, Ord k, MonadState s m) => Getter s (Map k a) -> k -> m a
 lookupSingle getter key = fromMaybe (failWithKeyNotFound key) . Map.lookup key <$> gets (view getter)
 
-insertSL :: Ord k => Lens' ParsingLibrary (Map k a) -> k -> a -> SystemLink a
+insertSL :: Ord k => Lens' l (Map k a) -> k -> a -> SystemLink l a
 insertSL getter key val = modify (over getter $ Map.insert key val) $> val
 
--- Parsing for SystemLink values
+-- Parsing for SystemLink l values
 
-parseListSLWith :: (Value -> Parser (SystemLink a)) -> Value -> Parser (SystemLink [a])
+parseListSLWith :: (Value -> Parser (SystemLink l a)) -> Value -> Parser (SystemLink l [a])
 parseListSLWith parser (Array a) = foldM append (pure []) a
     where append acc cur = parser cur >>= pure . (flip (liftM2 (:))) acc
-parseListSLWith _ v              = typeMismatch "[SystemLink a]" v
+parseListSLWith _ v              = typeMismatch "[SystemLink l a]" v
 
-parseListSL :: FromJSON (SystemLink a) => Value -> Parser (SystemLink [a])
+parseListSL :: FromJSON (SystemLink l a) => Value -> Parser (SystemLink l [a])
 parseListSL = parseListSLWith parseJSON
 
-parseMapSLWith :: Ord k => (Value -> Parser (SystemLink k)) -> (Value -> Parser (SystemLink a)) -> Value -> Parser (SystemLink (Map k a))
+parseMapSLWith :: Ord k => (Value -> Parser (SystemLink l k)) -> (Value -> Parser (SystemLink l a)) -> Value -> Parser (SystemLink l (Map k a))
 parseMapSLWith keyParser parser (Object v) = (foldM append (pure []) . map toValue . Hash.toList $ v) >>>= pure . Map.fromList
     where append acc (key, val) = makeTuple key val >>= pure . (flip (liftM2 (:))) acc 
           makeTuple key val  = (liftM2 . liftM2) (,) (keyParser key) (parser val)
           toValue (k, v) = (String k, v)
-parseMapSLWith _ _ v            = typeMismatch "Map k (SystemLink a)" v
+parseMapSLWith _ _ v            = typeMismatch "Map k (SystemLink l a)" v
 
-parseMapSL :: FromJSON (SystemLink a) => Value -> Parser (SystemLink (Map Text a))
+parseMapSL :: FromJSON (SystemLink l a) => Value -> Parser (SystemLink l (Map Text a))
 parseMapSL = parseMapSLWith (fmap pure . parseJSON) parseJSON

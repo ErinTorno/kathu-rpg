@@ -21,6 +21,14 @@ clampBetween min max cur | cur > max = max
 clampRange :: Ord a => Range a -> a -> a
 clampRange (Range min max) = clampBetween min max
 
+closestToZero :: (Num a, Ord a) => a -> a -> a
+closestToZero x y = if x' > y' then y else x
+    where (x', y') = (abs x, abs y)
+
+farthestFromZero :: (Num a, Ord a) => a -> a -> a
+farthestFromZero x y = if x' > y' then x else y
+    where (x', y') = (abs x, abs y)
+
 -- Tuple functions
 
 mapPair :: (a -> b) -> (a, a) -> (b, b)

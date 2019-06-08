@@ -1,0 +1,10 @@
+item-id:        mana-orb
+name:           mana orb
+description:    ""
+slot:           misc
+icon:
+  atlas: "mana-orb.png"
+  bounds: [7, 7]
+  strips: [{id: idle, frames: 4, row: 0, delay: 150}]
+max-stack-size: 99
+price:          30

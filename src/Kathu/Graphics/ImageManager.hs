@@ -204,13 +204,7 @@ copySurfaceOver !sur !tar = do
 replaceSurfaceColor :: MonadIO m => Color -> Color -> SDL.Surface -> m ()
 replaceSurfaceColor !srcColor !repColor sur = do
     SDL.lockSurface sur
-
-    {-
-    if srcColor /= backgroundMask then
-        error . concat $ ["Replacing ", show srcColor, " with ", show repColor]
-    else pure ()
-    -}
-
+    
     format <- SDLC.surfacePixelFormat sur
     if SDLRaw.pixelFormatBytesPerPixel format /= 4 then
         error "Attempted to replace colors in a surface that doesn't support all color channels" 

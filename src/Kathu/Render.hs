@@ -73,8 +73,11 @@ logicCoordToRender :: Floating a => a -> V3 a -> V3 a -> V3 a
 logicCoordToRender scale (V3 topX topY topZ) (V3 tarX tarY tarZ) = V3 x' y' z'
     where x' = (tarX - topX) * scale
           -- this ensures that the z angle is factored into where it appears
-          y' = z' * scale
-          z' = (tarY - topY + cameraZMult * (tarZ - topZ))
+          y' = (tarY - topY + cameraZMult * (tarZ - topZ)) * scale
+          z' = tarY - topY -- used only for sorting, closer along y coord is only consideration
+          -- these help it render floors/tiles on other layers; it's just a patch until we get tiles seperated by flat or wall
+          -- y' = z' * scale
+          -- z' = (tarY - topY + cameraZMult * (tarZ - topZ))
 
 updateAnimations :: Word32 -> System' ()
 updateAnimations dT = do

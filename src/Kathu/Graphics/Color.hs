@@ -8,7 +8,7 @@ import Data.Word
 import GHC.Generics
 import Linear.V4 (V4(..))
 import Numeric (readHex, showHex)
-import Kathu.Util.Misc (padShowHex)
+import Kathu.Util.Misc (closestToZero, padShowHex, clampBetween)
 
 newtype Color = Color (V4 Word8) deriving (Eq, Generic)
 
@@ -21,11 +21,10 @@ instance Read Color where
         in case str of
             ('#':r1:r2:g1:g2:b1:b2:a1:a2:[]) -> mkParse (pair r1 r2) (pair g1 g2) (pair b1 b2) (pair a1 a2)
             ('#':r1:r2:g1:g2:b1:b2:[])       -> mkParse (pair r1 r2) (pair g1 g2) (pair b1 b2) 255
-            _                                 -> error "Unable to parse color format"
+            _                                -> error "Unable to parse color format"
 
 mkColor :: Word8 -> Word8 -> Word8 -> Word8 -> Color
 mkColor r g b a = Color $ V4 r g b a
-
 
 data HSVColor = HSVColor
     { hue        :: Float
@@ -49,7 +48,7 @@ desaturateBy percent color = blendColor percent (desaturate color) color
 -- ratio is ratio of 2nd color to 1st; so 1.0 is only 2nd color, etc.
 blendColor :: Float -> Color -> Color -> Color
 blendColor ratio (Color (V4 r1 g1 b1 a1)) (Color (V4 r2 g2 b2 a2)) = Color $ V4 (blEach r1 r2) (blEach g1 g2) (blEach b1 b2) (blEach a1 a2) 
-    where blEach x y = floor $ (1.0 - ratio) * fromIntegral x + ratio * fromIntegral y 
+    where blEach x y = floor $ (1.0 - ratio) * fromIntegral y + ratio * fromIntegral x
 
 invertRGB :: Color -> Color
 invertRGB (Color (V4 r g b a)) = Color $ V4 (255 - r) (255 - g) (255 - b) a
@@ -59,7 +58,7 @@ invertRGB (Color (V4 r g b a)) = Color $ V4 (255 - r) (255 - g) (255 - b) a
 --------------------
 
 getHSVDifference :: HSVColor -> HSVColor -> HSVColor
-getHSVDifference primary col = HSVColor {hue = difVal hue, saturation = difVal saturation, value = difVal value, hsvAlpha = difVal hsvAlpha}
+getHSVDifference primary col = HSVColor (difVal hue) (difVal saturation) (difVal value) (difVal hsvAlpha)
     where difVal getter = getter primary - getter col
 
 applyHSVDifference :: HSVColor -> HSVColor -> HSVColor
@@ -74,7 +73,20 @@ restrictHue h | h < 0.0   = restrictHue (h + 360.0)
 
 shiftHue :: Float -> HSVColor -> HSVColor
 shiftHue angle (HSVColor h s v a) = HSVColor h' s v a
-            where h' = (h + angle) `mod'` 360.0
+    where h' = (h + angle) `mod'` 360.0
+
+shiftHueTowards :: Float -> Float -> HSVColor -> HSVColor
+shiftHueTowards angle p (HSVColor h s v a) = HSVColor h' s v a
+    where h'   = restrictHue $ h + p * dist
+          dist = closestToZero distTo distAround
+          distTo     = if angle < h then negate (h - angle) else angle - h
+          distAround = if angle < h then angle - h + 360 else negate (h - angle + 360)
+
+shiftHueTowardsAbs :: Float -> Float -> HSVColor -> HSVColor
+shiftHueTowardsAbs angle shift (HSVColor h s v a) = HSVColor h' s v a
+    where h' = restrictHue $ h + (if angle < h then distIfH else distIfL)
+          distIfH = if (h - angle) > (angle - h + 360) then shift else -shift
+          distIfL = if (angle - h) > (h - angle + 360) then -shift else shift
 
 invertHue :: HSVColor -> HSVColor
 invertHue = shiftHue 180 -- shift to exactly across color wheel
@@ -110,22 +122,23 @@ fromRGB (Color vec@(V4 r g b _)) = HSVColor h s v af
 
 -- Converts an HSV color into an RGB color
 fromHSV :: HSVColor -> Color
-fromHSV hsv = let fromFloat :: Float -> Word8
-                  fromFloat = floor . (*255.0)
-                  alph = fromFloat . hsvAlpha $ hsv
-                  hi   = (`mod`6) . floor . (/60.0) . hue $ hsv
-                  f    = (hue hsv / 60.0) - (fromInteger . floor) (hue hsv / 60.0)
-                  v = fromFloat . (*(value hsv)) $ 1.0
-                  p = fromFloat . (*(value hsv)) $ 1.0 - saturation hsv
-                  q = fromFloat . (*(value hsv)) $ 1.0 - f * saturation hsv
-                  t = fromFloat . (*(value hsv)) $ 1.0 - (1.0 - f) * saturation hsv in
-              case hi of
-                  0 -> mkColor v t p alph
-                  1 -> mkColor q v p alph
-                  2 -> mkColor p v t alph
-                  3 -> mkColor p q v alph
-                  4 -> mkColor t p v alph
-                  _ -> mkColor v p q alph
+fromHSV hsv =
+    let fromFloat :: Float -> Word8
+        fromFloat = floor . (*255.0)
+        alph = fromFloat . hsvAlpha $ hsv
+        hi   = (`mod`6) . floor . (/60.0) . hue $ hsv
+        f    = (hue hsv / 60.0) - (fromInteger . floor) (hue hsv / 60.0)
+        v = fromFloat . (*(value hsv)) $ 1.0
+        p = fromFloat . (*(value hsv)) $ 1.0 - saturation hsv
+        q = fromFloat . (*(value hsv)) $ 1.0 - f * saturation hsv
+        t = fromFloat . (*(value hsv)) $ 1.0 - (1.0 - f) * saturation hsv
+    in case hi of
+        0 -> mkColor v t p alph
+        1 -> mkColor q v p alph
+        2 -> mkColor p v t alph
+        3 -> mkColor p q v alph
+        4 -> mkColor t p v alph
+        _ -> mkColor v p q alph
 
 -------------------
 -- Common Colors --

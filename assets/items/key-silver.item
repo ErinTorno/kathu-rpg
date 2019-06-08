@@ -1,7 +1,0 @@
-item-id:        key-silver
-name:           silver key
-description:    a small key that can open a locked door
-slot:           misc
-icon:           "key-silver.png"
-max-stack-size: 99
-price:          0

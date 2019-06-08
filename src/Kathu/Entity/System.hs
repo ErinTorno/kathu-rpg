@@ -25,13 +25,9 @@ import Kathu.Graphics.ImageManager
 import Kathu.Graphics.UI
 import Kathu.IO.Settings
 import Kathu.World.Tile (Tile)
+import Kathu.World.Time (WorldTime(..))
 import Kathu.World.WorldSpace (WorldSpace, emptyWorldSpace)
 import qualified System.Random as R
-
-
--- We create an entity prototype that supports all given component types
-defineData          "EntityPrototype" "" allSerialComponents
-defineEntityCreator "newFromPrototype" "" allSerialComponents
 
 -- Globals
 
@@ -47,6 +43,10 @@ newtype RenderTime = RenderTime (Word32) deriving (Show, Eq)
 instance Semigroup RenderTime where (<>) = mappend
 instance Monoid RenderTime where mempty = RenderTime 0
 instance Component RenderTime where type Storage RenderTime = Global RenderTime
+
+instance Semigroup WorldTime where (<>) = mappend
+instance Monoid WorldTime where mempty = WorldTime 0
+instance Component WorldTime where type Storage WorldTime = Global WorldTime
 
 newtype Random = Random (R.StdGen)
 instance Semigroup Random where (<>) = mappend
@@ -91,7 +91,7 @@ instance Component Library where type Storage Library = Global Library
 
 -- World
 
-makeWorld "EntityWorld" $ allNonGlobal ++ [''LogicTime, ''RenderTime, ''Random, ''Settings, ''ImageManager, ''UIConfig, ''WorldSpace, ''Library, ''Debug]
+makeWorld "EntityWorld" $ allNonGlobal ++ [''LogicTime, ''RenderTime, ''WorldTime, ''Random, ''Settings, ''ImageManager, ''UIConfig, ''WorldSpace, ''Library, ''Debug]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a
@@ -105,3 +105,6 @@ stepLogicTime !dT = modify global $ \(LogicTime t) -> LogicTime (t + dT)
 
 stepRenderTime :: Word32 -> System' ()
 stepRenderTime !dT = modify global $ \(RenderTime t) -> RenderTime (t + dT)
+
+stepWorldTime :: Word32 -> System' ()
+stepWorldTime !dT = modify global $ \(WorldTime t) -> WorldTime (t + fromIntegral dT)

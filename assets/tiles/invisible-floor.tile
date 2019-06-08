@@ -1,5 +1,0 @@
-tile-id:  invisible-floor
-name:     invisible floor
-render:   []
-is-solid: true
-break-behavior: unbreakable

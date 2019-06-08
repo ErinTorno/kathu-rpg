@@ -10,6 +10,8 @@ import Kathu.Util.Misc
 
 data Slot = UseItem | Weapon | Head | Torso | Legs | Accessory | NoSlot deriving (Show, Eq, Generic)
 
+data SpecialCategory = NonUnique | KeyItem | WorldSpaceShared deriving (Show, Eq, Generic)
+
 -- allows use to compare slot types
 instance Ord Slot where
     compare a b = slotPriority a `compare` slotPriority b
@@ -23,6 +25,7 @@ data Item = Item
     , itemIcon    :: RenderSprite
     , stackSize   :: Int
     , price       :: Int
+    , specialCategory :: SpecialCategory
     -- Effects?
     }
 

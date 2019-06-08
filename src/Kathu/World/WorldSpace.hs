@@ -13,6 +13,7 @@ import Data.Text (Text)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vec
 import Kathu.Entity.Item
+import Kathu.Entity.Prototype
 import Kathu.Graphics.Color (black)
 import Kathu.Graphics.Drawable
 import Kathu.Graphics.Palette
@@ -21,15 +22,17 @@ import Linear.V3 (V3(..))
 
 data WorldSpace = WorldSpace
     { worldID :: Text
+    , worldName :: Text
     , worldPalettes :: Vector Palette
     , loadPoint   :: V3 Float
+    , worldEntities :: Vector (V3 Float, EntityPrototype)
     , worldItems  :: Vector (V3 Float, ItemStack)
     , worldFields :: FieldSet
     -- Some way to hold the fields that it possesses
     }
 
 emptyWorldSpace :: WorldSpace
-emptyWorldSpace = WorldSpace "" (Vec.singleton (Palette black Nothing)) (V3 0 0 0) Vec.empty Map.empty
+emptyWorldSpace = WorldSpace "" "the void" (Vec.singleton (Palette black Nothing)) (V3 0 0 0) Vec.empty Vec.empty Map.empty
 
 -- right now we only consider horizontal fields; ones with different z depths are ignored
 fieldsSurrounding :: RealFrac a => V3 a -> WorldSpace -> [(V3 Int, Field)]

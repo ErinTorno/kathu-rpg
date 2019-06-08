@@ -3,5 +3,5 @@ name:           health potion
 description:    an elixer that restores your health
 slot:           misc
 icon:           "potion-health.png"
-max-stack-size: 64
+max-stack-size: 99
 price:          30

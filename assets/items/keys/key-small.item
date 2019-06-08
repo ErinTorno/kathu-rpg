@@ -1,0 +1,10 @@
+item-id:        key-small
+# used to be "silver key", but since palettes change make this appear non-silver, this is more generic
+name:           small key
+description:    a shiny key that can open a locked door
+slot:           misc
+icon:           "key-small.png"
+max-stack-size: 99
+price:          0
+# instead of being stored in the inventory, it is stored in a counter for the worldspace
+special-category: worldspace-shared
