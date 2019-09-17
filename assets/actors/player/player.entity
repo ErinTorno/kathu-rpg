@@ -3,11 +3,10 @@ identity:
   id: player
   name: This should never appear
   description: This should never appear
-# This follows an Entity Component System. Everything component is optional, with only an ID part of an identity being required for serialized entities
-special-entity: player
+# This follows an Entity Component System. Everything component is optional, with only an ID part of an identity being required for config file entities
 tags: [player]
-position: default # these are given here with "default", to state that we have it without giving any special configs
-velocity: default # same for this; this component will be dropped in the future, with the "physics" type likely replacing it
+ # need to mark this, or else the entity will not be able to move
+velocity: available
 # 2.75/16 of a tile each tick; each tile is 16 units
 # 16 is absolute max speed for physics, but hard to control after 5 or 6
 moving-speed: 2.75

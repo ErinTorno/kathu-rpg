@@ -53,7 +53,7 @@ layers:
   - "                         #######"
 entities: []
 items:
-- item:     magic-lantern
+- item:     spirit-lantern
   position: [3, 6, 0]
 - item:     apple
   count:    3

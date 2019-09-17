@@ -11,11 +11,12 @@ health-bar:
   secondary-full:   heart-small-full.png
   secondary-empty:  heart-small-empty.png
 mana-bar:
-  starts-at:        [6, 16]
+  starts-at:        [5, 16]
   points-per-part:  20
   # for mana, the primary and secondary are same so that it looks like one continuous bar
-  cap-width:        1 # one pixel for the cap
-  cap:              mana-cap.png
+  cap-width:        2 # two pixels for the cap
+  cap-beginning:    mana-cap-beginning.png
+  cap-ending:       mana-cap-ending.png
   primary-width:    7
   secondary-width:  7
   primary-full:     mana-full.png

@@ -1,6 +1,12 @@
 world-id: test
 name:     test world
 palettes:
+  # night
+  - background: "#151220"
+    shader:
+      fn: shift-hue-towards
+      angle: 250
+      percent: 0.4
   - background: "#431d33"
 #  # day
 #  - background: "#431d33"
@@ -8,18 +14,18 @@ palettes:
 #      fn: shift-hue-towards
 #      angle: 130
 #      percent: 0.25
-  # night
-  - background: "#151220"
+  - background: "#232142" # "#1a1929"
+  # night forest
+  - background: "#121a20"
     shader:
       fn: shift-hue-towards
-      angle: 250
-      percent: 0.4
-  - background: "#232142" # "#1a1929"
+      angle: 140
+      percent: 0.3
 load-point: [16, 4, 0] # [16, 4, 1] # 1 above floor
 legend:
   " ": empty
   "#": brick-wall
-  "%": brick-cold-wall
+  "%": brick-wall-cold
   "*": brick-floor
   ",": tall-grass
 layers:
@@ -28,8 +34,8 @@ layers:
   - "#   #   ###     ,   ,#   ,,  , "
   - "#       ,        ,   #,   ,    "
   - "#      , ,   ,   ,   #,,       "
-  - "#        # ,  ,  ,  ##,    ,   "
-  - "#  ####  #        , ,# ,,  ,   "
+  - "#          ,  ,  ,  ##,    ,   "
+  - "#  ####  #        , ,, ,,  ,   "
   - "#        #  ,, ,,,          ,  "
   - "#        #  ,,,, ,   ,         "
   - "#        #  ,,,,  , ,%%%    %%%"
@@ -58,7 +64,7 @@ items:
 - item:     key-big
   position: [4, 9, 0]
 - item:     sword
-  position: [4, 4, 0]
+  position: [7, 7, 0]
 - item:     bomb
   position: [5, 4, 0]
 

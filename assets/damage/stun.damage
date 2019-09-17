@@ -3,4 +3,7 @@ name:      Stun
 icon:      "empty.png"
 color:     "#f1ed79"
 defense:   armor
-default-resist: 0.0 # immune by default to actually taking damage from stunning
+
+# immune by default, as most of the time we only care about the stunning effect
+# by for some very weak or small enemies we can change this to let them be killed by these effects
+default-resist: 0.0

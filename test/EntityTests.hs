@@ -1,9 +1,9 @@
 module EntityTests (entityTests) where
 
 import Kathu.Entity.Action
-import Linear.V3 (V3(..))
 import Test.HUnit
 
+entityTests :: Test
 entityTests = TestList
     [ TestLabel "Direction Conversion North" directionConvN
     ]
@@ -12,4 +12,5 @@ entityTests = TestList
 -- Action --
 ------------
 
-directionConvN = TestCase $ assertEqual "North direction is preserved" (Just North) (intToDir iNorth)
+directionConvN :: Test
+directionConvN = TestCase $ assertEqual "North direction is preserved" (Just North) (indexToDirection (iNorth :: Int))

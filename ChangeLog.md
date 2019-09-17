@@ -1,5 +1,15 @@
 # Revision history for kathu
 
+## 0.1.7.0 -- 2019-09-16
+
+* A major refactor was done to clean up code and eliminate warnings and redundancies
+* The library was fully split into two parts: kathu-lib and kathu app
+* kathu-lib provides the game's main logic, is system-independent, and doesn't make use of SDL, pointers, etc.
+* kathu app forms the code for turning kathu-lib into a desktop executable
+* IO.Parsing was eliminated, as was SystemLink; a new Dependency system was added to ease up on the orphan instances and weird structure
+* Utils was split up and reorganized
+* Some minor graphic improvements like outlines and taller walls
+
 ## 0.1.6.0 -- 2019-05-16
 
 * Palette sets can be loaded and are fully functional, changing all colors in a scene
