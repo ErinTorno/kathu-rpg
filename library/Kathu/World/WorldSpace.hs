@@ -12,7 +12,7 @@
 
 module Kathu.World.WorldSpace where
 
-import Apecs
+import Apecs hiding (Map)
 import Control.Monad (foldM)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson
@@ -29,6 +29,7 @@ import Kathu.Entity.Components
 import Kathu.Entity.Item
 import Kathu.Entity.Prototype
 import Kathu.Graphics.Color (black)
+import Kathu.Graphics.Drawable (Render)
 import Kathu.Graphics.Palette
 import Kathu.Util.Apecs
 import Kathu.Util.Dependency
@@ -39,13 +40,13 @@ import Kathu.World.Field
 import Kathu.World.Tile (Tile)
 
 data WorldSpace g = WorldSpace
-    { worldID :: Identifier
-    , worldName :: Text
+    { worldID       :: Identifier
+    , worldName     :: Text
     , worldPalettes :: Vector Palette
-    , loadPoint   :: V3 Float
+    , loadPoint     :: V3 Float
     , worldEntities :: Vector (V3 Float, EntityPrototype g)
-    , worldItems  :: Vector (V3 Float, ItemStack g)
-    , worldFields :: FieldSet g
+    , worldItems    :: Vector (V3 Float, ItemStack g)
+    , worldFields   :: FieldSet
     -- Some way to hold the fields that it possesses
     }
 
@@ -53,7 +54,7 @@ emptyWorldSpace :: WorldSpace g
 emptyWorldSpace = WorldSpace "" "the void" (Vec.singleton (Palette black Nothing)) (V3 0 0 0) Vec.empty Vec.empty Map.empty
 
 -- right now we only consider horizontal fields; ones with different z depths are ignored
-fieldsSurrounding :: RealFrac a => V3 a -> WorldSpace g -> [(V3 Int, Field g)]
+fieldsSurrounding :: RealFrac a => V3 a -> WorldSpace g -> [(V3 Int, Field)]
 fieldsSurrounding v ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
     where fields    = worldFields ws
           (V3 ox oy oz) = fieldContainingCoord v
@@ -99,7 +100,8 @@ instance ( s `CanProvide` (IDMap (EntityPrototype g))
         layers :: [[[Char]]] <- v .: "layers"
         legend <- do
             (keys, vals) :: ([Text], [Identifier]) <- ((unzip . Map.toList) <$> v .: "legend")
-            pure . fmap (Map.fromList . zip (T.head <$> keys)) . flattenDependency . fmap (dependencyMapLookupElseError "Tile") $ vals
+            let dLookup = dependencyMapLookupElseError :: String -> Identifier -> Dependency s m (Tile g)
+             in pure . fmap (Map.fromList . zip (T.head <$> keys)) . flattenDependency . fmap (dLookup "Tile") $ vals
         let parsePlacement fn (Array vec) = foldM (parseIndivPlace fn) (pure []) vec
             parsePlacement _ e            = typeMismatch "Placement" e
             parseIndivPlace fn acc val@(Object obj) = do
@@ -108,9 +110,9 @@ instance ( s `CanProvide` (IDMap (EntityPrototype g))
                 pure $ acc >>= \ls -> ((:ls) . (pos,)) <$> stack
             parseIndivPlace _ _ e                 = typeMismatch "Placement" e
             parseEty = withObject "EntityPlacement" $ \obj -> (obj .: "entity" :: Parser Identifier) >>= pure . dependencyMapLookupElseError "Entity" 
-        items <- v .: "items" >>= parsePlacement parseJSON >>>= pure . Vec.fromList
+        items    <- v .: "items" >>= parsePlacement parseJSON >>>= pure . Vec.fromList
         entities <- v .: "entities" >>= parsePlacement parseEty >>>= pure . Vec.fromList
-        let layersVec = (\lgnd -> fromList3D . fmap (fmap (fmap (fromMaybe failIfNothing . (flip Map.lookup) lgnd))) $ layers) <$> legend
+        let layersVec     = (\lgnd -> fromList3D . fmap (fmap (fmap (fromMaybe failIfNothing . (flip Map.lookup) lgnd))) $ layers) <$> legend
             failIfNothing = error "Attempted to tile without a listing in the WorldSpace's legend"
-        pure $ WorldSpace worldId wName palettes loadPnt <$> entities <*> items <*> (liftDependency . fromTileList =<< layersVec)
+        pure $ WorldSpace worldId wName palettes loadPnt <$> entities <*> items <*> (liftDependency . fromTileVector3D =<< layersVec)
     parseJSON e          = typeMismatch "WorldSpace" e

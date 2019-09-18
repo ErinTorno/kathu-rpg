@@ -7,7 +7,11 @@ palettes:
       fn: shift-hue-towards
       angle: 250
       percent: 0.4
-  - background: "#431d33"
+  # volcanic?
+  - background: "#47222c"
+    shader:
+      fn: shift-hue
+      angle: 45.0
 #  # day
 #  - background: "#431d33"
 #    shader:
@@ -18,9 +22,14 @@ palettes:
   # night forest
   - background: "#121a20"
     shader:
-      fn: shift-hue-towards
+    - fn: shift-hue-towards
       angle: 140
       percent: 0.3
+    - fn: desaturate-by
+      percent: 0.3
+  - background: "#131313"
+    shader:
+    - fn: desaturate
 load-point: [16, 4, 0] # [16, 4, 1] # 1 above floor
 legend:
   " ": empty
@@ -28,33 +37,43 @@ legend:
   "%": brick-wall-cold
   "*": brick-floor
   ",": tall-grass
+  "|": brick-door
+  ";": brick-door-unlocked
 layers:
-- - "##########   , ,,   ##   ,  ,, "
-  - "#   #    #   ,,, ,   #  ,,,  , "
-  - "#   #   ###     ,   ,#   ,,  , "
-  - "#       ,        ,   #,   ,    "
-  - "#      , ,   ,   ,   #,,       "
-  - "#          ,  ,  ,  ##,    ,   "
-  - "#  ####  #        , ,, ,,  ,   "
-  - "#        #  ,, ,,,          ,  "
-  - "#        #  ,,,, ,   ,         "
-  - "#        #  ,,,,  , ,%%%    %%%"
-  - "#        #   ,,,  ,  %        %"
-  - "#        #  , ,,,   ,%        %"
-  - "#        #  ,,,,,,  ,%        %"
-  - "#        #  , ,,,   ,%        %"
-  - "#        #  ,,,,,,  ,%        %"
-  - "########## ,,, , ,   %%%    %%%"
+- - "##  #######   , ,,   ##   ,  ,, "
+  - "#    #    #   ,,, ,   #  ,,,  , "
+  - "#    #   ###     ,   ,#   ,,  , "
+  - "#        ,        ,   #,   ,    "
+  - "#       , ,   ,   ,   #,,       "
+  - "#           ,  ,  ,  ##,    ,   "
+  - "####  #   #        , ,, ,,  ,   "
+  - "#         #  ,, ,,,          ,  "
+  - "#         #  ,,,, ,   ,         "
+  - "#         #  ,,,,  , ,%%%    %%%"
+  - "#         #   ,,,  ,  %        %"
+  - "#         #  , ,,,   ,%        %"
+  - "#         #  ,,,,,,  ,%        %"
+  - "#         #  , ,,,   ,%        %"
+  - "#         #  ,,,,,,  ,%        %"
+  - "#  #####  # ,,, , ,   %%%    %%%"
 entities:
-- entity: chest-locked
+- entity:   chest-locked
   position: [6, 1, 0]
-- entity: chest-odd
+- entity:   chest-odd
   position: [25, 12, 0]
+- entity:   door-brick-wide
+  position: [4.5, 6, 0]
+- entity:   door-brick-wide
+  position: [2.5, 0, 0]
+- entity:   door-brick-wide-unlocked
+  position: [1.5, 15, 0]
+- entity:   door-brick-wide-unlocked
+  position: [8.5, 15, 0]
 items:
 - item:     apple
-  position: [18, 2.5, 0] # 1.0 is a single tile
+  position: [19, 2.5, 0] # 1.0 is a single tile
 - item:     apple
-  position: [14.5, 8.5, 0]
+  position: [15.5, 8.5, 0]
 - item:     potion-health
   position: [1.5, 2, 0]
 - item:     potion-mana
@@ -64,8 +83,8 @@ items:
 - item:     key-big
   position: [4, 9, 0]
 - item:     sword
-  position: [7, 7, 0]
+  position: [8, 7, 0]
 - item:     bomb
-  position: [5, 4, 0]
+  position: [6, 4, 0]
 
 

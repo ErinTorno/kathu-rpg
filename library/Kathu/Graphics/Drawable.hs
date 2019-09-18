@@ -22,8 +22,6 @@ import Kathu.Util.Flow ((>>>=))
 -- | A newtype wrapper around a function that can grab image dimension information as a Dependency
 newtype ImageBounds m g = ImageBounds {unImageBounds :: g -> m (V2 CInt)}
 
-data AnimStyle = Single | StandardActor deriving (Show, Eq)
-
 -- a drawable that can change
 data AnimationStrip = AnimationStrip {animID :: Text, frameCount :: Int, row :: Int, delay :: Word32} deriving (Show, Eq)
 
@@ -54,7 +52,7 @@ data StaticSprite g = StaticSprite {staticSurface :: g, staticBounds :: V2 CInt}
 data AnimatedSprite g = AnimatedSprite
     { animation    :: Animation g
     , activeAnim   :: !Int
-    , currentFrame :: !Int
+    , currentFrame :: {-# UNPACK #-} !Int
     , animTime     :: !Word32
     } deriving (Show, Eq)
 
@@ -75,14 +73,32 @@ instance ( s `CanProvide` (ImageBounds (Dependency s m) g)
     parseJSON o@(Object _) = parseJSON o >>>= \graphics -> pure . RSAnimated $ AnimatedSprite graphics 0 0 0 
     parseJSON v            = typeMismatch "RenderSprite" v
 
+------------
+-- Render --
+------------
+
+newtype Render g = Render {unRender :: Vector (RenderSprite g)}
+
+instance (FromJSON (Dependency s m (RenderSprite g)), Monad m) => FromJSON (Dependency s m (Render g)) where
+    parseJSON obj@(Object _) = (\v -> v >>= pure . Render . Vec.singleton) <$> parseJSON obj
+    parseJSON str@(String _) = (\v -> v >>= pure . Render . Vec.singleton) <$> parseJSON str
+    parseJSON (Array a)      = toRender <$> Vec.foldM run (pure []) a
+        where run acc cur = (\rn -> rn >>= \inner -> (inner:) <$> acc) <$> parseJSON cur
+              toRender ls = Render <$> (Vec.fromList <$> ls)
+    parseJSON e              = typeMismatch "Render" e
+
+--------------------
+-- Util Functions --
+--------------------
+
 -- we use this so that rapidly starting and stopping moving in one direction is still animated
 timeBeforeFrameChange :: AnimatedSprite g -> Word32
 timeBeforeFrameChange animspr = (subtract 1) . delay . (Vec.!curAnim) . animStrips . animation $ animspr
     where curAnim = activeAnim animspr
 
 currentBounds :: RenderSprite g -> (# V2 CInt, V2 CInt #)
-currentBounds (RSStatic (StaticSprite _ bnd)) = (# V2 0 0, bnd #)
-currentBounds (RSAnimated anim) = (# V2 xCoord yCoord, dims #)
+currentBounds (RSStatic (StaticSprite _ !bnd)) = (# V2 0 0, bnd #)
+currentBounds (RSAnimated !anim) = (# V2 xCoord yCoord, dims #)
     where xCoord = ((*) w . fromIntegral . currentFrame $ anim)
           yCoord = ((*) h . fromIntegral . activeAnim $ anim)
           dims@(V2 w h) = animBounds . animation $ anim
@@ -92,7 +108,7 @@ isAnimated (RSStatic _)   = False
 isAnimated (RSAnimated _) = True
 
 switchAnimation :: Int -> AnimatedSprite g -> AnimatedSprite g
-switchAnimation i anim = anim {activeAnim = i, currentFrame = 0, animTime = timeBeforeFrameChange anim}
+switchAnimation !i anim = anim {activeAnim = i, currentFrame = 0, animTime = timeBeforeFrameChange anim}
 
 -- updates current time, and switches to new frame if we reach it
 updateFrames :: Word32 -> AnimatedSprite g -> AnimatedSprite g

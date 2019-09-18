@@ -1,5 +1,14 @@
 tile-id:  tall-grass
 name:     tall grass
-render:   ["tall-grass.png"]
+
+should-choose-render-randomly: true
+render:
+- atlas: "tall-grass.png"
+  bounds: [16, 16]
+  strips: [{id: idle, frames: 4, row: 0, delay: 500}] # in ms
+- atlas: "tall-grass-2.png"
+  bounds: [16, 16]
+  strips: [{id: idle, frames: 3, row: 0, delay: 666}]
+  
 is-solid: false
 break-behavior: unbreakable

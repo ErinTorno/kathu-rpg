@@ -1,0 +1,6 @@
+identity:
+  id: door-brick-wide
+  name: brick door
+  description: a wide set of locked doors
+tags: [door]
+render: ["door-brick-wide-locked.png"]

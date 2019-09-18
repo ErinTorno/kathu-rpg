@@ -1,4 +1,5 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns  #-}
+{-# LANGUAGE UnboxedTuples #-}
 
 module Kathu.App.Graphics.Render where
 
@@ -27,9 +28,9 @@ import Kathu.Graphics.Camera
 import Kathu.Graphics.Color
 import Kathu.Graphics.Drawable
 import Kathu.World.Field
-import Kathu.World.Tile
+import Kathu.World.Tile hiding (Vector, MVector)
 import Kathu.World.WorldSpace
-import Kathu.Util.Collection (growMVecIfNeeded)
+import Kathu.Util.Collection (growMVecIfNeeded, mapMVec)
 import Kathu.Util.Numeric (clampBetween)
 
 -- right now we stick with 45 degrees, as tiles are not stretched to accommodate other angles
@@ -81,14 +82,14 @@ logicCoordToRender scale (V3 topX topY topZ) (V3 tarX tarY tarZ) = V3 x' y' z'
 updateAnimations :: Word32 -> SystemT' IO ()
 updateAnimations dT = do
     -- anim frames are updated
-    let updateFramesIfAnim s@(RSStatic _)    = s
-        updateFramesIfAnim (RSAnimated anim) = RSAnimated $ updateFrames dT anim
+    let updateFramesIfAnim (RSAnimated !anim) = RSAnimated $ updateFrames dT anim
+        updateFramesIfAnim s                  = s
         updateWithoutController :: (Render ImageID, Not ActionSet) -> Render ImageID
         updateWithoutController (Render sprites, _) = Render $ updateFramesIfAnim <$> sprites
         updateAnimated :: (Render ImageID, ActionSet) -> Render ImageID
         updateAnimated ((Render sprites), ActionSet {_moving = m, _lastMoving = lm, _facingDirection = fac}) = Render $ updateEach <$> sprites
-            where updateEach s@(RSStatic _)    = s
-                  updateEach (RSAnimated anim) = RSAnimated $ update m lm fac anim
+            where updateEach s@(RSStatic _)     = s
+                  updateEach (RSAnimated anim)  = RSAnimated $ update m lm fac anim
                   update Nothing _ fc anim = anim {activeAnim = dirToAnimIndex fc, currentFrame = 0, animTime = timeBeforeFrameChange anim} -- we ensure that this is paused and waiting on first frame
                   update mv@(Just d) lmv _ anim
                       | mv == lmv || dir == act = updateFrames dT anim -- if same direction, we just update its frames
@@ -99,6 +100,9 @@ updateAnimations dT = do
     cmap updateWithoutController
     -- if it has an ActionSet, we have to deal with swapping animations
     cmap updateAnimated
+
+    (Tiles tileVector) <- get global :: SystemT' IO (Tiles ImageID)
+    lift . mapMVec tileVector $ (over tileRender $ Render . fmap updateFramesIfAnim . unRender)
 
 ----------------------
 -- main render loop --
@@ -114,10 +118,16 @@ runRender !window !renderBuffer !dT = do
     world        <- (get global :: SystemT' IO (WorldSpace ImageID))
     imageManager <- get global
     zoomScale    <- cfold (\_ (Camera z) -> z) 1.0
+    (Tiles tileVector) <- get global
+    let getTile :: TileState -> SystemT' IO (Tile ImageID)
+        getTile = lift . MVec.read tileVector . fromIntegral .  unTileID . view tile
 
+    {-
+    lift (foldM (\acc i -> MVec.read tileVector i >>= \t -> pure ((concat [show . _tileID $ t, show . _tileTextID $ t]) : acc)) [] [0..((MVec.length tileVector) - 1)])
+        >>= error . show >> pure ()
+    -}
     -- clears background
     SDL.surfaceFillRect screen Nothing . unColor . backgroundColor $ imageManager
-
 
     let scale   = (fromIntegral . resolutionY $ settings) / (zoomScale * pixelsPerUnit * unitsPerHeight)
         (V2 _ resY) = resolution settings
@@ -143,7 +153,7 @@ runRender !window !renderBuffer !dT = do
                 addToBuffer :: (Int, RenderBuffer) -> Vector (RenderSprite ImageID) -> V3 Float -> SystemT' IO (Int, RenderBuffer)
                 addToBuffer (!idx, !renBuf) render pos = if isOffScreen pos then pure (idx, renBuf) else do
                     let renderPos = convPos pos
-                    renBuf' <- lift $ growMVecIfNeeded bufferGrowIncr idx buf
+                    renBuf' <- lift $ growMVecIfNeeded renBuf bufferGrowIncr idx
                     (lift . MVec.unsafeWrite renBuf' idx) (renderPos, render)
                         >> pure (idx + 1, renBuf')
 
@@ -152,11 +162,12 @@ runRender !window !renderBuffer !dT = do
                 -- that represent each layer in a field
                 -- although to preserve z-depth we might want to split each field into "strips" of tiles with same y and z positions
                 -- close to this was "surfaceBlitScaled", which would dramatically have its number of calls cut down by this too
-                foldFnField :: (Int, RenderBuffer) -> (V3 Int, Field ImageID) -> SystemT' IO (Int, RenderBuffer)
+                foldFnField :: (Int, RenderBuffer) -> (V3 Int, Field) -> SystemT' IO (Int, RenderBuffer)
                 foldFnField pair (!pos, !field) = fieldFoldM (addTile pos) pair field
-                addTile :: V3 Int -> (Int, RenderBuffer) -> V3 Int -> TileState ImageID -> SystemT' IO (Int, RenderBuffer)
-                addTile fpos pair pos t | t^.tile.tileID == emptyTileID = pure pair
-                                        | otherwise = addToBuffer pair (t^.tile.tileRender.to unRender) (worldCoordFromTile fpos pos)
+                addTile :: V3 Int -> (Int, RenderBuffer) -> V3 Int -> TileState -> SystemT' IO (Int, RenderBuffer)
+                addTile fpos pair pos t = getTile t >>= \tileInst ->
+                    if   tileInst^.tileID == emptyTileID then pure pair
+                    else addToBuffer pair (getTileRenderSprites t tileInst) (worldCoordFromTile fpos pos)
 
             in ((flip cfoldM) (i, buf) $ \pair (Render render, Position pos) -> addToBuffer pair render pos)
                >>= \acc -> foldM foldFnField acc (fieldsSurrounding cam world) 

@@ -2,10 +2,11 @@
 
 module Kathu.Util.Collection where
 
-import Control.Monad.Primitive (PrimMonad, PrimState)
-import Data.Char (toLower, toUpper)
+import           Control.Monad.Primitive (PrimMonad, PrimState)
+import           Data.Char (toLower, toUpper)
+import           Data.Vector.Mutable (MVector)
 import qualified Data.Vector.Mutable as MVec
-import Numeric (showHex)
+import           Numeric (showHex)
 
 -- List functions
 
@@ -25,8 +26,23 @@ splitAtFirst e l  = go [] l
 
 -- Vector functions
 
-growMVecIfNeeded :: PrimMonad m => Int -> Int -> MVec.MVector (PrimState m) a -> m (MVec.MVector (PrimState m) a)
-growMVecIfNeeded !sizeIncrease !i !vec
+iterMVec :: PrimMonad m => MVector (PrimState m) a -> (a -> m b) -> m ()
+iterMVec !vec !f = go 0
+    where go !i | i == MVec.length vec = pure ()
+                | otherwise            = MVec.unsafeRead vec i >>= f >> go (i + 1)
+
+mapMVec :: PrimMonad m => MVector (PrimState m) a -> (a -> a) -> m ()
+mapMVec !vec !f = go 0
+    where go !i | i == MVec.length vec = pure ()
+                | otherwise            = MVec.unsafeModify vec f i >> go (i + 1)
+
+mapMMVec :: PrimMonad m => MVector (PrimState m) a -> (a -> m a) -> m ()
+mapMMVec !vec !f = go 0
+    where go !i | i == MVec.length vec = pure ()
+                | otherwise            = MVec.unsafeRead vec i >>= f >>= MVec.unsafeWrite vec i >> go (i + 1)
+
+growMVecIfNeeded :: PrimMonad m => MVector (PrimState m) a -> Int -> Int -> m (MVector (PrimState m) a)
+growMVecIfNeeded !vec !sizeIncrease !i
     | i < MVec.length vec = pure vec
     | otherwise           = MVec.unsafeGrow vec sizeIncrease
 

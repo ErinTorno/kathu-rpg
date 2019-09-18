@@ -15,8 +15,6 @@ module Kathu.Entity.Components where
 import Apecs
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
-import Data.Vector (Vector)
-import qualified Data.Vector as Vec
 import Data.Text (Text)
 import Linear.V3 (V3(..))
 import GHC.Generics
@@ -24,9 +22,9 @@ import Language.Haskell.TH.Syntax (Name)
 
 import Kathu.Entity.Action
 import Kathu.Entity.ActorState
-import Kathu.Graphics.Drawable
+import Kathu.Entity.Item (Inventory)
+import Kathu.Graphics.Drawable (Render)
 import Kathu.Graphics.Camera
-import Kathu.Util.Dependency
 import Kathu.Util.Types (Identifier(..))
 
 -- used for caches, which require Nat instead of a value
@@ -65,16 +63,6 @@ instance Component MovingSpeed where type Storage MovingSpeed = Map MovingSpeed
 newtype Tags = Tags [Text] deriving (Show, Eq, Generic, ToJSON, FromJSON)
 instance Component Tags where type Storage Tags = Map Tags
 
-newtype Render g = Render {unRender :: Vector (RenderSprite g)}
-
-instance (FromJSON (Dependency s m (RenderSprite g)), Monad m) => FromJSON (Dependency s m (Render g)) where
-    parseJSON obj@(Object _) = (\v -> v >>= pure . Render . Vec.singleton) <$> parseJSON obj
-    parseJSON str@(String _) = (\v -> v >>= pure . Render . Vec.singleton) <$> parseJSON str
-    parseJSON (Array a)      = toRender <$> Vec.foldM run (pure []) a
-        where run acc cur = (\rn -> rn >>= \inner -> (inner:) <$> acc) <$> parseJSON cur
-              toRender ls = Render <$> (Vec.fromList <$> ls)
-    parseJSON e              = typeMismatch "Render" e
-
 ----------------------------------
 -- For external component types --
 ----------------------------------
@@ -82,9 +70,6 @@ instance (FromJSON (Dependency s m (RenderSprite g)), Monad m) => FromJSON (Depe
 instance Component ActorState where type Storage ActorState = Map ActorState
 
 instance Component ActionSet where type Storage ActionSet = Map ActionSet
-
---type Inventory' = Inventory ImageID
---instance Component Inventory' where type Storage Inventory' = Map Inventory'
 
 -- Uniques
 
@@ -105,4 +90,5 @@ serializableComponentConfigs =
     , SerializableComponent {compName = ''Tags,        requiresDependencies = False, params = []}
     , SerializableComponent {compName = ''Render,      requiresDependencies = True,  params = ["g"]}
     , SerializableComponent {compName = ''ActorState,  requiresDependencies = True,  params = []}
+    , SerializableComponent {compName = ''Inventory,   requiresDependencies = True,  params = ["g"]}
     ]

@@ -10,6 +10,15 @@
 * Utils was split up and reorganized
 * Some minor graphic improvements like outlines and taller walls
 
+### 0.1.7.1 -- 2019-09-17
+
+* Tiles can now be animated just like entities; they will currently only ever play the first animation strip in their configuration
+* Tiles can now be given random variants by setting 'should-choose-render-randomly' to true, and supplying it with multiple renders
+* Doors have been added, although they currently are non-functional
+* Grass now has random sprites, and waves in the wind
+* WorldSpace tile information now uses unboxed tilestates to save memory and add ease to animation
+* Re-added the Inventory component to entities
+
 ## 0.1.6.0 -- 2019-05-16
 
 * Palette sets can be loaded and are fully functional, changing all colors in a scene

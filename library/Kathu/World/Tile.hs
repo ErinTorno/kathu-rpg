@@ -1,21 +1,28 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, MonoLocalBinds, TypeOperators, UndecidableInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Kathu.World.Tile where
 
+import Control.Lens
+import Control.Monad.IO.Class (liftIO, MonadIO)
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
-import Control.Lens
 import Data.Functor.Compose
 import Data.Text (Text)
+import qualified Data.Vector as Vec
+import Data.Vector.Unboxed.Deriving
 import Data.Word
-import GHC.Generics
+import qualified System.Random as R
 
-import Kathu.Entity.Components (Render)
 import Kathu.Entity.Resource
+import Kathu.Graphics.Drawable (Render(..), RenderSprite)
 import Kathu.Parsing.Aeson
 import Kathu.Parsing.Counting
 import Kathu.Util.Dependency
@@ -26,13 +33,17 @@ import Kathu.Util.Types (Identifier, IDMap)
 -- Tile Config Types --
 -----------------------
 
-newtype TileID = TileID Word16 deriving (Show, Eq)
+newtype TileID = TileID {unTileID :: Word32} deriving (Show, Eq, Ord)
+derivingUnbox "TileID"
+    [t| TileID -> Word32 |]
+    [| \(TileID i) -> i  |]
+    [| \(i) -> TileID i  |]
 
 instance (s `CanStore` CountingIDs, Monad m) => FromJSON (Dependency s m TileID) where
     parseJSON (String s) = pure (TileID . fromIntegral <$> lookupOrAdd "TileID" s)
     parseJSON v          = typeMismatch "TileID" v
 
-newtype ToolType = ToolType Int deriving (Show, Eq)
+newtype ToolType = ToolType Int deriving (Show, Eq, Ord)
 
 instance (s `CanStore` CountingIDs, Monad m) => FromJSON (Dependency s m ToolType) where
     parseJSON (String s) = pure (ToolType . fromIntegral <$> lookupOrAdd "ToolType" s)
@@ -41,7 +52,7 @@ instance (s `CanStore` CountingIDs, Monad m) => FromJSON (Dependency s m ToolTyp
 data BreakBehavior
     = Breakable {_toolType :: ToolType, _minimumPower :: Double, _durability :: Dynamic Double}
     | Unbreakable
-      deriving (Show, Eq, Generic)
+      deriving (Show, Eq)
 makeLenses ''BreakBehavior
 
 instance (FromJSON (Dependency s m ToolType), Monad m) => FromJSON (Dependency s m BreakBehavior) where
@@ -54,12 +65,13 @@ instance (FromJSON (Dependency s m ToolType), Monad m) => FromJSON (Dependency s
 ----------
 
 data Tile g = Tile
-    { _tileID        :: TileID
-    , _tileTextID    :: Identifier
-    , _tileName      :: Text
-    , _tileRender    :: Render g
-    , _isSolid       :: Bool
-    , _breakBehavior :: BreakBehavior
+    { _tileID         :: TileID
+    , _tileTextID     :: Identifier
+    , _tileName       :: Text
+    , _tileRender     :: Render g
+    , _isRenderRandom :: Bool -- if True, instead of drawing all RenderSprites given at once, we instead draw one at random, as determined by metadata
+    , _isSolid        :: Bool
+    , _breakBehavior  :: BreakBehavior
     }
 makeLenses ''Tile
 
@@ -75,6 +87,7 @@ instance ( s `CanStore` (IDMap (Tile g))
                   <*> v .:^ "tile-id" -- this is used for the text name
                   <*> v .:^ "name"
                   <*> v .:~ "render"
+                  <*> v .:^? "should-choose-render-randomly" .!=~ False
                   <*> v .:^ "is-solid"
                   <*> v .:~ "break-behavior"
     parseJSON v          = typeMismatch "Tile" v
@@ -84,19 +97,35 @@ emptyTileID = TileID 0
 
 emptyTile :: Tile g
 emptyTile = Tile
-    { _tileID = emptyTileID
-    , _tileTextID = ""
-    , _tileName = ""
-    , _tileRender = error "Attempted to draw an empty tile"
-    , _isSolid = False
-    , _breakBehavior = Unbreakable
+    { _tileID         = emptyTileID
+    , _tileTextID     = ""
+    , _tileName       = ""
+    , _tileRender     = error "Attempted to draw an empty tile"
+    , _isRenderRandom = False
+    , _isSolid        = False
+    , _breakBehavior  = Unbreakable
     }
 
-mkTileState :: Tile g -> TileState g
-mkTileState t = TileState t 0
+mkTileState :: Tile g -> TileState
+mkTileState t = TileState (t^.tileID) 0
 
-data TileState g = TileState
-    { _tile             :: !(Tile g)
-    , _metadata         :: !Word8
-    }
+-- | Uses randomIO to initialize metadata for tiles that make use of random properties through its metadata
+mkTileStateWithMetadata :: MonadIO m => Tile g -> m TileState
+mkTileStateWithMetadata t = (TileState (t^.tileID) . restrictRandomMeta) <$> (liftIO (R.randomIO :: IO Word32))
+    where restrictRandomMeta = (`mod`(t^.tileRender.to (fromIntegral . Vec.length . unRender)))
+
+-- Target Size: 8 bytes (for better alignment)
+data TileState = TileState
+    { _tile             :: {-# UNPACK #-} !TileID
+    , _metadata         :: {-# UNPACK #-} !Word32
+    } deriving (Show, Eq)
 makeLenses ''TileState
+derivingUnbox "TileState"
+    [t| TileState -> (TileID, Word32) |]
+    [| \(TileState tl mt) -> (tl, mt) |]
+    [| \(tl, mt) -> TileState tl mt   |]
+
+getTileRenderSprites :: TileState -> Tile g -> Vec.Vector (RenderSprite g)
+getTileRenderSprites !tileState !tileInst
+    | tileInst^.isRenderRandom = Vec.singleton $ (tileInst^.tileRender.to unRender) Vec.! (tileState^.metadata.to fromIntegral)
+    | otherwise                = tileInst^.tileRender.to unRender

@@ -10,7 +10,7 @@ import Data.Functor.Compose
 import Data.Text (Text)
 import GHC.Generics
 
-import Kathu.Entity.Components
+import Kathu.Graphics.Drawable (Render)
 import Kathu.Parsing.Aeson
 import Kathu.Util.Dependency
 import Kathu.Util.Flow ((>>>=))

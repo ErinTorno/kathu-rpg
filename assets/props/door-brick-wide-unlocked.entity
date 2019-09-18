@@ -1,0 +1,7 @@
+# once we have better defined prototype behavior, this will be merged into door-brick-wide
+identity:
+  id: door-brick-wide-unlocked
+  name: brick door
+  description: a wide set of locked doors
+tags: [door]
+render: ["door-brick-wide-unlocked.png"]

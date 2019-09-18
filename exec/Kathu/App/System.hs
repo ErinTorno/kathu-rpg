@@ -25,10 +25,15 @@ import Kathu.App.Graphics.UI
 import Kathu.Entity.Action
 import Kathu.Entity.ActorState
 import Kathu.Entity.Components
+import Kathu.Entity.Item (Inventory)
 import Kathu.Entity.System
 import Kathu.Graphics.Camera
+import Kathu.Graphics.Drawable (Render)
 import Kathu.World.Time (WorldTime(..))
 import Kathu.World.WorldSpace (WorldSpace, emptyWorldSpace)
+
+type Inventory' = Inventory ImageID
+instance Component Inventory' where type Storage Inventory' = Map Inventory'
 
 type Render' = Render ImageID
 instance Component Render' where type Storage Render' = Map Render'
@@ -37,11 +42,16 @@ instance Component Render' where type Storage Render' = Map Render'
 -- selects all unique and non-unique components that an individual entity might have
 type AllComponents =
     ( (Identity, Position, Velocity, MovingSpeed)
-    , (Tags, Render', ActorState)
+    , (Tags, Render', ActorState, Inventory')
     , (Local, Camera)
     )
     
 -- Globals
+
+type Tiles' = Tiles ImageID
+instance Semigroup Tiles' where (<>) = mappend
+instance Monoid Tiles' where mempty  = error "Attempted to use ActiveTiles before it has been loaded"
+instance Component Tiles' where type Storage Tiles' = Global Tiles'
 
 instance Semigroup Settings where (<>) = mappend
 instance Monoid Settings where mempty = defaultSettings
@@ -67,8 +77,8 @@ instance Component Library where type Storage Library = Global Library
 -- World
 
 makeWorld "EntityWorld"
-    $ [''Identity, ''Velocity, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Position, ''ActionSet, ''Local, ''Camera]
-   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''Random, ''Settings, ''ImageManager, ''UIConfig, ''WorldSpace', ''Library, ''Debug]
+    $ [''Identity, ''Velocity, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''Position, ''ActionSet, ''Local, ''Camera]
+   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''Random, ''Tiles', ''Settings, ''ImageManager, ''UIConfig, ''WorldSpace', ''Library, ''Debug]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a

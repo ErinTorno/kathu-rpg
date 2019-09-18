@@ -5,17 +5,27 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DataKinds, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, TemplateHaskell, TypeApplications, TypeFamilies #-}
+
+{-# LANGUAGE DataKinds, FlexibleContexts, TypeFamilies #-}
 
 module Kathu.Entity.System where
 
-import Apecs hiding (Map)
-import Control.Monad.IO.Class (MonadIO)
-import Data.Semigroup (Semigroup)
-import Data.Word
+import           Apecs hiding (Map)
+import           Control.Monad (foldM)
+import           Control.Monad.IO.Class (MonadIO)
+import           Control.Lens
+import           Data.List (sortBy)
+import           Data.Functor (($>))
+import           Data.Map (Map)
+import qualified Data.Map as Map
+import           Data.Semigroup (Semigroup)
+import qualified Data.Vector.Mutable as MVec
+import           Data.Vector.Mutable (IOVector)
+import           Data.Word
 import qualified System.Random as R
 
-import Kathu.World.Time (WorldTime(..))
+import           Kathu.World.Tile (Tile(..), tileID, tileTextID, unTileID)
+import           Kathu.World.Time (WorldTime(..))
 
 -- Globals
 
@@ -24,26 +34,28 @@ import Kathu.World.Time (WorldTime(..))
 --     Or update the graphics multiple times to display higher frames while we wait for the physics to run again
 newtype  LogicTime = LogicTime (Word32) deriving (Show, Eq)
 instance Semigroup LogicTime where (<>) = mappend
-instance Monoid LogicTime where mempty = LogicTime 0
+instance Monoid LogicTime where mempty  = LogicTime 0
 instance Component LogicTime where type Storage LogicTime = Global LogicTime
 
 newtype  RenderTime = RenderTime (Word32) deriving (Show, Eq)
 instance Semigroup RenderTime where (<>) = mappend
-instance Monoid RenderTime where mempty = RenderTime 0
+instance Monoid RenderTime where mempty  = RenderTime 0
 instance Component RenderTime where type Storage RenderTime = Global RenderTime
 
 instance Semigroup WorldTime where (<>) = mappend
-instance Monoid WorldTime where mempty = WorldTime 0
+instance Monoid WorldTime where mempty  = WorldTime 0
 instance Component WorldTime where type Storage WorldTime = Global WorldTime
 
 newtype  Random = Random (R.StdGen)
 instance Semigroup Random where (<>) = mappend
-instance Monoid Random where mempty = Random $ R.mkStdGen 0 -- the IO portion of this is expected to initialize it with a seed
+instance Monoid Random where mempty  = Random $ R.mkStdGen 0 -- the IO portion of this is expected to initialize it with a seed
 instance Component Random where type Storage Random = Global Random
+
+newtype  Tiles g = Tiles (IOVector (Tile g))
 
 newtype  Debug = Debug Bool
 instance Semigroup Debug where (<>) = mappend
-instance Monoid Debug where mempty = Debug False
+instance Monoid Debug where mempty  = Debug False
 instance Component Debug where type Storage Debug = Global Debug
 
 -- Entity functions
@@ -56,3 +68,10 @@ stepRenderTime !dT = modify global $ \(RenderTime t) -> RenderTime (t + dT)
 
 stepWorldTime :: forall w m. (Has w m WorldTime, MonadIO m) => Word32 -> SystemT w m ()
 stepWorldTime !dT = modify global $ \(WorldTime t) -> WorldTime (t + fromIntegral dT)
+
+makeTiles :: Map k (Tile g) -> IO (Tiles g)
+makeTiles elemMap = MVec.unsafeNew (Map.size elemMap) >>= \vec -> foldM (setElem vec) 0 allElems $> Tiles vec
+    where allElems = sortBy (\x y -> (x^.tileID) `compare` (y^.tileID)) . Map.elems $ elemMap
+          setElem !vec !idx !e = if (e^.tileID.to (fromIntegral . unTileID) /= idx)
+                                 then error . concat $ ["Tile ", e^.tileTextID.to show, " had tile id ", e^.tileID.to show, " but was stored in index ", show idx, " in Kathu.Entity.System.makeTiles"]
+                                 else MVec.unsafeWrite vec idx e $> (idx + 1)

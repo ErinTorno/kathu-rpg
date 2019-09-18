@@ -32,7 +32,7 @@ library kathu-lib
   -- other-modules: all are exposed for testing
   build-depends:     base >=4.11 && <4.12,
                      text, bytestring,
-                     apecs, containers, lens, linear, mtl, primitive, random, scientific, template-haskell, unordered-containers, vector,
+                     apecs, containers, lens, linear, mtl, primitive, random, scientific, template-haskell, unordered-containers, vector, vector-th-unbox,
                      directory, filepath,
                      aeson, cereal, yaml
   hs-source-dirs:    library

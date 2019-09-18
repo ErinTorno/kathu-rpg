@@ -3,7 +3,6 @@ identity:
   name: odd chest
   description: a strange, large locked box
 tags: [container]
-position: default
 render: ["chest-odd.png"]
 inventory:
   type: container

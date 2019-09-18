@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -21,7 +22,7 @@ import Kathu.Entity.Prototype
 import Kathu.IO.File (parseAllDP, parseExactlyNDP)
 import Kathu.Util.Dependency
 import Kathu.Util.Types (Identifier, IDMap)
-import Kathu.World.Tile
+import Kathu.World.Tile hiding (Vector, MVector)
 import Kathu.World.WorldSpace
 
 -- | This data type plays the role as a collection of named values for the game to read from when loading a level
@@ -68,9 +69,11 @@ loadLibrary initialLibrary fldr = fst <$> process
           -- the set of elements to 
           start = (initialLibrary, emptyKathuStore)
           process = pure start
-                >>= psDP ("item", addAll items itemID)
+                >>= psDP ("item",   addAll items itemID)
                 >>= psDP ("entity", addEntities)
-                >>= psDP ("tile", addAll tiles (view tileTextID))
-                >>= psDP ("world", addAll worldSpaces worldID)
-                >>= psUnique "ui" uiConfig
+                >>= psDP ("tile",   addAll tiles (view tileTextID))
+                -- All tiles must innately know of empty, since it isn't loaded through parsing
+                >>= \(library, store) -> pure (over tiles (Map.insert "empty" emptyTile) library, store)
+                >>= psDP ("world",  addAll worldSpaces worldID)
+                >>= psUnique "ui"   uiConfig
                 >>= setImages

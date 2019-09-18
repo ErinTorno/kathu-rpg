@@ -1,5 +1,5 @@
 tile-id:  brick-wall
 name:     brick wall
-render:   ["brick-wall-2.png"]
+render:   ["brick-wall.png"]
 is-solid: true
 break-behavior: unbreakable

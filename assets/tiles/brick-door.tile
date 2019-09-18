@@ -1,0 +1,5 @@
+tile-id:  brick-door
+name:     brick door
+render:   ["brick-door.png"]
+is-solid: true
+break-behavior: unbreakable
