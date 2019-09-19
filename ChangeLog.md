@@ -19,6 +19,11 @@
 * WorldSpace tile information now uses unboxed tilestates to save memory and add ease to animation
 * Re-added the Inventory component to entities
 
+### 0.1.7.2 -- 2019-09-19
+
+* The world logic is now 2D-based, rather than 3D
+* Worlds can load in variables associated with them
+
 ## 0.1.6.0 -- 2019-05-16
 
 * Palette sets can be loaded and are fully functional, changing all colors in a scene

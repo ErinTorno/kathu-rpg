@@ -11,7 +11,6 @@ import qualified Data.Vector as Vec
 import qualified Data.Vector.Mutable as MVec
 import Data.Word
 import Linear.V2 (V2(..))
-import Linear.V3 (V3(..))
 import qualified SDL
 
 import Kathu.App.Data.Settings
@@ -33,13 +32,6 @@ import Kathu.World.WorldSpace
 import Kathu.Util.Collection (growMVecIfNeeded, mapMVec)
 import Kathu.Util.Numeric (clampBetween)
 
--- right now we stick with 45 degrees, as tiles are not stretched to accommodate other angles
-cameraAngle :: Floating a => a
-cameraAngle = 45.0
-
-cameraZMult :: Floating a => a
-cameraZMult = sin cameraAngle
-
 -- the height of the screen in units; depending on screen size, more or less is included
 
 minUnitsPerHeight :: Floating a => a
@@ -57,27 +49,20 @@ pixelsForMaxUnits = 1080
 -- if sprite position is more than this many units from left or right, or from bottom, we don't draw
 -- we don't draw anything above the top of the screen, however, since sprites draw out and upwards
 renderBorderUnits :: Floating a => a
-renderBorderUnits = 4.0
+renderBorderUnits = 3.0
 
 pixelsPerUnit :: Floating a => a
 pixelsPerUnit = 16.0
 
-aspectRatio :: Floating a => SDL.V2 a -> a
-aspectRatio (SDL.V2 x y) = x / y
+aspectRatio :: Floating a => V2 a -> a
+aspectRatio (V2 x y) = x / y
 
 -- sprite dimensions are multiplied by this to prevent tiny streaks between adjacent sprites
 edgeBleedScaling :: Floating a => a
 edgeBleedScaling = 1.005
 
-logicCoordToRender :: Floating a => a -> V3 a -> V3 a -> V3 a
-logicCoordToRender scale (V3 topX topY topZ) (V3 tarX tarY tarZ) = V3 x' y' z'
-    where x' = (tarX - topX) * scale
-          -- this ensures that the z angle is factored into where it appears
-          y' = (tarY - topY + cameraZMult * (tarZ - topZ)) * scale
-          z' = tarY - topY -- used only for sorting, closer along y coord is only consideration
-          -- these help it render floors/tiles on other layers; it's just a patch until we get tiles seperated by flat or wall
-          -- y' = z' * scale
-          -- z' = (tarY - topY + cameraZMult * (tarZ - topZ))
+logicCoordToRender :: Floating a => a -> V2 a -> V2 a -> V2 a
+logicCoordToRender scale (V2 topX topY) (V2 tarX tarY) = V2 ((tarX - topX) * scale) ((tarY - topY) * scale)
 
 updateAnimations :: Word32 -> SystemT' IO ()
 updateAnimations dT = do
@@ -122,10 +107,6 @@ runRender !window !renderBuffer !dT = do
     let getTile :: TileState -> SystemT' IO (Tile ImageID)
         getTile = lift . MVec.read tileVector . fromIntegral .  unTileID . view tile
 
-    {-
-    lift (foldM (\acc i -> MVec.read tileVector i >>= \t -> pure ((concat [show . _tileID $ t, show . _tileTextID $ t]) : acc)) [] [0..((MVec.length tileVector) - 1)])
-        >>= error . show >> pure ()
-    -}
     -- clears background
     SDL.surfaceFillRect screen Nothing . unColor . backgroundColor $ imageManager
 
@@ -136,23 +117,27 @@ runRender !window !renderBuffer !dT = do
             where pixMult = fromIntegral (clampBetween pixelsForMinUnits pixelsForMaxUnits resY) / fromIntegral (pixelsForMaxUnits :: Int)
         unitsPerWidth = unitsPerHeight * aspectRatio resToCenter
         camShiftUp = 12
-        -- this collects all renders into our buffer with their positions
-        -- this takes transformed V3, rather than logical, since z is fully depth, rather than up down
-        gatherRender :: (Int, RenderBuffer) -> (Camera, Position) -> SystemT' IO (Int, RenderBuffer)
-        gatherRender (i, buf) (Camera _, Position cam@(V3 camX camY camZ)) =
-            let cam'@(V3 camX' camY' _) = V3 camX (camY - camShiftUp) camZ
-                convPos = logicCoordToRender scale cam'
 
-                minY = camY' + ((-0.5) * zoomScale * unitsPerHeight) * pixelsPerUnit
-                maxY = camY' + (0.5    * zoomScale * unitsPerHeight + renderBorderUnits) * pixelsPerUnit
+        tileToWorldCoord Foreground p = worldCoordFromTileCoord p
+        tileToWorldCoord Background p = (+(V2 0 (pixelsPerUnit * scale))) . worldCoordFromTileCoord p
+
+        -- this collects all renders into our buffer with their positions
+        gatherRender :: (Int, RenderBuffer) -> (Camera, Position) -> SystemT' IO (Int, RenderBuffer)
+        gatherRender (!i, !buf) (Camera _, Position cam@(V2 camX camY)) =
+            let cam'@(V2 camX' camY') = V2 camX (camY - camShiftUp)
+                -- coordinates must be in these ranges for us to draw them
+                -- if a sprite is taller or wider than units * 16px, then it can potentially be on screen but not drawn
+                -- this is not a problem now, but it it occurs later, this can easily be fixed
+                minY = camY' + ((-0.5) * zoomScale * unitsPerHeight) * pixelsPerUnit -- images are drawn from their bottom center, so if y is above top, no need to draw
+                maxY = camY' + (0.5    * zoomScale * unitsPerHeight + renderBorderUnits * 2) * pixelsPerUnit -- like above, but we need extra room for tall objects below
                 minX = camX' + ((-0.5) * zoomScale * unitsPerWidth  - renderBorderUnits) * pixelsPerUnit
                 maxX = camX' + (0.5    * zoomScale * unitsPerWidth  + renderBorderUnits) * pixelsPerUnit
 
-                isOffScreen (V3 !x !y !z) = let y' = y + cameraZMult * z in y' < minY || y' > maxY || x < minX || x > maxX
+                isOffScreen (V2 !x !y) = y < minY || y > maxY || x < minX || x > maxX
                 -- adds to RenderBuffer and increments if judged to be drawable; expands the buffer if needed
-                addToBuffer :: (Int, RenderBuffer) -> Vector (RenderSprite ImageID) -> V3 Float -> SystemT' IO (Int, RenderBuffer)
+                addToBuffer :: (Int, RenderBuffer) -> Vector (RenderSprite ImageID) -> V2 Float -> SystemT' IO (Int, RenderBuffer)
                 addToBuffer (!idx, !renBuf) render pos = if isOffScreen pos then pure (idx, renBuf) else do
-                    let renderPos = convPos pos
+                    let renderPos = (*scale) <$> (pos - cam')
                     renBuf' <- lift $ growMVecIfNeeded renBuf bufferGrowIncr idx
                     (lift . MVec.unsafeWrite renBuf' idx) (renderPos, render)
                         >> pure (idx + 1, renBuf')
@@ -162,19 +147,19 @@ runRender !window !renderBuffer !dT = do
                 -- that represent each layer in a field
                 -- although to preserve z-depth we might want to split each field into "strips" of tiles with same y and z positions
                 -- close to this was "surfaceBlitScaled", which would dramatically have its number of calls cut down by this too
-                foldFnField :: (Int, RenderBuffer) -> (V3 Int, Field) -> SystemT' IO (Int, RenderBuffer)
+                foldFnField :: (Int, RenderBuffer) -> (V2 Int, Field) -> SystemT' IO (Int, RenderBuffer)
                 foldFnField pair (!pos, !field) = fieldFoldM (addTile pos) pair field
-                addTile :: V3 Int -> (Int, RenderBuffer) -> V3 Int -> TileState -> SystemT' IO (Int, RenderBuffer)
-                addTile fpos pair pos t = getTile t >>= \tileInst ->
-                    if   tileInst^.tileID == emptyTileID then pure pair
-                    else addToBuffer pair (getTileRenderSprites t tileInst) (worldCoordFromTile fpos pos)
+                addTile :: V2 Int -> (Int, RenderBuffer) -> Layer -> V2 Int -> TileState -> SystemT' IO (Int, RenderBuffer)
+                addTile fpos pair !layer pos !t = getTile t >>= \tileInst ->
+                    -- foldFnField filters out empty tiles, so we know they are safe here; if it didn't, attempting to render an empty would error
+                    addToBuffer pair (getTileRenderSprites t tileInst) (tileToWorldCoord layer fpos pos)
 
             in ((flip cfoldM) (i, buf) $ \pair (Render render, Position pos) -> addToBuffer pair render pos)
                >>= \acc -> foldM foldFnField acc (fieldsSurrounding cam world) 
         renderEvery :: Int -> Int -> RenderBuffer -> SDL.Surface -> IO ()
         renderEvery !i !len !buf !sur | i == len  = pure ()
                                       | otherwise = MVec.unsafeRead buf i >>= drawRender >> renderEvery (i + 1) len buf sur
-            where drawRender (V3 x y _, sprs) = Vec.foldM_ (drawEach $ V2 x y) sur sprs
+            where drawRender (V2 x y, sprs) = Vec.foldM_ (drawEach $ V2 x y) sur sprs
                   drawEach pos scr ren = blitRenderSprite imageManager (mkRenderRect edgeBleedScaling resToCenter scale pos) ren scr
 
     (sprCount, renBuf') <- cfoldM gatherRender (0, renderBuffer)

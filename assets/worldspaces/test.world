@@ -30,7 +30,7 @@ palettes:
   - background: "#131313"
     shader:
     - fn: desaturate
-load-point: [16, 4, 0] # [16, 4, 1] # 1 above floor
+load-point: [16, 4]
 legend:
   " ": empty
   "#": brick-wall
@@ -39,52 +39,57 @@ legend:
   ",": tall-grass
   "|": brick-door
   ";": brick-door-unlocked
-layers:
-- - "##  #######   , ,,   ##   ,  ,, "
-  - "#    #    #   ,,, ,   #  ,,,  , "
-  - "#    #   ###     ,   ,#   ,,  , "
-  - "#        ,        ,   #,   ,    "
-  - "#       , ,   ,   ,   #,,       "
-  - "#           ,  ,  ,  ##,    ,   "
-  - "####  #   #        , ,, ,,  ,   "
-  - "#         #  ,, ,,,          ,  "
-  - "#         #  ,,,, ,   ,         "
-  - "#         #  ,,,,  , ,%%%    %%%"
-  - "#         #   ,,,  ,  %        %"
-  - "#         #  , ,,,   ,%        %"
-  - "#         #  ,,,,,,  ,%        %"
-  - "#         #  , ,,,   ,%        %"
-  - "#         #  ,,,,,,  ,%        %"
-  - "#  #####  # ,,, , ,   %%%    %%%"
+foreground-tiles:
+- "##  #######   , ,,   ##   ,  ,, "
+- "#    #    #   ,,, ,   #  ,,,  , "
+- "#    #   ###     ,   ,#   ,,  , "
+- "#        ,        ,   #,   ,    "
+- "#       , ,   ,   ,   #,,       "
+- "#           ,  ,  ,  ##,    ,   "
+- "####  #   #        , ,, ,,  ,   "
+- "#         #  ,, ,,,          ,  "
+- "#         #  ,,,, ,   ,         "
+- "#         #  ,,,,  , ,%%%    %%%"
+- "#         #   ,,,  ,  %        %"
+- "#         #  , ,,,   ,%        %"
+- "#         #  ,,,,,,  ,%        %"
+- "#         #  , ,,,   ,%        %"
+- "#         #  ,,,,,,  ,%        %"
+- "#  #####  # ,,, , ,   %%%    %%%"
+variables:
+  # this contains variables that are associated with the worldspace itself, and are saved/loaded with it
+  my-bool:   {type: double, value: 100}
+  my-double: {type: int,    value: 4.25}
+  my-int:    {type: bool,   value: true}
 entities:
 - entity:   chest-locked
-  position: [6, 1, 0]
+  position: [6.5, 1]
 - entity:   chest-odd
-  position: [25, 12, 0]
+  position: [25, 12]
 - entity:   door-brick-wide
-  position: [4.5, 6, 0]
+  position: [4.5, 6]
 - entity:   door-brick-wide
-  position: [2.5, 0, 0]
+  position: [2.5, 0]
 - entity:   door-brick-wide-unlocked
-  position: [1.5, 15, 0]
+  position: [1.5, 15]
 - entity:   door-brick-wide-unlocked
-  position: [8.5, 15, 0]
+  position: [8.5, 15]
 items:
 - item:     apple
-  position: [19, 2.5, 0] # 1.0 is a single tile
+  position: [19, 2.5] # 1.0 is a single tile
 - item:     apple
-  position: [15.5, 8.5, 0]
+  position: [15.5, 8.5]
 - item:     potion-health
-  position: [1.5, 2, 0]
+  position: [1.5, 2]
 - item:     potion-mana
-  position: [2.5, 2, 0]
+  position: [2.5, 2]
 - item:     key-small
-  position: [3, 8, 0]
+  position: [3, 8]
 - item:     key-big
-  position: [4, 9, 0]
+  position: [4, 9]
 - item:     sword
-  position: [8, 7, 0]
+  position: [8, 7]
 - item:     bomb
-  position: [6, 4, 0]
+  position: [6, 4]
 
 

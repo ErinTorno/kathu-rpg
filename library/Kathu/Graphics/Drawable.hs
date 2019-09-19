@@ -23,7 +23,12 @@ import Kathu.Util.Flow ((>>>=))
 newtype ImageBounds m g = ImageBounds {unImageBounds :: g -> m (V2 CInt)}
 
 -- a drawable that can change
-data AnimationStrip = AnimationStrip {animID :: Text, frameCount :: Int, row :: Int, delay :: Word32} deriving (Show, Eq)
+data AnimationStrip = AnimationStrip
+    { animID     :: Text
+    , frameCount :: {-# UNPACK #-} !Int
+    , row        :: {-# UNPACK #-} !Int
+    , delay      :: {-# UNPACK #-} !Word32
+    } deriving (Show, Eq)
 
 instance ToJSON AnimationStrip where
     toJSON (AnimationStrip anID frames rowNum delayMS) = object ["id" .= anID, "frames" .= frames, "row" .= rowNum, "delay" .= delayMS]

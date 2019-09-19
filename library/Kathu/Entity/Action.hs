@@ -5,7 +5,7 @@ module Kathu.Entity.Action where
 
 import Control.Lens
 import Kathu.Util.Timing
-import Linear.V3 (V3(..))
+import Linear.V2 (V2(..))
 
 getDiagonalSpeed :: Float -> Float
 getDiagonalSpeed v = v * 0.707106781187 -- a constant so that we don't need to call the trigonometric functions each time
@@ -57,19 +57,17 @@ getDirection ap = indexToDirection $ (nsComp + ewComp :: Int) -- positive x is e
               where (a', b') = (timedVal a, timedVal b)
 
 -- positive x is east, positive y is south, positive z is upward
-getMoveVector :: Float -> Direction -> V3 Float
+getMoveVector :: Float -> Direction -> V2 Float
 getMoveVector s d = let diagS = getDiagonalSpeed s
-                        flatV :: Float -> Float -> V3 Float
-                        flatV x y = V3 x y 0.0
                     in case d of
-                        North     -> flatV 0.0 (-s)
-                        Northeast -> flatV diagS (-diagS)
-                        East      -> flatV s 0.0
-                        Southeast -> flatV diagS diagS
-                        South     -> flatV 0.0 s
-                        Southwest -> flatV (-diagS) diagS
-                        West      -> flatV (-s) 0.0
-                        Northwest -> flatV (-diagS) (-diagS)
+                        North     -> V2 0.0 (-s)
+                        Northeast -> V2 diagS (-diagS)
+                        East      -> V2 s 0.0
+                        Southeast -> V2 diagS diagS
+                        South     -> V2 0.0 s
+                        Southwest -> V2 (-diagS) diagS
+                        West      -> V2 (-s) 0.0
+                        Northwest -> V2 (-diagS) (-diagS)
 
 -- Direction Components
 

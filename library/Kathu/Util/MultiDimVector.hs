@@ -8,6 +8,8 @@ import qualified Data.Vector as Vec
 import Data.Vector.Mutable (MVector, IOVector)
 import qualified Data.Vector.Mutable as MVec
 
+-- This module seeks to make it easier to work with nested Vectors
+
 type Vector2D a    = Vector (Vector a)
 type Vector3D a    = Vector (Vector2D a)
 
@@ -67,6 +69,17 @@ mWrite3D x y z ele v = MVec.read v x >>= (flip MVec.read) y >>= \v' -> MVec.writ
 
 -- Mapping
 
+-- | Folds over a MVector2D monadically, and supplies the coordinates for each element to the accumulator
+miFoldl2D :: PrimMonad m => (b -> Int -> Int -> a -> m b) -> b -> MVector2D (PrimState m) a -> m b
+miFoldl2D f acc v = do
+    mX <- pure $ MVec.length v
+    mY <- MVec.length <$> (MVec.read v 0)
+    let go x y b | y == mY = pure b
+                 | x == mX = go 0 (y + 1) b
+                 | otherwise = mRead2D x y v >>= f b x y >>= go (x + 1) y
+    go 0 0 acc
+
+-- | Folds over a MVector3D monadically, and supplies the coordinates for each element to the accumulator
 miFoldl3D :: PrimMonad m => (b -> Int -> Int -> Int -> a -> m b) -> b -> MVector3D (PrimState m) a -> m b
 miFoldl3D f acc v = do
     mX <- pure $ MVec.length v

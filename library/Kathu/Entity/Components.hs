@@ -16,7 +16,7 @@ import Apecs
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
 import Data.Text (Text)
-import Linear.V3 (V3(..))
+import Linear.V2 (V2(..))
 import GHC.Generics
 import Language.Haskell.TH.Syntax (Name)
 
@@ -45,16 +45,16 @@ instance FromJSON Identity where
     parseJSON e          = typeMismatch "Identity" e
 
 -- different layers are treated as different world spaces that still use (relative) 2d coordinates
-newtype Position = Position (V3 Float) deriving (Show, Eq, Generic, ToJSON, FromJSON)
+newtype Position = Position (V2 Float) deriving (Show, Eq, Generic, ToJSON, FromJSON)
 instance Component Position where type Storage Position = Cache CATCH_SIZE (Map Position)
 
 -- should be replaced with a physics body in the future
-newtype Velocity = Velocity (V3 Float) deriving (Show, Eq, Generic, ToJSON)
+newtype Velocity = Velocity (V2 Float) deriving (Show, Eq, Generic, ToJSON)
 instance Component Velocity where type Storage Velocity = Cache CATCH_SIZE (Map Velocity)
 
 instance FromJSON Velocity where
     -- a generic value for serialized entities to specify that they can move (and so have a velocity), but it is not set yet
-    parseJSON (String "available") = pure . Velocity $ V3 0 0 0
+    parseJSON (String "available") = pure . Velocity $ V2 0 0
     parseJSON v = genericParseJSON defaultOptions v
 
 newtype MovingSpeed = MovingSpeed Float deriving (Show, Eq, Generic, ToJSON, FromJSON)

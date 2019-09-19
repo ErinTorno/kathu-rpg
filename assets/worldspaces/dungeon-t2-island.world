@@ -22,47 +22,47 @@ palettes:
       - fn: invert-hue
       - fn: desaturate-by
         percent: 0.2
-load-point: [16, 4, 0] # [16, 4, 1] # 1 above floor
+load-point: [16, 4]
 legend:
   " ": empty
   "#": brick-wall
   "*": brick-floor
   ",": tall-grass
-layers:
-- - "#######################,,,,#####"
-  - ",,, , #        #           ,   ,"
-  - " ,,   #        #       ,    ,,, "
-  - "      #        #           ,,   "
-  - "      #        #     , ,,,      "
-  - "  ,   #        #      ,,,,,,   ,"
-  - "      ####,,####   , ,,         "
-  - "   ,                            "
-  - "     ,,             ,,,     ,,,,"
-  - "                   ,,,       ,, "
-  - "     ,,               ,         "
-  - "     ,,,     ##  ##        ,,   "
-  - "             #    #             "
-  - "  ,          #    #    ,        "
-  - "   ,,        #    #       ,     "
-  - "             ######            #"
-  - "      ,,              ,,,      #"
-  - "          ,,     ,,   ,,    ####"
-  - "    ,     ,   ,,  ,,,, ,       #"
-  - "      ,,         ,,  ,,,,,,,   #"
-  - "                  ,,,,   ,,,,,,#"
-  - "                         #######"
+foreground-tiles:
+- "#######################,,,,#####"
+- ",,, , #        #           ,   ,"
+- " ,,   #        #       ,    ,,, "
+- "      #        #           ,,   "
+- "      #        #     , ,,,      "
+- "  ,   #        #      ,,,,,,   ,"
+- "      ####,,####   , ,,         "
+- "   ,                            "
+- "     ,,             ,,,     ,,,,"
+- "                   ,,,       ,, "
+- "     ,,               ,         "
+- "     ,,,     ##  ##        ,,   "
+- "             #    #             "
+- "  ,          #    #    ,        "
+- "   ,,        #    #       ,     "
+- "             ######            #"
+- "      ,,              ,,,      #"
+- "          ,,     ,,   ,,    ####"
+- "    ,     ,   ,,  ,,,, ,       #"
+- "      ,,         ,,  ,,,,,,,   #"
+- "                  ,,,,   ,,,,,,#"
+- "                         #######"
 entities: []
 items:
 - item:     spirit-lantern
-  position: [3, 6, 0]
+  position: [3, 6]
 - item:     apple
   count:    3
-  position: [18, 2.5, 0] # 1.0 is a single tile
+  position: [18, 2.5] # 1.0 is a single tile
 - item:     apple
-  position: [14.5, 8.5, 0]
+  position: [14.5, 8.5]
 - item:     potion-health
-  position: [2, 2.3, 0]
+  position: [2, 2.3]
 - item:     key-small
-  position: [3, 8, 0]
+  position: [3, 8]
 - item:     key-big
-  position: [4, 9, 0]
+  position: [4, 9]

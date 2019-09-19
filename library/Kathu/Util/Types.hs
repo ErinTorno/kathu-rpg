@@ -19,7 +19,7 @@ import GHC.Generics
 -- | A type use to represent the type that identifies the objects that compose the game world
 newtype Identifier = Identifier
     { unID :: Text
-    } deriving (Show, Eq, Generic, Ord, IsString)
+    } deriving (Show, Eq, Generic, Ord, IsString, FromJSONKey)
 
 instance ToJSON Identifier where
     toJSON (Identifier identifier) = toJSON identifier

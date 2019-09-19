@@ -99,7 +99,7 @@ instance ToJSON a => ToJSON (V2 a) where
 
 instance FromJSON a => FromJSON (V2 a) where
     parseJSON (Object m) = V2 <$> m .: "x" <*> m .: "y"
-    parseJSON (Array a)  = if Vec.length a /= 2 then fail "V2 array is not of length 2" else res
+    parseJSON (Array a)  = if Vec.length a /= 2 then fail ("V2 array is not of length 2 (" ++ show a ++ ")") else res
         where pInd = parseJSON . (Vec.!) a
               res  = pInd 0 >>= \x -> pInd 1 >>= \y -> pure $ V2 x y
     parseJSON e          = typeMismatch "V2" e
@@ -112,7 +112,7 @@ instance ToJSON a => ToJSON (V3 a) where
 
 instance FromJSON a => FromJSON (V3 a) where
     parseJSON (Object m) = V3 <$> m .: "x" <*> m .: "y" <*> m .: "z"
-    parseJSON (Array a)  = if Vec.length a /= 3 then fail "V3 array is not of length 3" else res
+    parseJSON (Array a)  = if Vec.length a /= 3 then fail ("V3 array is not of length 3 (" ++ show a ++ ")") else res
         where pInd = parseJSON . (Vec.!) a
               res  = pInd 0 >>= \x -> pInd 1 >>= \y -> pInd 2 >>= \z -> pure $ V3 x y z
     parseJSON e          = typeMismatch "V3" e
@@ -125,7 +125,7 @@ instance ToJSON a => ToJSON (V4 a) where
 
 instance FromJSON a => FromJSON (V4 a) where
     parseJSON (Object m) = V4 <$> m .: "t" <*> m .: "x" <*> m .: "y" <*> m .: "z"
-    parseJSON (Array a)  = if Vec.length a /= 4 then fail "V4 array is not of length 4" else res
+    parseJSON (Array a)  = if Vec.length a /= 4 then fail ("V4 array is not of length 4 (" ++ show a ++ ")") else res
         where pInd = parseJSON . (Vec.!) a
               res  = pInd 0 >>= \t -> pInd 1 >>= \x -> pInd 2 >>= \y -> pInd 3 >>= \z -> pure $ V4 t x y z
     parseJSON e          = typeMismatch "V3" e

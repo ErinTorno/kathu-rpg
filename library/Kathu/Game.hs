@@ -11,7 +11,7 @@ import Control.Lens
 import Control.Monad.IO.Class (MonadIO)
 import Data.Maybe
 import Data.Word
-import Linear.V3 (V3(..))
+import Linear.V2 (V2(..))
 
 import Kathu.Entity.Action
 import Kathu.Entity.Components
@@ -27,7 +27,7 @@ runPhysics = do
             facingDir = fromMaybe (view facingDirection as) dir
         in set facingDirection facingDir . set moving dir . set lastMoving (view moving as) $ as
     -- Updates Velocity for all moving acting entities
-    cmapIf newDirection $ \(as, MovingSpeed s, Velocity _) -> Velocity . fromMaybe (V3 0 0 0) . fmap (getMoveVector s) . view moving $ as
+    cmapIf newDirection $ \(as, MovingSpeed s, Velocity _) -> Velocity . fromMaybe (V2 0 0) . fmap (getMoveVector s) . view moving $ as
     -- Updates Position based on Velocity
     cmap $ \(Position p, Velocity v) -> Position (v + p)
     pure ()
