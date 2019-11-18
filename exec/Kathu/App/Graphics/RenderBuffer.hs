@@ -11,7 +11,7 @@ import Kathu.Graphics.Drawable (RenderSprite)
 
 -- this stores each sprite to draw and its properties, which we will sort before drawing for z depth
 -- this can be converted to an unboxed MVector if I can find a clean way to drop the RenderSprite
-type RenderBuffer = IOVector (V2 Float, Vector (RenderSprite ImageID))
+type RenderBuffer = IOVector (V2 Double, Vector (RenderSprite ImageID))
 
 mkRenderBuffer :: IO RenderBuffer
 mkRenderBuffer = MVec.new baseSize
@@ -23,5 +23,5 @@ bufferGrowIncr = 32
 sortRenderBuffer :: Int -> Int -> RenderBuffer -> IO ()
 sortRenderBuffer mn mx buf = sortByBounds compRender buf mn mx
 
-compRender :: (V2 Float, Vector (RenderSprite g)) -> (V2 Float, Vector (RenderSprite g)) -> Ordering
+compRender :: (V2 Double, Vector (RenderSprite g)) -> (V2 Double, Vector (RenderSprite g)) -> Ordering
 compRender ((V2 _ ya), _) ((V2 _ yb), _) = ya `compare` yb

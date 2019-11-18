@@ -33,11 +33,11 @@ instance FromJSON Team where
 
 data ActorState = ActorState
     { _team    :: Team
-    , _health  :: Dynamic Float
-    , _mana    :: Dynamic Float
-    , _armor   :: Static Float
-    , _aura    :: Static Float
-    , _resists :: Map DamageID (Static Float)
+    , _health  :: Dynamic Double
+    , _mana    :: Dynamic Double
+    , _armor   :: Static Double
+    , _aura    :: Static Double
+    , _resists :: Map DamageID (Static Double)
     } deriving (Show, Eq, Generic)
 makeLenses ''ActorState
 
@@ -55,12 +55,12 @@ instance (FromJSON (Dependency s m DamageID), Monad m) => FromJSON (Dependency s
 -- Util functions --
 --------------------
 
-resistTo :: DamageProfile g -> ActorState -> Float
+resistTo :: DamageProfile g -> ActorState -> Double
 resistTo prof actor = maybe (defaultResist prof) total . (Map.lookup (dmgID prof)) $ actor^.resists
 
 applyDamagePacket :: DamagePacket g -> ActorState -> ActorState
 applyDamagePacket (DamagePacket prof res magn) =
-    let modAv av actor = over av (modDynCur $ -1.0 * magn * (resistTo prof actor)) actor
+    let modAv av actor = over av (modDynCur $ (-1.0) * magn * (resistTo prof actor)) actor
     in case res of
         TgtHealth -> modAv health
         TgtMana   -> modAv mana

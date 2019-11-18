@@ -1,9 +1,12 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Kathu.App.Events where
 
 import Apecs hiding (set)
-import Control.Lens
+import Apecs.Physics
+import Control.Lens hiding (Identity)
+import Control.Monad (when)
 import qualified SDL
 
 import Kathu.App.Data.Settings
@@ -43,19 +46,35 @@ runEvents = whileFstM (SDL.pollEvent >>= ev)
               if canUseDebug settings && key == keyToggleDebug cs then do
                   (Debug d) <- get global
                   global $= Debug (not d)
-              else if isDebug then
+              else when isDebug $
                   -- debug controls are kept here, to prevent toggling too fast whenever a frame is processed
-                  if key == keyDebugZoomIn cs then do
-                      cmap $ \(Camera z) -> Camera (z + 0.5)
-                  else if key == keyDebugZoomOut cs then do
-                      cmap $ \(Camera z) -> Camera (z - 0.5)
-                  else if key == keyDebugNextPalette cs then do
+                  if      key == keyDebugZoomIn cs       then cmap $ \(Camera z) -> Camera (z + 0.25)
+                  else if key == keyDebugZoomOut cs      then cmap $ \(Camera z) -> Camera (z - 0.25)
+                  else if key == keyDebugPrintPhysics cs then printPhysics
+                  else if key == keyDebugNextPalette cs  then do
                       im <- get global
                       let nextPalette = (1 + currentPalette im) `mod` (availablePaletteCount im)
                       global $= setPalette nextPalette im
-                   else pure ()
-              else pure ()
+                  else pure ()
               pure (True, True)
           ev (Just _) = pure (True, True)
           -- stop running, with end result of True
           ev Nothing  = pure (False, True)
+
+printPhysics :: SystemT' IO ()
+printPhysics = do
+    liftIO . putStrLn $ "### Print Physics ###"
+    -- Torque and force are ignored, as those are set to zero every update, and so this would always print 0's for them
+    cmapM_ $ \(Identity idt _ _, (Position p, Velocity v), (BodyMass mass, Moment moment), (Angle a, AngularVelocity a', CenterOfGravity cog), Entity etyID :: Entity) ->
+        liftIO . putStrLn . concat $
+            [ show etyID
+            , " (", show idt
+            , "): pos ", show p
+            , "; vel ", show v
+            , "; mass ", show mass
+            , "; moment ", show moment
+            , "; angle ", show a
+            , "; angle-v ", show a'
+            , "; center-of-g ", show cog
+            ]
+    liftIO . putStrLn $ "### End of Print Physics ###"

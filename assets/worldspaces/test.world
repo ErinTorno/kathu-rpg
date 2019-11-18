@@ -1,4 +1,4 @@
-world-id: test
+world-id: test-world
 name:     test world
 palettes:
   # night
@@ -30,6 +30,12 @@ palettes:
   - background: "#131313"
     shader:
     - fn: desaturate
+    - fn: match-nearest
+      color-set: ["#ffffff", "#666666", "#aaaaaa", "#ffffff"]
+  - background: "#000000"
+    shader:
+      fn: match-nearest
+      color-set: ["#ffffff", "#fb3e6c", "#41c955", "#4176c9"]
 load-point: [16, 4]
 legend:
   " ": empty
@@ -37,10 +43,8 @@ legend:
   "%": brick-wall-cold
   "*": brick-floor
   ",": tall-grass
-  "|": brick-door
-  ";": brick-door-unlocked
-foreground-tiles:
-- "##  #######   , ,,   ##   ,  ,, "
+tiles:
+- "##  #######   , ,, # ##   ,  ,,#"
 - "#    #    #   ,,, ,   #  ,,,  , "
 - "#    #   ###     ,   ,#   ,,  , "
 - "#        ,        ,   #,   ,    "
@@ -74,6 +78,10 @@ entities:
   position: [1.5, 15]
 - entity:   door-brick-wide-unlocked
   position: [8.5, 15]
+- entity:   block
+  position: [15, 12]
+- entity:   block
+  position: [2, 12]
 items:
 - item:     apple
   position: [19, 2.5] # 1.0 is a single tile
@@ -87,9 +95,13 @@ items:
   position: [3, 8]
 - item:     key-big
   position: [4, 9]
+- item:     key-odd
+  position: [26.5, 12]
 - item:     sword
   position: [8, 7]
 - item:     bomb
   position: [6, 4]
+- item:     pumpkin
+  position: [21, 1]
 
 

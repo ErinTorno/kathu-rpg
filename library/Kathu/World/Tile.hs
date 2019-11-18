@@ -10,24 +10,26 @@
 
 module Kathu.World.Tile where
 
-import Control.Lens
-import Control.Monad.IO.Class (liftIO, MonadIO)
-import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
-import Data.Functor.Compose
-import Data.Text (Text)
-import qualified Data.Vector as Vec
-import Data.Vector.Unboxed.Deriving
-import Data.Word
-import qualified System.Random as R
+import           Control.Lens
+import           Control.Monad.IO.Class       (liftIO, MonadIO)
+import           Data.Aeson
+import           Data.Aeson.Types             (typeMismatch)
+import           Data.Functor.Compose
+import           Data.Map                     (Map)
+import qualified Data.Map                     as Map
+import           Data.Text                    (Text)
+import qualified Data.Vector                  as Vec
+import           Data.Vector.Unboxed.Deriving
+import           Data.Word
+import qualified System.Random                as R
 
-import Kathu.Entity.Resource
-import Kathu.Graphics.Drawable (Render(..), RenderSprite)
-import Kathu.Parsing.Aeson
-import Kathu.Parsing.Counting
-import Kathu.Util.Dependency
-import Kathu.Util.Flow ((>>>=))
-import Kathu.Util.Types (Identifier, IDMap)
+import           Kathu.Entity.Resource
+import           Kathu.Graphics.Drawable      (Render(..), RenderSprite)
+import           Kathu.Parsing.Aeson
+import           Kathu.Parsing.Counting
+import           Kathu.Util.Dependency
+import           Kathu.Util.Flow              ((>>>=))
+import           Kathu.Util.Types             (Identifier, IDMap)
 
 -----------------------
 -- Tile Config Types --
@@ -42,6 +44,13 @@ derivingUnbox "TileID"
 instance (s `CanStore` CountingIDs, Monad m) => FromJSON (Dependency s m TileID) where
     parseJSON (String s) = pure (TileID . fromIntegral <$> lookupOrAdd "TileID" s)
     parseJSON v          = typeMismatch "TileID" v
+
+emptyTileID :: TileID
+emptyTileID = TileID 0
+
+-- | CountingIDs is initialized with this key and default map, instead of empty, so that it starts counting after reserved tile IDs
+reservedTileIDMap :: (Text, Map Text Int)
+reservedTileIDMap = ("TileID", Map.fromList [("empty", 0)])
 
 newtype ToolType = ToolType Int deriving (Show, Eq, Ord)
 
@@ -91,9 +100,6 @@ instance ( s `CanStore` (IDMap (Tile g))
                   <*> v .:^ "is-solid"
                   <*> v .:~ "break-behavior"
     parseJSON v          = typeMismatch "Tile" v
-
-emptyTileID :: TileID
-emptyTileID = TileID 0
 
 emptyTile :: Tile g
 emptyTile = Tile

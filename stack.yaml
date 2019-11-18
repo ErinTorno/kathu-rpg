@@ -40,7 +40,8 @@ packages:
 # (e.g., acme-missiles-0.3)
 # extra-deps: []
 extra-deps:
-  - apecs-0.7.1@sha256:453f1e8e6a1858c87deb00dc1022829e7147a31dfbf6979f9ce80124efeb27db
+- apecs-0.8.2
+- apecs-physics-0.4.3
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

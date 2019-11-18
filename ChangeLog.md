@@ -1,5 +1,19 @@
 # Revision history for kathu
 
+## 0.1.8.0 -- 2019-11-17
+
+* The game now has physics! Entities can specify their collision shapes and mass, density, friction, elasticity, and collision group
+* Entities can now have lifetimes, and destroy themselves when time has passed
+* The world itself also has collision; further improvements will be needed to improve sliding along tile walls
+* The world now makes use of 1 unit per tile, instead of 16 units per tile, making logic easier; in addition, positions are now double precision
+* The world is no longer separated into foreground and background layers
+* New config files with the .floor extension were added to specify how floor friction works
+* New props and items were added
+* Two shader options were added: set forces everything to a certain color, and match-nearest fits colors to their closest match in a given palette
+* Basic font support has been added
+* When debugging, world, player position, and collision boxes are shown
+* Added debug key F7 to print the physic properties of all identified entities
+
 ## 0.1.7.0 -- 2019-09-16
 
 * A major refactor was done to clean up code and eliminate warnings and redundancies

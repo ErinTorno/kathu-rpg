@@ -65,6 +65,7 @@ data Controls = Controls
     , keyDebugZoomIn  :: SDL.Scancode
     , keyDebugZoomOut :: SDL.Scancode
     , keyDebugNextPalette :: SDL.Scancode
+    , keyDebugPrintPhysics :: SDL.Scancode
     } deriving (Generic)
 
 -- We also need to store keys and scancodes to make use of Control serialization
@@ -92,6 +93,7 @@ defaultControls = Controls
     , keyDebugZoomIn  = SDL.ScancodeKPMinus
     , keyDebugZoomOut = SDL.ScancodeKPPlus
     , keyDebugNextPalette = SDL.ScancodeF5
+    , keyDebugPrintPhysics = SDL.ScancodeF7
     }
 
 loadSettings :: IO Settings

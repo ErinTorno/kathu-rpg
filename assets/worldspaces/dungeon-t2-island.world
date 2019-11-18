@@ -28,7 +28,7 @@ legend:
   "#": brick-wall
   "*": brick-floor
   ",": tall-grass
-foreground-tiles:
+tiles:
 - "#######################,,,,#####"
 - ",,, , #        #           ,   ,"
 - " ,,   #        #       ,    ,,, "

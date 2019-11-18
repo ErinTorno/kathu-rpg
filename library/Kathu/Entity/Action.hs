@@ -7,20 +7,18 @@ import Control.Lens
 import Kathu.Util.Timing
 import Linear.V2 (V2(..))
 
-getDiagonalSpeed :: Float -> Float
-getDiagonalSpeed v = v * 0.707106781187 -- a constant so that we don't need to call the trigonometric functions each time
-
-type Angle = Float
+getDiagonal :: Fractional a => a -> a
+getDiagonal v = v * 0.707106781187 -- a constant so that we don't need to call the trigonometric functions each time
 
 data Direction = North | Northeast | East | Southeast | South | Southwest | West | Northwest deriving (Show, Eq)
 
 data ActionSet = ActionSet
-    { _controller :: ActionSet -> ActionSet
-    , _moving :: Maybe Direction
-    , _lastMoving :: Maybe Direction
+    { _controller      :: ActionSet -> ActionSet
+    , _moving          :: Maybe Direction
+    , _lastMoving      :: Maybe Direction
     , _facingDirection :: Direction -- so even if waiting, we still know which direction to draw
-    , _usingPrimary :: Maybe Angle
-    , _usingSecondary :: Maybe Angle
+    , _usingPrimary    :: Maybe Double -- angle
+    , _usingSecondary  :: Maybe Double -- angle
     }
 makeLenses ''ActionSet
 
@@ -56,18 +54,32 @@ getDirection ap = indexToDirection $ (nsComp + ewComp :: Int) -- positive x is e
                          | otherwise      = iNone
               where (a', b') = (timedVal a, timedVal b)
 
+-- | When a character with a moving speed starts trying to move with a given movement speed, at what rate do we accelerate them?
+movingAcceleration :: Fractional a => a -> a -> a
+movingAcceleration mass s = 25 * mass * s
+
 -- positive x is east, positive y is south, positive z is upward
-getMoveVector :: Float -> Direction -> V2 Float
-getMoveVector s d = let diagS = getDiagonalSpeed s
-                    in case d of
-                        North     -> V2 0.0 (-s)
-                        Northeast -> V2 diagS (-diagS)
-                        East      -> V2 s 0.0
-                        Southeast -> V2 diagS diagS
-                        South     -> V2 0.0 s
-                        Southwest -> V2 (-diagS) diagS
-                        West      -> V2 (-s) 0.0
-                        Northwest -> V2 (-diagS) (-diagS)
+getMoveVector :: (Fractional a, Ord a) => V2 a -> a -> a -> Maybe Direction -> V2 a
+getMoveVector _ _ _ Nothing           = V2 0 0 
+getMoveVector (V2 !x !y) !mass !s (Just dir) =
+    let diagS     = getDiagonal s
+        acc       = movingAcceleration mass s
+        diagAcc   = getDiagonal acc
+        diag !x' !y' !ax !ay -- when we are moving diagonally, we need to check both the x and y components
+            | x' > diagS && y' > diagS = V2 0 0
+            | x' > diagS               = V2 0 ay
+            | y' > diagS               = V2 ax 0
+            | otherwise                = V2 ax ay
+     in case dir of
+        North     -> if y < (-s) then V2 0 0 else V2 0 (-acc)
+        Northeast -> diag x (-y) diagAcc (-diagAcc)
+        East      -> if x > s then V2 0 0 else V2 acc 0
+        Southeast -> diag x y diagAcc diagAcc
+        South     -> if y > s then V2 0 0 else V2 0 acc
+        Southwest -> diag (-x) y (-diagAcc) diagAcc
+        West      -> if x < (-s) then V2 0 0 else V2 (-acc) 0
+        Northwest -> diag (-x) (-y) (-diagAcc) (-diagAcc)
+ 
 
 -- Direction Components
 

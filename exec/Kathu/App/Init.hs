@@ -2,22 +2,25 @@
 
 module Kathu.App.Init (entityWorld, localPlayer, system) where
 
-import Apecs          hiding (get)
-import Control.Lens
+import Apecs hiding (get)
+import Apecs.Physics
+import Control.Lens hiding (Identity)
 import qualified Data.Map as Map
-import Data.Maybe            (maybe)
+import Data.Maybe (maybe)
+import Linear.V2 (V2(..))
 import qualified System.Random as R
 
 import Kathu.App.Data.Library
 import Kathu.App.Data.Settings
 import Kathu.App.Graphics.ImageManager
 import Kathu.App.System
-import Kathu.App.World       (loadWorldSpace)
+import Kathu.App.World (loadWorldSpace)
 import Kathu.Entity.Action
 import Kathu.Entity.Components
+import Kathu.Entity.Physics.Floor
 import Kathu.Entity.Prototype
 import Kathu.Entity.System
-import Kathu.IO.Directory    (assetPath)
+import Kathu.IO.Directory (assetPath)
 import Kathu.Graphics.Camera
 
 entityWorld :: IO EntityWorld
@@ -42,8 +45,13 @@ system settings = do
     global  $= tilesV
     global  $= settings
     global  $= library ^. uiConfig
-    let getLib g t = (view g library) Map.! t
+    global  $= (Gravity $ V2 0 0) -- no gravity, as the game is top-down
 
+    floorPropEtys <- mapM initFloorProperty . view floorProperties $ library
+    global  $= FloorProperties (floorPropEtys Map.! "default") floorPropEtys
+
+    let getLib g t = (view g library) Map.! t
+    
     playerEty <- newFromPrototype $ getLib prototypes "player"
     localPlayer playerEty
 

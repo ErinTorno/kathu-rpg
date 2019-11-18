@@ -1,0 +1,7 @@
+item-id:        pumpkin
+name:           pumpkin
+description:    a large orange gourd
+slot:           misc
+icon:           "pumpkin.png"
+max-stack-size: 64
+price:          13

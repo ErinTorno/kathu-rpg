@@ -1,0 +1,13 @@
+identity:
+  id: block
+  name: block
+  description: an unanchored block that can be pushed around
+render: "block.png"
+body-config:
+  type:       dynamic
+  group:      movement
+  mass:       100
+  friction:   1
+  elasticity: 0
+  shapes:
+  - {shape: rectangle, bounds: [1, 1]}

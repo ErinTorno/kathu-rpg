@@ -5,11 +5,18 @@ identity:
   description: This should never appear
 # This follows an Entity Component System. Everything component is optional, with only an ID part of an identity being required for config file entities
 tags: [player]
- # need to mark this, or else the entity will not be able to move
-velocity: available
-# 2.75/16 of a tile each tick; each tile is 16 units
-# 16 is absolute max speed for physics, but hard to control after 5 or 6
-moving-speed: 2.75
+ # how many tiles you can cover per second; probably shouldn't go past 60, as after that you might be able to clip past tiles
+moving-speed: 12
+body-config:
+  type:       dynamic
+  group:      movement
+  mass:       10
+  friction:   0
+  elasticity: 0
+  shapes:
+# - {shape: circle,    radius: 0.25,        origin: [0, -0.25]}
+  - {shape: rectangle, bounds: [0.5, 0.25], origin: [-0.25, -0.25]}
+# - {shape: rectangle, bounds: [1, 1],   origin: [0.5, 0.75]}
 # in future palette will be chosen by the player
 render:
 - atlas: "player.png"

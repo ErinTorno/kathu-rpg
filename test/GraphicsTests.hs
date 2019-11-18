@@ -1,7 +1,8 @@
 module GraphicsTests (graphicsTests) where
 
-import Kathu.Graphics.Color
 import Test.HUnit
+
+import Kathu.Graphics.Color
 
 graphicsTests :: Test
 graphicsTests = TestList
@@ -11,6 +12,11 @@ graphicsTests = TestList
     , TestLabel "Shift Hue 1" hueShift1
     , TestLabel "Shift Hue Towards 1" hueShiftTowards1
     , TestLabel "Shift Hue Towards 2" hueShiftTowards2
+    , TestLabel "Nearest Color Simple 1" nearestColor1
+    , TestLabel "Nearest Color Empty Set" nearestColorEmptySet
+    , TestLabel "Nearest Color Red-Green Bias" nearestColorRedGreenBias
+    , TestLabel "Nearest Color to Alpha" nearestColorToAlpha
+    , TestLabel "Nearest Color to Opaqua" nearestColorToOpaque
     ]
 
 -----------
@@ -42,3 +48,26 @@ hueShiftTowards1 = TestCase $ assertEqual "Color shift towards hue 35 by 10" (HS
 
 hueShiftTowards2 :: Test
 hueShiftTowards2 = TestCase $ assertEqual "Color shift towards hue 30 by 30" (HSVColor 10 1 1 1) (shiftHueTowardsAbs 30 30 $ HSVColor 340 1 1 1)
+
+-- nearestColor
+
+nearestColor1 :: Test
+nearestColor1 = TestCase $ assertEqual "Color was matched from set" (colorSet !! 0) (nearestColor colorSet (read "#aa6610"))
+    where colorSet = read <$> ["#ff0000", "#00ff00", "#0000ff"]
+
+nearestColorEmptySet :: Test
+nearestColorEmptySet = TestCase $ assertEqual "Empty set, so same color is returned" color (nearestColor [] color)
+    where color = read "#ffffff"
+
+nearestColorRedGreenBias :: Test
+nearestColorRedGreenBias = TestCase $ assertEqual "When equally distant from red and green, red is favored" (colorSet !! 0) (nearestColor colorSet (read "#444400"))
+    where colorSet = read <$> ["#ff0000", "#00ff00", "#0000ff"]
+
+nearestColorToAlpha :: Test
+nearestColorToAlpha = TestCase $ assertEqual "More transparent color chosen" (colorSet !! 1) (nearestColor colorSet (read "#bb000022"))
+    where colorSet = read <$> ["#ff0000ff", "#66000011"]
+
+nearestColorToOpaque :: Test
+nearestColorToOpaque = TestCase $ assertEqual label (colorSet !! 0) (nearestColor colorSet (read "#ff000066"))
+    where label = "More transparent color is still farther away that opaque, so opaque chosen"
+          colorSet = read <$> ["#ff0000ff", "#66000011"]

@@ -5,10 +5,12 @@
 module Kathu.App.Main (start) where
 
 import Apecs (runWith)
+import Apecs.Physics (stepPhysics)
 import Control.Monad (replicateM_, unless)
 import Data.Text (Text)
 import Data.Word
 import qualified SDL
+import qualified SDL.Font as SDLF
 import SDL (($=))
 
 import Kathu.App.Data.Settings
@@ -17,13 +19,10 @@ import Kathu.App.Graphics.Render (runRender)
 import Kathu.App.Graphics.RenderBuffer (RenderBuffer, mkRenderBuffer)
 import qualified Kathu.App.Init as Init
 import Kathu.App.System
-import Kathu.Game
+import Kathu.Game (runGame, updateDelay)
 
 appName :: Text
 appName = "Kathu"
-
-updateDelay :: Word32
-updateDelay = floor $ 1000 / (60 :: Double) -- 60 ticks per second is ideal
 
 -- determines the millisecond delay needed to hit goal fps. Will disregard fps goals beneath the physics delay
 renderDelay :: Settings -> Word32
@@ -35,7 +34,9 @@ run renDelay window renBuf !prevPhysTime !prevRendTime = do
     let (n, remainder) = (startTime - prevPhysTime) `divMod` updateDelay
 
     -- physics steps as a constant rate as given by the update delay
-    replicateM_ (fromIntegral n) $ handleControls >> runGame updateDelay
+    replicateM_ (fromIntegral n) $ handleControls
+                                >> runGame destroyEntity updateDelay
+                                >> stepPhysics ((fromIntegral  updateDelay) / 1000)
     shouldContinue <- runEvents
 
     renderStartTime <- SDL.ticks
@@ -63,6 +64,7 @@ start = do
                     }
     window   <- SDL.createWindow appName winConfig
     SDL.showWindow window
+    SDLF.initialize
 
     curTime      <- SDL.ticks
     renderBuffer <- mkRenderBuffer
@@ -73,4 +75,5 @@ start = do
 
     -- dispose of resources
     SDL.destroyWindow window
+    SDLF.quit
     SDL.quit

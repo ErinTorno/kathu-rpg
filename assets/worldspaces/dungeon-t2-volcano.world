@@ -9,7 +9,7 @@ palettes:
 load-point: [0, 0]
 legend:
   " ": empty
-foreground-tiles:
+tiles:
 - "     "
 - "     "
 - "     "

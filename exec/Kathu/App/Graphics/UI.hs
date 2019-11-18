@@ -26,15 +26,15 @@ import Kathu.Parsing.Aeson ()
 import Kathu.Util.Dependency
 
 data DisplayBar = DisplayBar
-    { startsAt        :: V2 Float
+    { startsAt        :: V2 Double
     -- for every N points that this bar measures, there will be a new unit of the image
-    , pointsPerUnit   :: Float
+    , pointsPerUnit   :: Double
     -- if present this will be drawn at the start and end of the bar
     , barCapBeginning :: Maybe (RenderSprite ImageID)
     , barCapEnding    :: Maybe (RenderSprite ImageID)
-    , capWidth        :: Float
-    , primaryWidth    :: Float
-    , secondaryWidth  :: Float
+    , capWidth        :: Double
+    , primaryWidth    :: Double
+    , secondaryWidth  :: Double
     , primaryFull     :: RenderSprite ImageID
     , primary3Q       :: RenderSprite ImageID
     , primaryHalf     :: RenderSprite ImageID
@@ -76,10 +76,10 @@ instance ( FromJSON (Dependency s m (RenderSprite ImageID))
 -- Functions --
 ---------------
 
-barIconBleed :: Float
+barIconBleed :: Floating a => a
 barIconBleed = 1.01
 
-renderUI :: forall w m. (MonadIO m, Get w m UIConfig, Get w m ImageManager) => SDL.Surface -> Float -> Maybe ActorState -> SystemT w m ()
+renderUI :: forall w m. (MonadIO m, Get w m UIConfig, Get w m ImageManager) => SDL.Surface -> Double -> Maybe ActorState -> SystemT w m ()
 renderUI _ _ Nothing = pure ()
 renderUI screen scale (Just as) = do
     config <- get global
@@ -89,7 +89,7 @@ renderUI screen scale (Just as) = do
     drawBar scale manager (as ^. mana) (manaBar config) screen
     pure ()
 
-drawBar :: MonadIO m => Float -> ImageManager -> Dynamic Float -> DisplayBar -> SDL.Surface -> m ()
+drawBar :: MonadIO m => Double -> ImageManager -> Dynamic Double -> DisplayBar -> SDL.Surface -> m ()
 drawBar scale im dyn (DisplayBar startingPos ppu capBegin capEnd capw pw sw pi4 pi3 pi2 pi1 sif sie) sur = go >> pure ()
     where go = drawCap capBegin sx >>= goInner >>= drawCap capEnd
           goInner x = drawN fullUnits sif sw x >>= drawAt primaryImg pw >>= drawN emptyUnits sie sw

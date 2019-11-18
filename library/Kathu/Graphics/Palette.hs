@@ -4,7 +4,9 @@
 module Kathu.Graphics.Palette where
 
 import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
+import Data.Aeson.Types (Parser, typeMismatch)
+import Data.Vector (Vector)
+
 import Kathu.Graphics.Color
     
 data Palette = Palette
@@ -22,12 +24,14 @@ instance FromJSON Shader where
     parseJSON (Array a)  = composeShaders <$> (mapM parseJSON a)
     parseJSON (Object v) = v .: "fn" >>= parseFn
         where parseFn str = fmap Shader $ case str of
+                  "set-color"     -> const <$> v .: "color"
                   "desaturate"    -> pure desaturate
                   "desaturate-by" -> desaturateBy <$> v .: "percent"
                   "blend-color"   -> blendColor <$> v .: "percent" <*> v .: "color"
                   "shift-hue"     -> (fromHSVFunction . shiftHue) <$> v .: "angle"
                   "invert-hue"    -> pure . fromHSVFunction $ invertHue
                   "invert-rgb"    -> pure invertRGB
+                  "match-nearest" -> nearestColor <$> (v .: "color-set" :: Parser (Vector Color))
                   "shift-hue-towards"     -> fromHSVFunction <$> (shiftHueTowards <$> v .: "angle" <*> v .: "percent")
                   "shift-hue-towards-abs" -> fromHSVFunction <$> (shiftHueTowardsAbs <$> v .: "target-angle" <*> v .: "shift-angle")
                   f               -> error $ "Attempted to parse unknown filter " ++ f

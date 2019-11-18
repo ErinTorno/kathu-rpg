@@ -66,7 +66,7 @@ data DamageProfile g = DamageProfile
     , dmgIcon       :: g
     , dmgColor      :: Color
     , targetDefense :: Defense
-    , defaultResist :: Float
+    , defaultResist :: Double
     }
 
 instance ( s `CanStore` IDMap (DamageProfile g)
@@ -88,5 +88,5 @@ instance ( s `CanStore` IDMap (DamageProfile g)
 data DamagePacket g = DamagePacket
     { damageProfile  :: !(DamageProfile g)
     , targetResource :: !DamageTarget
-    , magnitude      :: !Float
+    , magnitude      :: !Double
     } 

@@ -24,12 +24,14 @@ import           Data.Vector.Mutable (IOVector)
 import           Data.Word
 import qualified System.Random as R
 
-import           Kathu.World.Tile (Tile(..), tileID, tileTextID, unTileID)
+import           Kathu.Entity.Physics.Floor (FloorPropEntity)
+import           Kathu.Util.Types (IDMap)
+import           Kathu.World.Tile (Tile(..), TileID(..), tileID, TileState(..), tileTextID, unTileID)
 import           Kathu.World.Time (WorldTime(..))
 
--- Globals
+-- New Globals
 
--- these are kept separate, as the times for each type of loop may become desynced
+-- render and logic are kept separate, as the times for each type of loop may become desynced
 -- ex: We may update the physics multiple times to "catch-up" if there was a delay in the system
 --     Or update the graphics multiple times to display higher frames while we wait for the physics to run again
 newtype  LogicTime = LogicTime (Word32) deriving (Show, Eq)
@@ -53,6 +55,11 @@ instance Component Random where type Storage Random = Global Random
 
 newtype  Tiles g = Tiles (IOVector (Tile g))
 
+data FloorProperties = FloorProperties {propsDefault :: FloorPropEntity, propsAll :: IDMap FloorPropEntity}
+instance Semigroup FloorProperties where (<>) = mappend
+instance Monoid FloorProperties where mempty  = error "Attempted to access the FloorProperties before it has been initialized"
+instance Component FloorProperties where type Storage FloorProperties = Global FloorProperties
+
 newtype  Debug = Debug Bool
 instance Semigroup Debug where (<>) = mappend
 instance Monoid Debug where mempty  = Debug False
@@ -68,6 +75,13 @@ stepRenderTime !dT = modify global $ \(RenderTime t) -> RenderTime (t + dT)
 
 stepWorldTime :: forall w m. (Has w m WorldTime, MonadIO m) => Word32 -> SystemT w m ()
 stepWorldTime !dT = modify global $ \(WorldTime t) -> WorldTime (t + fromIntegral dT)
+
+-------------
+-- Unsafe! --
+-------------
+
+fromTiles :: Tiles g -> TileState -> IO (Tile g)
+fromTiles (Tiles vec) (TileState (TileID tid) _) = MVec.read vec . fromIntegral $ tid
 
 makeTiles :: Map k (Tile g) -> IO (Tiles g)
 makeTiles elemMap = MVec.unsafeNew (Map.size elemMap) >>= \vec -> foldM (setElem vec) 0 allElems $> Tiles vec

@@ -7,6 +7,7 @@ module Kathu.Graphics.Color where
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
 import Data.Fixed (mod')
+import Data.List (foldl')
 import qualified Data.Text as T
 import Data.Word
 import GHC.Generics
@@ -20,7 +21,7 @@ import Kathu.Util.Numeric (closestToZero)
 -- Color --
 -----------
 
-newtype Color = Color {unColor :: (V4 Word8)} deriving (Eq, Generic)
+newtype Color = Color {unColor :: V4 Word8} deriving (Eq, Generic)
 
 instance Show Color where
     show (Color (V4 r g b a)) = ('#':) . padShowHex 2 r . padShowHex 2 g . padShowHex 2 b . padShowHex 2 a $ ""
@@ -80,6 +81,17 @@ blendColor ratio (Color (V4 r1 g1 b1 a1)) (Color (V4 r2 g2 b2 a2)) = Color $ V4 
 
 invertRGB :: Color -> Color
 invertRGB (Color (V4 r g b a)) = Color $ V4 (255 - r) (255 - g) (255 - b) a
+
+-- | Yields the most-visually similar color to the given color within the color collection; uses Euclidean method
+-- | If the color set is empty, then the given color is returned as is
+nearestColor :: (Foldable t, Functor t) => t Color -> Color -> Color
+nearestColor colors color = fst . foldl' minWeight (color, 1/0) . fmap (weigh color) $ colors
+    where minWeight (ac, aw) (cc, cw) = if aw < cw then (ac, aw) else (cc, cw)
+          weigh :: Color -> Color -> (Color, Double)
+          weigh (Color (V4 xr xb xg xa)) c@(Color (V4 yr yb yg ya)) = (c, weight)
+              where weight   = (2 + rAvg / 256) * (dsqr xr yr) + 4 * (dsqr xg yg) + (2 + (255 - rAvg) / 256) * (dsqr xb yb) + 6 * (dsqr xa ya)
+                    rAvg     = (fromIntegral xr + fromIntegral yr) / 2
+                    dsqr a b = (fromIntegral a - fromIntegral b) ** 2
 
 --------------------
 -- Manipulate HSV --

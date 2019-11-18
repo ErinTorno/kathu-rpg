@@ -1,8 +1,8 @@
 name:                kathu
-version:             0.1.7.2
+version:             0.1.8.0
 -- synopsis:
 -- description:
-license:             BSD3
+license:             GPL-3.0-only
 license-file:        LICENSE
 author:              Erin Torno
 -- maintainer:
@@ -14,25 +14,50 @@ cabal-version:       >=1.10
 
 library kathu-lib
   exposed-modules:   Kathu.Game,
-
-                     Kathu.Entity.Action, Kathu.Entity.ActorState, Kathu.Entity.Components, Kathu.Entity.Damage, Kathu.Entity.Item, 
-                     Kathu.Entity.Prototype, Kathu.Entity.PrototypeTemplate, Kathu.Entity.Resource, Kathu.Entity.System,
-
-                     Kathu.Graphics.Camera, Kathu.Graphics.Color, Kathu.Graphics.Drawable,
+                     -- Entity
+                     Kathu.Entity.Action,
+                     Kathu.Entity.ActorState,
+                     Kathu.Entity.Components,
+                     Kathu.Entity.Damage,
+                     Kathu.Entity.Item,
+                     Kathu.Entity.Physics.BodyConfig,
+                     Kathu.Entity.Physics.CollisionGroup,
+                     Kathu.Entity.Physics.Floor,
+                     Kathu.Entity.Prototype,
+                     Kathu.Entity.PrototypeTemplate,
+                     Kathu.Entity.Resource,
+                     Kathu.Entity.System,
+                     -- Graphics
+                     Kathu.Graphics.Camera,
+                     Kathu.Graphics.Color,
+                     Kathu.Graphics.Drawable,
                      Kathu.Graphics.Palette,
-
-                     Kathu.IO.Directory, Kathu.IO.File,
-
-                     Kathu.Parsing.Aeson, Kathu.Parsing.Counting,
-
-                     Kathu.Util.Apecs, Kathu.Util.Collection, Kathu.Util.Dependency, Kathu.Util.Flow, Kathu.Util.MultiDimVector,
-                     Kathu.Util.Numeric, Kathu.Util.Timing, Kathu.Util.Types,
-
-                     Kathu.World.Field, Kathu.World.Tile, Kathu.World.Time, Kathu.World.WorldSpace
+                     -- World
+                     Kathu.World.Field,
+                     Kathu.World.Tile,
+                     Kathu.World.Time,
+                     Kathu.World.WorldSpace
+                     -- IO / File
+                     Kathu.IO.Directory,
+                     Kathu.IO.File,
+                     -- Parsing
+                     Kathu.Parsing.Aeson,
+                     Kathu.Parsing.Counting,
+                     -- Utility
+                     Kathu.Util.Apecs,
+                     Kathu.Util.Collection,
+                     Kathu.Util.Dependency,
+                     Kathu.Util.Flow,
+                     Kathu.Util.MultiDimVector,
+                     Kathu.Util.Numeric,
+                     Kathu.Util.Timing,
+                     Kathu.Util.Types
   -- other-modules: all are exposed for testing
   build-depends:     base >=4.11 && <4.12,
                      text, bytestring,
-                     apecs, containers, lens, linear, mtl, primitive, random, scientific, template-haskell, unordered-containers, vector, vector-th-unbox,
+                     apecs >=0.8.2 && <0.9, apecs-physics >=0.4.3 && <0.5,
+                     containers,
+                     lens, linear, mtl, primitive, random, scientific, template-haskell, unordered-containers, vector, vector-th-unbox,
                      directory, filepath,
                      aeson, cereal, yaml
   hs-source-dirs:    library
@@ -40,14 +65,26 @@ library kathu-lib
 
 executable kathu
   main-is:           Main.hs
-  other-modules:     Kathu.App.Events, Kathu.App.Init, Kathu.App.Main, Kathu.App.SDLCommon, Kathu.App.System, Kathu.App.World,
-
-                     Kathu.App.Data.KathuStore, Kathu.App.Data.Library, Kathu.App.Data.Settings,
-
-                     Kathu.App.Graphics.Drawing, Kathu.App.Graphics.Image, Kathu.App.Graphics.ImageManager, Kathu.App.Graphics.Render,
-                     Kathu.App.Graphics.RenderBuffer, Kathu.App.Graphics.UI
+  other-modules:     Kathu.App.Events,
+                     Kathu.App.Init,
+                     Kathu.App.Main,
+                     Kathu.App.SDLCommon,
+                     Kathu.App.System,
+                     Kathu.App.World,
+                     -- Data
+                     Kathu.App.Data.KathuStore,
+                     Kathu.App.Data.Library,
+                     Kathu.App.Data.Settings,
+                     -- Graphics
+                     Kathu.App.Graphics.Debug,
+                     Kathu.App.Graphics.Drawing,
+                     Kathu.App.Graphics.Image,
+                     Kathu.App.Graphics.ImageManager,
+                     Kathu.App.Graphics.Render,
+                     Kathu.App.Graphics.RenderBuffer,
+                     Kathu.App.Graphics.UI
   build-depends:     base >=4.11 && <4.12, kathu-lib,
-                     aeson, apecs, containers, lens, linear, random, sdl2, sdl2-image, text, vector, vector-algorithms
+                     aeson, apecs >=0.8.2 && <0.9, apecs-physics >=0.4.3 && <0.5, containers, lens, linear, random, sdl2, sdl2-image, sdl2-ttf, text, vector, vector-algorithms
   hs-source-dirs:    exec
   default-language:  Haskell2010
 

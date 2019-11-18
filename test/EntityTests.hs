@@ -1,7 +1,8 @@
 module EntityTests (entityTests) where
 
-import Kathu.Entity.Action
 import Test.HUnit
+
+import Kathu.Entity.Action
 
 entityTests :: Test
 entityTests = TestList

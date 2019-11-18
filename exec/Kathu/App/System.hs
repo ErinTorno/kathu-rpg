@@ -1,7 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-missing-signatures -fno-warn-orphans #-}
--- due to working with templates and complicated types related to Apecs
--- we sometimes can't give a type signature to functions like destroyEntity
--- without it becoming outdated too quickly
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- we also need orphan instances to set up the Apecs system
 
 {-# LANGUAGE BangPatterns #-}
@@ -13,6 +10,8 @@
 module Kathu.App.System where
 
 import Apecs
+import Apecs.Physics
+import Control.Monad.IO.Class (MonadIO)
 import qualified Data.Map as Map
 import Data.Semigroup (Semigroup)
 import qualified Data.Vector as Vec
@@ -26,6 +25,7 @@ import Kathu.Entity.Action
 import Kathu.Entity.ActorState
 import Kathu.Entity.Components
 import Kathu.Entity.Item (Inventory)
+import Kathu.Entity.Physics.Floor (WorldFloor)
 import Kathu.Entity.System
 import Kathu.Graphics.Camera
 import Kathu.Graphics.Drawable (Render)
@@ -41,12 +41,12 @@ instance Component Render' where type Storage Render' = Map Render'
 -- ECS Util
 -- selects all unique and non-unique components that an individual entity might have
 type AllComponents =
-    ( (Identity, Position, Velocity, MovingSpeed)
-    , (Tags, Render', ActorState, Inventory')
+    ( (Identity, LifeTime, WorldFloor, Tags, Render', Body)
+    , (MovingSpeed, ActorState, Inventory')
     , (Local, Camera)
     )
     
--- Globals
+-- New Globals
 
 type Tiles' = Tiles ImageID
 instance Semigroup Tiles' where (<>) = mappend
@@ -71,18 +71,20 @@ instance Monoid WorldSpace'  where mempty = emptyWorldSpace
 instance Component WorldSpace'  where type Storage WorldSpace'  = Global WorldSpace' 
 
 instance Semigroup Library where (<>) = mappend
-instance Monoid Library where mempty = Library Vec.empty mempty Map.empty Map.empty Map.empty Map.empty
+instance Monoid Library where mempty = Library Vec.empty mempty Map.empty Map.empty Map.empty Map.empty Map.empty (error "No font loaded")
 instance Component Library where type Storage Library = Global Library
 
 -- World
 
 makeWorld "EntityWorld"
-    $ [''Identity, ''Velocity, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''Position, ''ActionSet, ''Local, ''Camera]
-   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''Random, ''Tiles', ''Settings, ''ImageManager, ''UIConfig, ''WorldSpace', ''Library, ''Debug]
+    $ [''Physics]
+   ++ [''Identity, ''LifeTime, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
+   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''Random, ''FloorProperties, ''Tiles', ''Settings, ''ImageManager, ''UIConfig, ''WorldSpace', ''Library, ''Debug]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a
 
 -- Entity functions
 
+destroyEntity :: MonadIO m => Entity -> SystemT' m ()
 destroyEntity ety = destroy ety (Proxy @AllComponents)

@@ -16,12 +16,12 @@ getImageID :: RenderSprite ImageID -> ImageID
 getImageID (RSStatic (StaticSprite img _)) = img
 getImageID (RSAnimated anim) = animAtlas . animation $ anim
 
-mkRenderRect :: Float -> V2 Float -> Float -> V2 Float -> SDL.Rectangle CInt -> SDL.Rectangle CInt
+mkRenderRect :: (Floating a, RealFrac a) => a -> V2 a -> a -> V2 a -> SDL.Rectangle CInt -> SDL.Rectangle CInt
 mkRenderRect bleed (V2 shiftX shiftY) scale (V2 x y) (SDL.Rectangle _ (V2 w h)) = SDLC.mkRectWith round x' y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
     where x' = x - scale * 0.5 * fromIntegral w + shiftX
           y' = y - scale * fromIntegral h + shiftY
 
-mkRenderRectNoCenter :: Float -> V2 Float -> Float -> V2 Float -> SDL.Rectangle CInt -> SDL.Rectangle CInt
+mkRenderRectNoCenter :: (Floating a, RealFrac a) => a -> V2 a -> a -> V2 a -> SDL.Rectangle CInt -> SDL.Rectangle CInt
 mkRenderRectNoCenter bleed (V2 shiftX shiftY) scale (V2 x y) (SDL.Rectangle _ (V2 w h)) = SDLC.mkRectWith round x' y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
     where x' = x - scale * shiftX
           y' = y - scale * fromIntegral h + shiftY

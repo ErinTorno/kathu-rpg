@@ -8,3 +8,7 @@ inventory:
   type: container
   equip-slots: []
   misc-slots: [{count: 10}]
+body-config:
+  type:   static
+  group:  movement
+  shapes: [{shape: rectangle, bounds: [1.05, 1.05]}]
