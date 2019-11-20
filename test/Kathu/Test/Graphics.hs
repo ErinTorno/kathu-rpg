@@ -1,4 +1,4 @@
-module GraphicsTests (graphicsTests) where
+module Kathu.Test.Graphics (graphicsTests) where
 
 import Test.HUnit
 
@@ -16,7 +16,7 @@ graphicsTests = TestList
     , TestLabel "Nearest Color Empty Set" nearestColorEmptySet
     , TestLabel "Nearest Color Red-Green Bias" nearestColorRedGreenBias
     , TestLabel "Nearest Color to Alpha" nearestColorToAlpha
-    , TestLabel "Nearest Color to Opaqua" nearestColorToOpaque
+    , TestLabel "Nearest Color to Opaque" nearestColorToOpaque
     ]
 
 -----------
@@ -68,6 +68,6 @@ nearestColorToAlpha = TestCase $ assertEqual "More transparent color chosen" (co
     where colorSet = read <$> ["#ff0000ff", "#66000011"]
 
 nearestColorToOpaque :: Test
-nearestColorToOpaque = TestCase $ assertEqual label (colorSet !! 0) (nearestColor colorSet (read "#ff000066"))
+nearestColorToOpaque = TestCase $ assertEqual label (colorSet !! 0) (nearestColor colorSet (read "#ff000088"))
     where label = "More transparent color is still farther away that opaque, so opaque chosen"
           colorSet = read <$> ["#ff0000ff", "#66000011"]

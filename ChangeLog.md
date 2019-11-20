@@ -14,6 +14,11 @@
 * When debugging, world, player position, and collision boxes are shown
 * Added debug key F7 to print the physic properties of all identified entities
 
+### 0.1.8.1 -- 2019-11-19
+
+* Tile collision now merges and triangulates to prevent issues with getting stuck on tile boundaries
+* Reorganized tests and cleaned up some outdated comments and commented-out code
+
 ## 0.1.7.0 -- 2019-09-16
 
 * A major refactor was done to clean up code and eliminate warnings and redundancies

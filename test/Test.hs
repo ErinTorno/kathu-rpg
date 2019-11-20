@@ -2,9 +2,10 @@ module Main where
 
 import Test.HUnit
 
-import EntityTests
-import GraphicsTests
+import Kathu.Test.Entity
+import Kathu.Test.Graphics
+import Kathu.Test.Util
 
 main :: IO ()
 main = runTestTT tests >>= print
-    where tests = TestList [entityTests, graphicsTests]
+    where tests = TestList [entityTests, graphicsTests, utilTests]

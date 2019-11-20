@@ -12,11 +12,14 @@ import           Control.Monad.ST            (RealWorld)
 import           Data.Map.Strict             (Map)
 import qualified Data.Map.Strict             as Map
 import           Data.Maybe                  (maybe)
+import qualified Data.Vector.Unboxed         as UVec
 import qualified Data.Vector                 as Vec
 import qualified Data.Vector.Unboxed.Mutable as UMVec
 import           Linear.V2                   (V2(..))
 
+import           Kathu.Entity.System         (Tiles, fromTiles)
 import           Kathu.Util.MultiDimVector
+import           Kathu.Util.Polygon
 import           Kathu.World.Tile
 
 unitsPerTile :: Num a => a
@@ -29,8 +32,6 @@ fieldDim = 32
 type FieldSet = Map (V2 Int) Field
 
 newtype Field = Field {unField :: MVector RealWorld TileState}
-    --, fieldIndRenders :: (IOVector Bool)
-    --, fieldPreRenders :: [Image]
 
 mkField :: MonadIO m => m (Field)
 mkField = liftIO $ Field <$> UMVec.replicate size emptyTS
@@ -112,6 +113,16 @@ fieldFoldM f !acc (Field fgTiles) = go fgTiles 0 0 acc
               | otherwise         = liftIO (UMVec.unsafeRead tiles $ indexFromCoord x y) >>= ignoreEmpty b (f b (V2 x y)) >>= go tiles (x + 1) y
           ignoreEmpty b action !t = if t^.tile == emptyTileID then pure b else action t
 
+
+{-# INLINE fieldFoldWithEmptyM #-}
+-- | Folds through all present tiles in the field monadically, with position; skips empty tiles
+fieldFoldWithEmptyM :: MonadIO m => (a -> V2 Int -> TileState -> m a) -> a -> Field -> m a
+fieldFoldWithEmptyM f !acc (Field fgTiles) = go fgTiles 0 0 acc
+    where go tiles !x !y !b
+              | y == fieldDim     = pure b
+              | x == fieldDim     = go tiles 0 (y + 1) b
+              | otherwise         = liftIO (UMVec.unsafeRead tiles $ indexFromCoord x y) >>= f b (V2 x y) >>= go tiles (x + 1) y
+
 ----------------
 -- Conversion --
 ----------------
@@ -143,3 +154,16 @@ fromTileVector2D fgTiles = if yLayers == 0 || xLayers == 0 then empty else build
                     writeTile t field = mkTileStateWithMetadata t >>= \newTileState -> setTileState x y newTileState field
           convertToMap iovec = fmap Map.fromList . liftIO .  miFoldl2D foldf [] $ iovec
               where foldf acc x y cur = pure $ maybe acc ((:acc) . (V2 x y,)) cur
+
+-- | Transforms a FieldSet into a list of V2 lists defining collision shapes
+mkCollisionPolygons :: MonadIO m => Tiles g -> FieldSet -> m [[V2 Double]]
+mkCollisionPolygons tiles = fmap (concat . fmap (concat . mkTriangles)) . mapM isSolidVec . Map.assocs
+    where isSolidTS :: MonadIO m => TileState -> m Bool
+          isSolidTS ts = view isSolid <$> (liftIO . fromTiles tiles $ ts)
+          -- transforms field into a 1D vector of bools for if is solid; accessed at pos with indexFromCoord
+          isSolidVec :: MonadIO m => (V2 Int, Field) -> m (V2 Int, UVec.Vector Bool)
+          isSolidVec (pos, f) = fmap ((pos,) . UVec.fromList . reverse) . fieldFoldWithEmptyM (\acc _ ts -> (:acc) <$> isSolidTS ts) [] $ f
+          mkTriangles :: (V2 Int, UVec.Vector Bool) -> [[[V2 Double]]]
+          mkTriangles ((V2 wx wy), v) = fmap triangulate
+                                      . fmap (fmap ((+(V2 (-0.5) (-1))) . fmap fromIntegral . (+(V2 (wx * fieldDim) (wy * fieldDim)))))
+                                      $ polygonsFromBinaryGrid v fieldDim fieldDim

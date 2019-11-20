@@ -1,5 +1,5 @@
 name:                kathu
-version:             0.1.8.0
+version:             0.1.8.1
 -- synopsis:
 -- description:
 license:             GPL-3.0-only
@@ -50,6 +50,7 @@ library kathu-lib
                      Kathu.Util.Flow,
                      Kathu.Util.MultiDimVector,
                      Kathu.Util.Numeric,
+                     Kathu.Util.Polygon,
                      Kathu.Util.Timing,
                      Kathu.Util.Types
   -- other-modules: all are exposed for testing
@@ -57,6 +58,7 @@ library kathu-lib
                      text, bytestring,
                      apecs >=0.8.2 && <0.9, apecs-physics >=0.4.3 && <0.5,
                      containers,
+                     hgeometry >=0.9 && <0.10, hgeometry-combinatorial >=0.9 && <0.10,
                      lens, linear, mtl, primitive, random, scientific, template-haskell, unordered-containers, vector, vector-th-unbox,
                      directory, filepath,
                      aeson, cereal, yaml
@@ -90,8 +92,8 @@ executable kathu
 
 test-suite kathu-test
   type:              exitcode-stdio-1.0 
-  build-depends:     base >=4.11 && <4.12, HUnit, kathu-lib
+  build-depends:     base >=4.11 && <4.12, kathu-lib, HUnit, linear, vector
   hs-source-dirs:    test
   default-language:  Haskell2010
   main-is:           Test.hs
-  other-modules:     EntityTests, GraphicsTests
+  other-modules:     Kathu.Test.Entity, Kathu.Test.Graphics, Kathu.Test.Util

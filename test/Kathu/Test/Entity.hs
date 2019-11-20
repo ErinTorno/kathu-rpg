@@ -1,4 +1,4 @@
-module EntityTests (entityTests) where
+module Kathu.Test.Entity (entityTests) where
 
 import Test.HUnit
 

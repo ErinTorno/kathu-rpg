@@ -64,6 +64,11 @@ runEvents = whileFstM (SDL.pollEvent >>= ev)
 printPhysics :: SystemT' IO ()
 printPhysics = do
     liftIO . putStrLn $ "### Print Physics ###"
+
+    (Gravity g)    <- get global
+    (Iterations i) <- get global
+    liftIO . putStrLn . concat $ ["global (gravity ", show g, "; iterations ", show i, ")"]
+
     -- Torque and force are ignored, as those are set to zero every update, and so this would always print 0's for them
     cmapM_ $ \(Identity idt _ _, (Position p, Velocity v), (BodyMass mass, Moment moment), (Angle a, AngularVelocity a', CenterOfGravity cog), Entity etyID :: Entity) ->
         liftIO . putStrLn . concat $
@@ -76,5 +81,6 @@ printPhysics = do
             , "; angle ", show a
             , "; angle-v ", show a'
             , "; center-of-g ", show cog
+            , ")"
             ]
     liftIO . putStrLn $ "### End of Print Physics ###"

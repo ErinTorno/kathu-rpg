@@ -42,6 +42,12 @@ packages:
 extra-deps:
 - apecs-0.8.2
 - apecs-physics-0.4.3
+- hgeometry-0.9.0.0@sha256:43043574d2ce39c543dfadb629ab3a41fe65d7bf68a1426d8d01312818bc6e4e,9702
+- contravariant-1.5.2@sha256:853259271870000c007a281f0bf0bf6e1aaa97c5fd5cd5734d7b0d79b9de2af5,2761
+- data-clist-0.1.2.3@sha256:0a4ad5f045c285eb533c2baa228581d2ff3ee123a4da7ca84e95a74aea9fb058,936
+- hgeometry-combinatorial-0.9.0.0@sha256:a03b48302d8c542ff2ff90ba5d45f2742cc21ed1a676c8fa4870cd461a273354,7367
+- vector-builder-0.3.8@sha256:184ed15a76025943ccaf556887cf60bca21359e3ccf4d7735def394ab76b76f1,3531
+- vinyl-0.12.0@sha256:6136e2608c2c4be0c112944fb0f5a6a0df56b50adec12eb1b7240258abfcf9b1,3790
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

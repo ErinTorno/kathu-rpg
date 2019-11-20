@@ -16,8 +16,7 @@ module Kathu.World.WorldSpace where
 
 import Apecs hiding (Map)
 import Apecs.Physics hiding (Map)
-import Control.Lens hiding ((.=))
-import Control.Monad (foldM, when)
+import Control.Monad (foldM)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
@@ -34,7 +33,7 @@ import Linear.V2 (V2(..))
 import Kathu.Entity.Components
 import Kathu.Entity.Item
 import Kathu.Entity.Prototype
-import Kathu.Entity.System (Tiles, fromTiles)
+import Kathu.Entity.System (Tiles)
 import Kathu.Graphics.Color (black)
 import Kathu.Graphics.Drawable (Render)
 import Kathu.Graphics.Palette
@@ -45,7 +44,7 @@ import Kathu.Util.Flow ((>>>=))
 import qualified Kathu.Util.MultiDimVector as MDVec
 import Kathu.Util.Types (Identifier, IDMap)
 import Kathu.World.Field
-import Kathu.World.Tile (Tile, isSolid)
+import Kathu.World.Tile (Tile)
 
 data WorldVariable
     = WorldBool Bool
@@ -91,15 +90,16 @@ initWorldSpace mkEntity ws = do
     -- we place all items in the world as entities
     mapM_ (\(pos, ety)  -> mkEntity ety >>= (flip ($=)) (Position pos)) (worldEntities ws)
     mapM_ (\(pos, item) -> newEntityFromItem item pos) (worldItems ws)
-
-    let addTileCollision wpos localPos ts = do
-            let pos' = (fromIntegral . (*fieldDim) <$> wpos) + (fromIntegral <$> localPos)
-
-            tileInst <- liftIO . fromTiles tiles $ ts
-            when (tileInst^.isSolid) $ do
-                ety <- newEntity (StaticBody, Position pos')
-                ety $= (Shape ety (oRectangle (V2 (-0.5) (-1)) (V2 1 1)))
-    mapM_ (\(pos, field) -> foreachPosTile (addTileCollision pos) field) . Map.assocs . worldFields $ ws
+    
+    let addWorldCollision []           = pure ()
+        addWorldCollision (poly:polys) = do
+            ety <- newEntity (StaticBody, Position (V2 0 0))
+            ety $= (Shape ety $ Convex poly 0)
+            let go [] = pure ()
+                go (p:ps) = newEntity (Shape ety $ Convex p 0) >> go ps
+            go polys
+    colPolys <- mkCollisionPolygons tiles . worldFields $ ws
+    addWorldCollision colPolys
     
 
 -- as of right now, count not considered; this will be added when picking up is implemented
