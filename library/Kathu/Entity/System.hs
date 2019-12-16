@@ -25,21 +25,19 @@ import           Data.Word
 import qualified System.Random as R
 
 import           Kathu.Entity.Physics.Floor (FloorPropEntity)
+import           Kathu.Entity.Time
+import           Kathu.Graphics.Palette (PaletteManager, staticManager)
 import           Kathu.Util.Types (IDMap)
+import           Kathu.World.Stasis
 import           Kathu.World.Tile (Tile(..), TileID(..), tileID, TileState(..), tileTextID, unTileID)
 import           Kathu.World.Time (WorldTime(..))
 
 -- New Globals
 
--- render and logic are kept separate, as the times for each type of loop may become desynced
--- ex: We may update the physics multiple times to "catch-up" if there was a delay in the system
---     Or update the graphics multiple times to display higher frames while we wait for the physics to run again
-newtype  LogicTime = LogicTime (Word32) deriving (Show, Eq)
 instance Semigroup LogicTime where (<>) = mappend
 instance Monoid LogicTime where mempty  = LogicTime 0
 instance Component LogicTime where type Storage LogicTime = Global LogicTime
 
-newtype  RenderTime = RenderTime (Word32) deriving (Show, Eq)
 instance Semigroup RenderTime where (<>) = mappend
 instance Monoid RenderTime where mempty  = RenderTime 0
 instance Component RenderTime where type Storage RenderTime = Global RenderTime
@@ -48,12 +46,20 @@ instance Semigroup WorldTime where (<>) = mappend
 instance Monoid WorldTime where mempty  = WorldTime 0
 instance Component WorldTime where type Storage WorldTime = Global WorldTime
 
+instance Semigroup PaletteManager where (<>) = mappend
+instance Monoid PaletteManager where mempty  = staticManager 0
+instance Component PaletteManager where type Storage PaletteManager = Global PaletteManager
+
 newtype  Random = Random (R.StdGen)
 instance Semigroup Random where (<>) = mappend
 instance Monoid Random where mempty  = Random $ R.mkStdGen 0 -- the IO portion of this is expected to initialize it with a seed
 instance Component Random where type Storage Random = Global Random
 
 newtype  Tiles g = Tiles (IOVector (Tile g))
+
+instance Semigroup WorldStases where (<>) = mappend
+instance Monoid WorldStases where mempty = WorldStases Map.empty
+instance Component WorldStases where type Storage WorldStases = Global WorldStases
 
 data FloorProperties = FloorProperties {propsDefault :: FloorPropEntity, propsAll :: IDMap FloorPropEntity}
 instance Semigroup FloorProperties where (<>) = mappend

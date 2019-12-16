@@ -1,10 +1,11 @@
 module Kathu.App.World where
 
 import Apecs
+import Control.Monad (void)
 
 import Kathu.App.Graphics.Image (ImageID)
 import Kathu.App.Graphics.ImageManager
-import Kathu.App.System (SystemT')
+import Kathu.App.System (SystemT', destroyEntity)
 import Kathu.Entity.Prototype
 import Kathu.World.WorldSpace
 
@@ -13,4 +14,8 @@ loadWorldSpace ws = do
     prevManager <- get global
     manager <- loadPalettes (worldPalettes ws) prevManager
     global  $= manager
-    initWorldSpace newFromPrototype ws
+    initWorldSpace destroyEntity newFromPrototype ws
+    void $ setPaletteManager (initialPalette ws)
+
+    -- to prevent pausing issues during gameplay, we force a GC now while it's just done loading
+    runGC

@@ -1,5 +1,17 @@
 # Revision history for kathu
 
+## 0.1.9.0 -- 2019-12-15
+
+* SDL rendering is done through textures instead of surfaces, significantly reducing CPU at the cost of GPU
+* The ImageManager now has no limit besides system memory, making it easy to support thousands of themes without too much memory overhead. For most sprites, only 8 bytes are used per palette
+* The ImageManager now makes use of PaletteManagers to control which palettes it is using
+* PaletteManagers may be animated from keyframes, with customizable interpolation, looping, and switching behavior
+* Debug collisions are now drawn with lines, resulting in exact collision shapes being drawn
+* The tile collision generator no longer triangulates rectangles, as we can be assured they are convex
+* Fixed issue with worlds with more than one horizontal field having repeating tiles
+* The player can hold shift to focus to slow down movement
+* The player's sprite now has more frames; still mostly programmer art though
+
 ## 0.1.8.0 -- 2019-11-17
 
 * The game now has physics! Entities can specify their collision shapes and mass, density, friction, elasticity, and collision group

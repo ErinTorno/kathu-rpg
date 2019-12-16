@@ -5,14 +5,15 @@
 module Kathu.App.Graphics.Render where
 
 import Apecs hiding (($=))
-import Apecs.Physics
+import Apecs.Physics hiding (($=))
 import Control.Lens hiding (Identity)
 import Control.Monad (foldM, when)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vec
 import qualified Data.Vector.Mutable as MVec
 import Data.Word
-import Linear.V2 (V2(..))
+import Linear.V2 (V2(..), _y)
+import SDL (($=))
 import qualified SDL
 
 import Kathu.App.Data.Settings
@@ -95,27 +96,27 @@ updateAnimations dT = do
 -- main render loop --
 ----------------------
 
-runRender :: SDL.Window -> RenderBuffer -> Word32 -> SystemT' IO RenderBuffer
-runRender !window !renderBuffer !dT = do
+runRender :: SDL.Renderer -> RenderBuffer -> Word32 -> SystemT' IO RenderBuffer
+runRender !renderer !renderBuffer !dT = do
     do stepRenderTime dT
     updateAnimations dT
 
-    screen       <- SDL.getWindowSurface window
-    settings     <- get global
-    imageManager <- get global
+    runImageManager
+    imageManager   <- get global
+    settings       <- get global
     (Debug isDebug)    <- get global
     (Tiles tileVector) <- get global
     let getTile :: TileState -> SystemT' IO (Tile ImageID)
         getTile = lift . MVec.read tileVector . fromIntegral .  unTileID . view tile
 
+    world :: WorldSpace ImageID <- get global
     (camPos@(V2 camX camY), zoomScale) <- cfold (\_ (Position pos, Camera z) -> (pos, z)) (V2 0 0, 1.0)
 
-    world :: WorldSpace ImageID <- get global
-
     -- clears background
-    SDL.surfaceFillRect screen Nothing . unColor . backgroundColor $ imageManager
+    SDL.rendererDrawColor renderer $= (unColor . backgroundColor $ imageManager)
+    SDL.clear renderer
 
-    let scale      = (fromIntegral . resolutionY $ settings) / (zoomScale * unitsPerHeight * pixelsPerUnit)
+    let scale      = (fromIntegral . view _y . resolution $ settings) / (zoomScale * unitsPerHeight * pixelsPerUnit)
         logicScale = scale * pixelsPerUnit -- we mult by this again to convert the 1-per-tile view of the entity-world into a N-pixels-per-tile view
         (V2 _ resY) = resolution settings
         resToCenter = ((*) 0.5 . fromIntegral) <$> resolution settings
@@ -163,20 +164,21 @@ runRender !window !renderBuffer !dT = do
         gatherRender :: (Int, RenderBuffer) -> SystemT' IO (Int, RenderBuffer)
         gatherRender pair = cfoldM gatherEntityRender pair >>= gatherTileRender
         
-        renderEvery :: Int -> Int -> RenderBuffer -> SDL.Surface -> IO ()
-        renderEvery !i !len !buf !sur | i == len  = pure ()
-                                      | otherwise = MVec.unsafeRead buf i >>= drawRender >> renderEvery (i + 1) len buf sur
-            where drawRender (V2 x y, sprs) = Vec.foldM_ (drawEach $ V2 x y) sur sprs
-                  drawEach pos scr ren      = blitRenderSprite imageManager (mkRenderRect edgeBleedScaling resToCenter scale pos) ren scr
+        renderEvery :: Int -> Int -> RenderBuffer -> IO ()
+        renderEvery !i !len !buf | i == len  = pure ()
+                                 | otherwise = MVec.unsafeRead buf i >>= drawRender >> renderEvery (i + 1) len buf
+            where drawRender (V2 x y, sprs) = Vec.forM_ sprs (drawEach $ V2 x y)
+                  drawEach pos ren      = blitRenderSprite renderer imageManager (mkRenderRect edgeBleedScaling resToCenter scale pos) ren
 
     (sprCount, renBuf') <- gatherRender (0, renderBuffer)
     when (sprCount > 0) $
-        lift (sortRenderBuffer 0 sprCount renBuf' >> renderEvery 0 sprCount renBuf' screen)
+        lift (sortRenderBuffer 0 sprCount renBuf' >> renderEvery 0 sprCount renBuf')
 
     playerAS <- cfold (\_ (as, Camera _) -> Just as) Nothing
-    renderUI screen scale playerAS
+    renderUI renderer scale playerAS
 
-    when isDebug $ renderDebug screen (\pos -> ((+)resToCenter) . fmap (*logicScale) . (+(pos - shiftedCamera)))
+    when isDebug $
+        renderDebug renderer (\pos -> ((+)resToCenter) . fmap (*logicScale) . (+(pos - shiftedCamera)))
 
-    SDL.updateWindowSurface window
-    pure renBuf'
+    SDL.present renderer
+    pure renderBuffer

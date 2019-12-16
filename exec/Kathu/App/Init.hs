@@ -8,6 +8,7 @@ import Control.Lens hiding (Identity)
 import qualified Data.Map as Map
 import Data.Maybe (maybe)
 import Linear.V2 (V2(..))
+import qualified SDL as SDL
 import qualified System.Random as R
 
 import Kathu.App.Data.Library
@@ -33,11 +34,11 @@ localPlayer ety = do
     ety $= Local emptyActionPressed
     ety $= emptyActionSet
 
-system :: Settings -> SystemT' IO ()
-system settings = do
-    library <- lift . loadLibrary mempty $ assetPath
+system :: SDL.Renderer -> Settings -> SystemT' IO ()
+system renderer settings = do
+    (library, surfaces) <- lift . loadLibrary mempty $ assetPath
     seed    <- lift . maybe (R.randomIO :: IO Int) pure . randomSeed $ settings
-    manager <- lift . mkImageManager . view images $ library
+    manager <- lift . mkImageManager renderer $ surfaces
     tilesV  <- lift . makeTiles . view tiles $ library
     global  $= library
     global  $= manager

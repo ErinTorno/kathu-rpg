@@ -1,10 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- we create some orphan instances for Apecs.Physics types so we can parse them from json files
 
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE ExplicitForAll    #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE ExplicitForAll      #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE TupleSections       #-}
 
 module Kathu.Entity.Physics.BodyConfig (BodyConfig, setBodyConfig) where
 
@@ -17,10 +18,12 @@ import Data.Aeson.Types (Parser, typeMismatch)
 import Data.Maybe (maybe)
 import Data.Text (Text)
 
+import Kathu.Entity.Components (Existance, newExistingEntity)
+import Kathu.Entity.LifeTime
 import Kathu.Entity.Physics.CollisionGroup
 import Kathu.Entity.Physics.Floor (assignMeWorldFloor, WorldFloor)
 import Kathu.Parsing.Aeson ()
-    
+
 data BodyConfig = BodyConfig
     { body             :: Body
     , shapes           :: [Convex]
@@ -33,7 +36,7 @@ data BodyConfig = BodyConfig
     , elasticity       :: Maybe Elasticity
     }
 
-setBodyConfig :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, Has w m WorldFloor, Set w m WorldFloor)
+setBodyConfig :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, Has w m Existance, Set w m Existance, Get w m LifeTime, Has w m LifeTime, Set w m LifeTime, Has w m WorldFloor, Set w m WorldFloor)
               => Entity -> Maybe BodyConfig -> SystemT w m ()
 setBodyConfig ety (Nothing)   = ety $= StaticBody -- if no config given, we at least need to give it a StaticBody so it can have a position
 setBodyConfig ety (Just conf) = do
@@ -41,10 +44,18 @@ setBodyConfig ety (Just conf) = do
 
     when False $ (set ety . collisionFilter) conf
 
-    let setShape []       = pure ()
-        setShape (x:xs)   = ety $= (Shape ety x) >> setShapes xs -- if there is one shape, we can set it on our entity; otherwise, we can give the first shape to the main ety itself
-        setShapes mShapes = forM_ mShapes (newEntity . Shape ety) -- otherwise, we create new entities for holding that shape information, linked back to ety
-    setShape . shapes $ conf
+    let setShape :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, Has w m Existance, Set w m Existance, Has w m LifeTime, Set w m LifeTime) => Maybe LifeTime -> [Convex] -> SystemT w m ()
+        setShape _ []      = pure ()
+        setShape lf (x:xs) = ety $= (Shape ety x) >> setShapes lf xs -- if there is one shape, we can set it on our entity; otherwise, we can give the first shape to the main ety itself
+        setShapes Nothing mShapes   = forM_ mShapes (newExistingEntity . Shape ety)       -- otherwise, we create new entities for holding that shape information, linked back to ety
+        setShapes (Just lf) mShapes = forM_ mShapes (newExistingEntity . (,lf) . Shape ety) -- if the parent has a lifetime, we should inherit that too
+    
+    hasLifeTime <- exists ety (Proxy :: Proxy LifeTime)
+    if hasLifeTime then do
+        lifetime <- get ety
+        setShape (Just lifetime) . shapes $ conf
+    else
+        setShape Nothing . shapes $ conf
 
     when (body conf == DynamicBody) $ do
         -- if we want floor friction, we assign it a world floor that requests for the world on its next update to give us an appropriate floor type

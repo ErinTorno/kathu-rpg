@@ -79,18 +79,18 @@ instance ( FromJSON (Dependency s m (RenderSprite ImageID))
 barIconBleed :: Floating a => a
 barIconBleed = 1.01
 
-renderUI :: forall w m. (MonadIO m, Get w m UIConfig, Get w m ImageManager) => SDL.Surface -> Double -> Maybe ActorState -> SystemT w m ()
+renderUI :: forall w m. (MonadIO m, Get w m UIConfig, Get w m ImageManager) => SDL.Renderer -> Double -> Maybe ActorState -> SystemT w m ()
 renderUI _ _ Nothing = pure ()
-renderUI screen scale (Just as) = do
+renderUI renderer scale (Just as) = do
     config <- get global
     manager <- get global
     
-    drawBar scale manager (as ^. health) (healthBar config) screen
-    drawBar scale manager (as ^. mana) (manaBar config) screen
+    drawBar renderer scale manager (as^.health) (healthBar config)
+    drawBar renderer scale manager (as^.mana)   (manaBar config)
     pure ()
 
-drawBar :: MonadIO m => Double -> ImageManager -> Dynamic Double -> DisplayBar -> SDL.Surface -> m ()
-drawBar scale im dyn (DisplayBar startingPos ppu capBegin capEnd capw pw sw pi4 pi3 pi2 pi1 sif sie) sur = go >> pure ()
+drawBar :: MonadIO m => SDL.Renderer -> Double -> ImageManager -> Dynamic Double -> DisplayBar -> m ()
+drawBar renderer scale im dyn (DisplayBar startingPos ppu capBegin capEnd capw pw sw pi4 pi3 pi2 pi1 sif sie) = go >> pure ()
     where go = drawCap capBegin sx >>= goInner >>= drawCap capEnd
           goInner x = drawN fullUnits sif sw x >>= drawAt primaryImg pw >>= drawN emptyUnits sie sw
           drawCap cap x = maybe (pure x) (\i -> drawAt i capw x) cap
@@ -104,6 +104,6 @@ drawBar scale im dyn (DisplayBar startingPos ppu capBegin capEnd capw pw sw pi4 
           fixPartial p = p
           emptyUnits = unitCount - fullUnits - 1
           primaryImg = case partialRem of {1 -> pi1; 2 -> pi2; 3 -> pi3; 4 -> pi4; _ -> pi4}
-          drawAt img w x = blitRenderSprite im (mkRenderRectNoCenter barIconBleed (V2 0 0) scale (V2 x sy)) img sur >> pure (x + scale * w)
+          drawAt img w x = blitRenderSprite renderer im (mkRenderRectNoCenter barIconBleed (V2 0 0) scale (V2 x sy)) img >> pure (x + scale * w)
           drawN 0 _ _ x   = pure x
           drawN i img w x = drawAt img w x >>= drawN (i - 1) img w

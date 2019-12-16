@@ -1,160 +1,226 @@
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 -- This file contains a lot of "unused" code that clarifies meaning, like names in records
 
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE Strict #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE ExplicitForAll    #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Strict            #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
 
 module Kathu.App.Graphics.ImageManager
     ( ImageManager
     , defaultImageManager
     , mkImageManager
-    , resetImageManager
-    , fetchImage
+    , runImageManager
+    , nextPaletteManager
+    , setPaletteIdx
+    , setPaletteManager
+    , fetchTextures
     , backgroundColor
     , loadPalettes
-    , setPalette
     , currentPalette
     , availablePaletteCount
-    , maxPalettes
     ) where
 
-import Control.Lens
-import Control.Monad (join)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Bits
-import Data.Vector (Vector)
-import qualified Data.Vector as Vec
-import Data.Vector.Mutable (IOVector)
-import qualified Data.Vector.Mutable as MVec
-import qualified Data.Vector.Storable as V
-import Data.Word
-import Foreign.Ptr
-import Foreign.Storable
-import Linear.V2 (V2(..))
-import Linear.V4 (V4(..))
+import           Apecs                       (SystemT, global)
+import qualified Apecs
+import           Control.Lens
+import           Control.Monad               (foldM, foldM_, join, void, when)
+import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Data.Bits
+import qualified Data.Map                     as Map
+import qualified Data.Vector                  as Vec
+import qualified Data.Vector.Storable         as SVec
+import qualified Data.Vector.Storable.Mutable as MSVec
+import           Data.Word
+import           Foreign.Ptr
+import           Foreign.Storable
+import           Linear.V2                    (V2(..))
+import           Linear.V3                    (V3(..))
+import           Linear.V4                    (V4(..))
+import           SDL                          (($=))
 import qualified SDL
-import qualified SDL.Raw.Types as SDLRaw
+import qualified SDL.Raw.Types                as SDLRaw
 
-import Kathu.App.Graphics.Image (ImageID(..))
-import qualified Kathu.App.SDLCommon as SDLC
-import Kathu.Graphics.Color
-import Kathu.Graphics.Palette
+import           Kathu.App.Graphics.Image     (ImageID(..))
+import           Kathu.Entity.Time
+import           Kathu.Graphics.Color
+import           Kathu.Graphics.Palette
+import           Kathu.Util.Apecs
+import           Kathu.Util.Types             (Identifier, IDMap)
 
-maxPalettes :: Integral a => a
-maxPalettes = 8
+-- Warning: most things in this class are private, and as it makes use of rather unsafe operations and mutability
+
+-- | Refers to the base object in the palette manager map, where there are no filters and just a black background
+noPalette :: Identifier
+noPalette = ""
 
 backgroundMask :: Color
 backgroundMask = black
 
-data SurfaceSet = SurfaceSet
-    { palette      :: Vector Color
-    , baseSurface  :: SDL.Surface
-    , convSurfaces :: IOVector SDL.Surface
+alphaColor :: Color
+alphaColor = mkColor 0 0 0 0
+
+-- | By default, all ImageSets will allocate room for this many palettes; they will expand dynamically though if more are provided
+basePaletteMaximum :: Integral a => a
+basePaletteMaximum = 256
+
+data TextureSet = TextureSet
+    { textures    :: Vec.Vector SDL.Texture -- each color in image other than alpha is split into separate texture
+    , basePalette :: SVec.Vector Color     -- the default palette; not used in rendering, only when creating new palettes, never for rendering or updating textures
+    , palettes    :: MSVec.IOVector Color   -- all available colors to textureColorMod; palette i starts at index i*(size textures)
     }
 
-{-
--- considered type for using Storable Vector
--- not needed now, but maybe eventually
-newtype SurfaceSet = SurfaceSet
-    ( Ptr SDLRaw.Surface
-    , IOVector (Ptr SDLRaw.Surface)
-    ) deriving Storable
-    -- not sure if managed or not (Surface has Just (IOVector Word8); if not, we can fully store it; otherwise we will need more
--}
-
 data ImageManager = ImageManager
-    { _currentSet :: Int
-    , _backgrounds :: Vector Color
-    , _surfaceSets :: IOVector SurfaceSet
+    { _currentSetIdx     :: Int
+    , _paletteSetCount   :: Int -- Not including base idx 0 colors
+    , _currentManagerIdt :: Identifier
+    , _paletteManagers   :: IDMap PaletteManager
+    , _backgrounds       :: SVec.Vector Color
+    , _textureSets       :: Vec.Vector TextureSet
     }
 makeLenses ''ImageManager
 
 defaultImageManager :: ImageManager
 defaultImageManager = error "Attempted to access uninitialized ImageManager"
 
-mkImageManager :: Vector SDL.Surface -> IO ImageManager
-mkImageManager surs = pure . ImageManager 0 (Vec.singleton (black)) =<< Vec.thaw =<< mapM mkSet surs
-        where mkSet :: SDL.Surface -> IO SurfaceSet
-              mkSet sur  = do
-                  cpy <- MVec.replicateM maxPalettes (dupSur sur)
-                  pal <- mkPalette sur
-                  pure $ SurfaceSet pal sur cpy
-              dupSur sur = SDL.surfaceFormat sur >>= SDL.convertSurface sur
+mkImageManager :: SDL.Renderer -> Vec.Vector SDL.Surface -> IO ImageManager
+mkImageManager renderer surfaces = do
+    let mkSet :: SDL.Surface -> IO TextureSet
+        mkSet surface = do
+            nBasePalette   <- mkPalette surface
+            surfaceFormat <- SDL.surfaceFormat surface
+            -- a surface target to copy select pixel information over
+            copySurface   <- SDL.convertSurface surface surfaceFormat
+            let mkTex col  = copyColorMaskOverSurface col surface copySurface >> SDL.createTextureFromSurface renderer copySurface
+            -- for each color in palette, we create a separate texture with only pixel information 
+            texs          <- Vec.fromList <$> mapM mkTex nBasePalette
+            paletteVec    <- MSVec.unsafeNew (length nBasePalette * basePaletteMaximum)
+            foldM_ (\i col -> MSVec.write paletteVec i col >> pure (i + 1)) 0 nBasePalette
+            pure $ TextureSet texs (SVec.fromList nBasePalette) paletteVec
+        basePalManagers = Map.singleton noPalette (staticManager 0)
 
-resetImageManager :: MonadIO m => ImageManager -> m ImageManager
-resetImageManager (ImageManager _ bkg surfSets) = (mVecMapM_ resetIndiv surfSets) >> (pure $ ImageManager 0 bkg surfSets)
-    where resetIndiv (SurfaceSet _ base surs) = mVecMapM_ (copySurfaceOver base) surs
-    
-setPalette :: Int -> ImageManager -> ImageManager
-setPalette = set currentSet
+    pure . ImageManager 0 1 noPalette basePalManagers (SVec.singleton black) =<< mapM mkSet surfaces
 
-currentPalette :: ImageManager -> Int
-currentPalette im = im^.currentSet
+runImageManager :: forall w m. (MonadIO m, ReadWriteEach w m '[ImageManager, PaletteManager, RenderTime])
+                => SystemT w m ()
+runImageManager = do
+    mngr@(PaletteManager _ runPal) <- Apecs.get global
+    runPal setPaletteIdx (void . setPaletteManager) mngr
 
-availablePaletteCount :: ImageManager -> Int
-availablePaletteCount im = im^.backgrounds.to Vec.length
+nextPaletteManager :: ImageManager -> Identifier
+nextPaletteManager im =
+    case im^.paletteManagers.to (Map.lookupGT (im^.currentManagerIdt)) of
+    (Just (idt, _)) -> idt
+    Nothing         -> fst (im^.paletteManagers.to Map.findMin)
 
-fetchImage :: MonadIO m => ImageID -> ImageManager -> m SDL.Surface
-fetchImage (ImageID iid) (ImageManager curS _ surSets) = liftIO $ MVec.read surSets iid >>= (flip MVec.read) curS . convSurfaces
+setPaletteIdx :: forall w m. (MonadIO m, ReadWriteEach w m '[ImageManager, PaletteManager, RenderTime])
+              => Int -> SystemT w m ()
+setPaletteIdx i = Apecs.get global >>= setPalette i >>= Apecs.set global >> pure ()
+
+-- | Changes palette manager to the one specified; False will be returned if there was no matching palette manager
+setPaletteManager :: forall w m. (MonadIO m, ReadWriteEach w m '[ImageManager, PaletteManager, RenderTime])
+                  => Identifier -> SystemT w m Bool
+setPaletteManager idt = do
+    manager <- Apecs.get global
+    case manager^.paletteManagers.to (Map.lookup idt) of
+        Nothing        -> pure False
+        (Just newMngr) -> do
+            (initManager newMngr) setPaletteIdx newMngr
+            Apecs.set global newMngr
+            manager' <- Apecs.get global
+            Apecs.set global (set currentManagerIdt idt manager')
+            pure True
+
+-- warning: mutates internal ImageManager TextureSet states, and will error if given out-of-bounds palette index
+setPalette :: MonadIO m => Int -> ImageManager -> m ImageManager
+setPalette newSet = (\im -> liftIO (mapM_ updateTex . view textureSets $ im) >> pure im) . set currentSetIdx newSet . check
+    where updateTex :: TextureSet -> IO ()
+          updateTex (TextureSet texs _ pals) = foldM_ (applyColorMod pals) (newSet * Vec.length texs) texs
+          applyColorMod pals i tex = do
+              (Color (V4 r g b a)) <- MSVec.unsafeRead pals i
+              SDL.textureColorMod tex $= V3 r g b
+              SDL.textureAlphaMod tex $= a
+              pure (i + 1)
+          check im | newSet >= im^.paletteSetCount = error . concat $ ["Attempted to set ImageManager palette to index ", show newSet, " when there are only ", im^.paletteSetCount.to show, " available palettes"]
+                   | otherwise                     = im
 
 backgroundColor :: ImageManager -> Color
-backgroundColor (ImageManager i bkg _) = bkg Vec.! i
+backgroundColor (ImageManager i _ _ _ bkg _) = bkg SVec.! i
 
-loadPalettes :: MonadIO m => Vector Palette -> ImageManager -> m ImageManager
-loadPalettes thms im = (resetImageManager im) >>= ((mVecMapM_ resetIndv (im^.surfaceSets))>>) . pure . set backgrounds (background <$> thms)
-    where resetIndv :: MonadIO m => SurfaceSet -> m ()
-          resetIndv (SurfaceSet pal _ surs) = copySurface pal 0 surs
-          copySurface :: MonadIO m => Vector Color -> Int -> IOVector SDL.Surface -> m ()
-          copySurface pal i surs
-              | i >= thmLen = pure ()
-              | otherwise   = do
-                  surface <- (liftIO . MVec.read surs) i
-                  let theme = thms Vec.! i
-                      maySh = shader theme
-                      runShader Nothing = pure ()
-                      runShader (Just (Shader sh)) = mapM_ (\c -> replaceSurfaceColor c (sh c) surface) pal
-                  replaceSurfaceColor backgroundMask (background theme) surface
-                  runShader maySh
-                  copySurface pal (i + 1) surs
-          thmLen    = let l = Vec.length thms in if l > maxPalettes then failure l else l
-          failure l = (error . concat) ["Attempted to load theme set past max limit (max: ", show (maxPalettes :: Int), " given length: ", show l, ")"]
+currentPalette :: ImageManager -> Int
+currentPalette im = im^.currentSetIdx
 
-mVecMapM_ :: MonadIO m => (a -> m b) -> IOVector a -> m ()
-mVecMapM_ f v = go 0
-    where len = MVec.length v
-          go i | i == len  = pure ()
-               | otherwise = (liftIO . MVec.read v) i >>= f >> go (i + 1)
+availablePaletteCount :: ImageManager -> Int
+availablePaletteCount im = im^.paletteSetCount
+
+fetchTextures :: ImageID -> ImageManager -> Vec.Vector SDL.Texture
+fetchTextures (ImageID iid) = textures . (Vec.!iid) . view textureSets
+
+loadPalettes :: MonadIO m => IDMap Palette -> ImageManager -> m ImageManager
+loadPalettes newPalettes im = liftIO (mapM updateSet . view textureSets $ im)
+                          >>= setPalette (min 1 paletteCount) . ImageManager 0 (paletteCount + 1) noPalette newManagers newBackgrounds
+    where paletteCount = SVec.length newBackgrounds
+          interpolatedBackgrounds :: [(Palette, [Color])]
+          interpolatedBackgrounds = (\p -> (p,) . allBackgrounds $ p) <$> Map.elems newPalettes
+
+          backgroundVecs = Vec.fromList . cons (Vec.singleton black) . fmap (Vec.fromList . snd) $ interpolatedBackgrounds
+          newBackgrounds = SVec.convert . join $ backgroundVecs
+          newManagers :: IDMap PaletteManager
+          newManagers = Map.fromList . fst . Vec.foldl' mkManager ([], 0) . Vec.zip assocVec $ backgroundVecs
+              where assocVec = Vec.fromList . cons ("", emptyPalette) . Map.assocs $ newPalettes
+                    -- We know that a palette will take up a number of slots equal to its background frame count
+                    mkManager (acc, idx) ((pid, p), bkgs) = let endIdx = idx + Vec.length bkgs - 1
+                                                             in ((pid, managerFromPalette idx endIdx p):acc, endIdx + 1)
+          updateSet :: TextureSet -> IO TextureSet
+          updateSet (TextureSet texs basePal pals) = do
+              let colorsPerSet = SVec.length basePal
+              pals' <- growIfNeeded colorsPerSet pals
+              foldM_ (writeNewCols basePal pals') colorsPerSet interpolatedBackgrounds
+              pure (TextureSet texs basePal pals')
+          -- If shader is Nothing, we write base palette into slots; otherwise we write the value yielded from passing each color into the shader function
+          writeNewCols :: SVec.Vector Color -> MSVec.IOVector Color -> Int -> (Palette, [Color]) -> IO Int
+          writeNewCols basePal pals i (pal, bkgs) = case pal of
+              (SPalette (StaticPalette bkg (Shader shdr))) -> SVec.foldM (writeFrame pals bkg shdr) i basePal
+              (APalette animPalette)                       -> fmap (const $ i + length bkgs * SVec.length basePal)
+                                                            . Vec.foldM_ (\off cols -> writeAnimFrame (SVec.length basePal) pals (i + off) cols >> pure (off + 1)) 0
+                                                            . Vec.map (applyAnimPalette bkgs animPalette)
+                                                            . Vec.convert
+                                                            $ basePal
+          applyAnimPalette :: [Color] -> AnimatedPalette -> Color -> [Color]
+          applyAnimPalette bkgs pal col | col == backgroundMask = bkgs
+                                        | otherwise             = applyAnimatedPalette pal col
+          writeAnimFrame :: Int -> MSVec.IOVector Color -> Int -> [Color] -> IO Int
+          writeAnimFrame count pals idx = foldM (\i col -> MSVec.unsafeWrite pals i col >> pure (i + count)) idx
+          writeFrame pals bkg shdr idx col = MSVec.unsafeWrite pals idx (getColor shdr bkg col) >> pure (idx + 1)
+          -- if the base color matches our mask, we instead use the background color instead
+          getColor f bkg col = if col == backgroundMask then bkg else f col
+          -- If we are trying to add more shaders than the current vectors can hold, we grow them to fit
+          -- The amount of room we add is basePaletteMaximum, unless more is needed
+          growIfNeeded n pals | reqSlots > palsLen = MSVec.unsafeGrow pals (max (reqSlots - palsLen) basePaletteMaximum)
+                              | otherwise          = pure pals -- just good friends :)
+              where reqSlots = n * (paletteCount + 1)
+                    palsLen  = MSVec.length pals
 
 -------------
 -- Warning --
 -------------
--- The following section is rather dangerous, and makes use of SDL.Raw and Ptrs
 
--- for some reason, this always returns Nothing; will need to check later and see why formatPalette is missing; maybe format issue?
-paletteFromSurface :: MonadIO m => SDL.Surface -> m (Maybe SDL.Palette)
-paletteFromSurface sur = SDL.surfaceFormat sur >>= SDL.formatPalette
+-- Extra warning level: this section makes use of raw pointers and casting
 
-replacePaletteColor :: MonadIO m => Color -> Color -> SDL.Palette -> m ()
-replacePaletteColor (Color src) (Color rep) pal = indexId >>= maybe (pure ()) replace
-    where indexId :: MonadIO m => m (Maybe Int)
-          indexId = (join . fmap (V.elemIndex src)) <$> SDL.paletteColors pal
-          replace :: MonadIO m => Int -> m ()
-          replace = SDL.setPaletteColors pal (V.singleton rep) . fromIntegral
-
-mkPalette :: MonadIO m => SDL.Surface -> m (Vector Color)
+mkPalette :: MonadIO m => SDL.Surface -> m [Color]
 mkPalette sur = do
     SDL.lockSurface sur
     
-    format <- SDLC.surfacePixelFormat sur
+    format   <- rawSurfaceFormat sur
     (V2 w h) <- SDL.surfaceDimensions sur
-    if SDLRaw.pixelFormatBytesPerPixel format /= 4 then
+    when (SDLRaw.pixelFormatBytesPerPixel format /= 4) $ do
         error "Attempted to find palette in a surface that doesn't support all color channels"
-    else pure ()
 
     pixels   <- castPtr <$> SDL.surfacePixels sur
-    let len = fromIntegral (w * h)
+    let len = fromIntegral $ w * h
         checkColor acc i
             | i >= len  = pure acc
             | otherwise = do
@@ -164,62 +230,51 @@ mkPalette sur = do
                     checkColor acc (i + 1)
                 else
                     checkColor (col:acc) (i + 1)
-        removeUnn c@(Color (V4 _ _ _ a)) = c /= backgroundMask && a /= 0
+        removeUnn (Color (V4 _ _ _ a)) = a /= 0
     colorList <- liftIO . fmap (filter removeUnn) . checkColor [] $ 0
     SDL.unlockSurface sur
-    pure . Vec.fromList $ colorList
+    pure colorList
 
--- | Copies a surface over another surface; both must have same size and pixel format, with 32 bits per pixel
-copySurfaceOver :: MonadIO m => SDL.Surface -> SDL.Surface -> m ()
-copySurfaceOver sur tar = do
+-- | Copies pixels in a target Surface that match the given color over to another Surface as white; other pixels will be fully transparent
+-- | Both must have same size and pixel format, with 32 bits per pixel
+copyColorMaskOverSurface :: MonadIO m => Color -> SDL.Surface -> SDL.Surface -> m ()
+copyColorMaskOverSurface col sur tar = do
     SDL.lockSurface sur
     SDL.lockSurface tar
 
-    format <- SDLC.surfacePixelFormat sur
+    format <- rawSurfaceFormat sur
     (V2 w h) <- SDL.surfaceDimensions sur
     do (V2 wtar htar) <- SDL.surfaceDimensions tar
-       tarFormat <- SDLC.surfacePixelFormat tar
+       tarFormat <- rawSurfaceFormat tar
        if SDLRaw.pixelFormatBytesPerPixel format /= 4 then
            error "Attempted to copy colors in a surface that doesn't support all color channels" 
        else if format /= tarFormat then
-           error "Attempted to copy colors between two surfaces with different pixel formats"
+           error .concat $ ["Attempted to copy colors between two surfaces with different pixel formats (", show format, ", ", show tarFormat, ")"]
        else if w /= wtar || h /= htar then
            error "Attempted to copy between surfaces with different dimensions"
        else pure ()
-
-    surPixels <- SDL.surfacePixels sur
-    tarPixels <- SDL.surfacePixels tar
-    let len = fromIntegral $ w * h * fromIntegral (SDLRaw.pixelFormatBytesPerPixel format)
+ 
+    let whitePixel  = colorToWord32 format white
+        alphaPixel  = colorToWord32 format alphaColor   
+        targetPixel = colorToWord32 format col
+    surPixels <- castPtr <$> SDL.surfacePixels sur
+    tarPixels <- castPtr <$> SDL.surfacePixels tar
+    let len = fromIntegral $ w * h
         copyAt i | i >= len  = pure ()
-                 | otherwise = ((peekByteOff surPixels i) :: IO Word8) >>= pokeByteOff tarPixels i >> copyAt (i + 1)
+                 | otherwise = do
+                     pixel <- (peekElemOff surPixels i) :: IO Word32
+                     if pixel == targetPixel then
+                        pokeElemOff tarPixels i whitePixel
+                     else
+                        pokeElemOff tarPixels i alphaPixel
+                     copyAt (i + 1)
     liftIO $ copyAt 0
 
     SDL.unlockSurface sur
     SDL.unlockSurface tar
 
--- | Replaces all pixels in a surface of a certain color with another; each pixel in the format must be 32 bits
-replaceSurfaceColor :: MonadIO m => Color -> Color -> SDL.Surface -> m ()
-replaceSurfaceColor srcColor repColor sur = do
-    SDL.lockSurface sur
-    
-    format <- SDLC.surfacePixelFormat sur
-    if SDLRaw.pixelFormatBytesPerPixel format /= 4 then
-        error "Attempted to replace colors in a surface that doesn't support all color channels" 
-    else pure ()
-
-    (V2 w h) <- SDL.surfaceDimensions sur
-    pixels   <- castPtr <$> SDL.surfacePixels sur
-    let src = colorToWord32 format srcColor
-        rep = colorToWord32 format repColor
-        len = fromIntegral (w * h)
-        replaceAtI i | i >= len  = pure ()
-                     | otherwise = do
-                           c <- (peekElemOff pixels i) :: IO Word32
-                           if c == src then pokeElemOff pixels i rep else pure ()
-                           replaceAtI (i + 1)
-
-    liftIO $ replaceAtI 0
-    SDL.unlockSurface sur
+rawSurfaceFormat :: MonadIO m => SDL.Surface -> m SDLRaw.PixelFormat
+rawSurfaceFormat (SDL.Surface sur _) = liftIO (peek . SDLRaw.surfaceFormat =<< peek sur)
 
 colorToWord32 :: SDLRaw.PixelFormat -> Color -> Word32
 colorToWord32 format (Color (V4 r g b a)) = gp SDLRaw.pixelFormatRMask r .|. gp SDLRaw.pixelFormatGMask g .|. gp SDLRaw.pixelFormatBMask b .|. gp SDLRaw.pixelFormatAMask a

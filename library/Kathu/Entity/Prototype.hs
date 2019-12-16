@@ -12,9 +12,9 @@ import Data.Maybe
 import Kathu.Entity.Components
 import Kathu.Entity.Physics.BodyConfig (BodyConfig, setBodyConfig)
 import Kathu.Entity.PrototypeTemplate
+import Kathu.Entity.SerializableComponents
 import Kathu.Util.Types (Identifier)
 
--- We create an entity prototype that supports all given component types
 defineData          "EntityPrototype"  "" ((SerializableComponent ''BodyConfig False []):serializableComponentConfigs)
 defineEntityCreator "newFromPrototypeSansPhysics" "" serializableComponentConfigs
 

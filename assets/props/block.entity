@@ -6,7 +6,7 @@ render: "block.png"
 body-config:
   type:       dynamic
   group:      movement
-  mass:       100
+  mass:       90
   friction:   1
   elasticity: 0
   shapes:

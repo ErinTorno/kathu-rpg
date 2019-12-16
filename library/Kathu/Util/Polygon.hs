@@ -4,7 +4,8 @@
 {-# LANGUAGE TupleSections #-}
 
 module Kathu.Util.Polygon
-    ( polygonsFromBinaryGrid
+    ( convexAndConcaveFromBinaryGrid
+    , polygonsFromBinaryGrid
     , triangulate
     ) where
 
@@ -18,12 +19,11 @@ import           Data.Geometry.PlanarSubdivision.Basic hiding (edges)
 import           Data.Geometry.Polygon
 import           Data.Geometry.Point
 import qualified Data.Geometry.Vector.VectorFamily     as VF
-import           Data.List                             (unfoldr)
+import           Data.List                             (partition, unfoldr)
 import           Data.Maybe
 import           Data.Vector.Unboxed                   (Vector)
 import qualified Data.Vector.Unboxed                   as UVec
 import           Linear.V2                             (V2(..))
-
 
 data PX = PX
 
@@ -36,6 +36,10 @@ triangulate poly = (toV2<$>) <$> points
           subdiv    = PolyTri.triangulate (Identity PX) . fromPoints . fmap toPoint $ poly
           facePolys = mapMaybe (^?_2.core._Left) . F.toList . rawFacePolygons $ subdiv
           points    = (\(SimplePolygon cseq) -> F.toList . CSeq.asSeq . fmap _core $ cseq) <$> facePolys
+
+convexAndConcaveFromBinaryGrid :: Vector Bool -> Int -> Int -> ([[V2 Int]], [[V2 Int]])
+convexAndConcaveFromBinaryGrid grid w = partition ((<=4) . length) . polygonsFromBinaryGrid grid w
+-- due to how our tracing works, we know that all 4-point polygons are rectangles, and any 5-point or above must be concave in some way
 
 -- Warning: not able to handle enclosed spaces; will need to add in future (flood-fill to determine?)
 -- | Takes a vector of Bools, with a width and height to interpret it as, and generates a series of polygons that wraps all groups of Trues

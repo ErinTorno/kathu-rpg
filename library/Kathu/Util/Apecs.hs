@@ -14,9 +14,16 @@ import           Control.Monad       (when)
 import           Data.Kind           (Constraint)
 import qualified Data.Vector.Unboxed as U
 
+type family ReadWrite w m c :: Constraint where
+    ReadWrite w m c = (Get w m c, Has w m c, Set w m c)
+
+type family ReadWriteEach w m cs :: Constraint where
+    ReadWriteEach w m '[]       = ()
+    ReadWriteEach w m (c ': cs) = (Has w m c, Set w m c, Get w m c, ReadWriteEach w m cs)
+
 type family HasEach w m cs :: Constraint where
     HasEach w m '[]       = ()
-    HasEach w m (c ': cs) = (Has w m c, Set w m c, Get w m c, HasEach w m cs)
+    HasEach w m (c ': cs) = (Has w m c, HasEach w m cs)
 
 type family GetEach w m cs :: Constraint where
     GetEach w m '[]       = ()
@@ -34,7 +41,7 @@ cmapIfM cond f = do
     pStore :: Storage cp <- getStore
     xStore :: Storage cx <- getStore
     yStore :: Storage cy <- getStore
-    cs <- lift . explMembers $ (xStore, pStore)
+    cs     <- lift . explMembers $ (xStore, pStore)
     U.forM_ cs $ \ety -> do
         p <- lift . explGet pStore $ ety
         when (cond p) $ do

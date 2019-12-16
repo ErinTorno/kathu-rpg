@@ -1,41 +1,71 @@
 world-id: test-world
 name:     test world
+initial-palette: night
 palettes:
-  # night
-  - background: "#151220"
+  night:
+    background: "#151220"
     shader:
       fn: shift-hue-towards
       angle: 250
-      percent: 0.4
-  # volcanic?
-  - background: "#47222c"
+      percent: 0.35
+  volcanic:
+    background: "#47222c"
     shader:
       fn: shift-hue
       angle: 45.0
-#  # day
-#  - background: "#431d33"
-#    shader:
-#      fn: shift-hue-towards
-#      angle: 130
-#      percent: 0.25
-  - background: "#232142" # "#1a1929"
-  # night forest
-  - background: "#121a20"
+  night-forest:
+    background: "#121a20"
     shader:
     - fn: shift-hue-towards
       angle: 140
       percent: 0.3
     - fn: desaturate-by
       percent: 0.3
-  - background: "#131313"
-    shader:
-    - fn: desaturate
-    - fn: match-nearest
-      color-set: ["#ffffff", "#666666", "#aaaaaa", "#ffffff"]
-  - background: "#000000"
+  night-to-night-forest:
+    cycle-duration: 3000
+    frames-per-second: 15
+    cycle-end-behavior: change-to night-forest
+    keyframes:
+      0:
+        background: "#151220"
+        shader: {fn: shift-hue-towards, angle: 250, percent: 0.35}
+      3000:
+        background: "#121a20"
+        shader: [{fn: shift-hue-towards, angle: 140, percent: 0.3}, {fn: desaturate-by, percent: 0.3}]
+  limited:
+    background: "#000000"
     shader:
       fn: match-nearest
       color-set: ["#ffffff", "#fb3e6c", "#41c955", "#4176c9"]
+  poisoned:
+    cycle-duration: 1500
+    frames-per-second: 15
+    keyframes:
+      0:
+        background: "#1d0827"
+        shader: {fn: shift-hue-towards, angle: 280, percent: 0.35}
+      1500:
+        background: "#250f2ef2"
+        shader: {fn: shift-hue-towards, angle: 280, percent: 0.75}
+  rainbow:
+    cycle-duration: 6000
+    frames-per-second: 15
+    cycle-end-behavior: restart
+    interpolate-fn: angular
+    keyframes:
+      0:
+        background: "#3b1822"
+        shader: {fn: shift-hue, angle: 45.0}
+      2000:
+        background: "#161f36"
+        shader: {fn: shift-hue, angle: 165.0}
+      4000:
+        background: "#11240a"
+        shader: {fn: shift-hue, angle: 285.0}
+      6000:
+        background: "#3b1822"
+        shader: {fn: shift-hue, angle: 45.0}
+      
 load-point: [16, 4]
 legend:
   " ": empty
@@ -44,22 +74,22 @@ legend:
   "*": brick-floor
   ",": tall-grass
 tiles:
-- "##  #######   , ,, # ##   ,  ,,#"
-- "#    #    #   ,,, ,   #  ,,,  , "
-- "#    #   ###     ,   ,#   ,,  , "
-- "#        ,        ,   #,   ,    "
-- "#       , ,   ,   ,   #,,       "
-- "#           ,  ,  ,  ##,    ,   "
-- "####  #   #        , ,, ,,  ,   "
-- "#         #  ,, ,,,          ,  "
-- "#         #  ,,,, ,   ,         "
-- "#         #  ,,,,  , ,%%%    %%%"
-- "#         #   ,,,  ,  %        %"
-- "#         #  , ,,,   ,%        %"
-- "#         #  ,,,,,,  ,%        %"
-- "#         #  , ,,,   ,%        %"
-- "#         #  ,,,,,,  ,%        %"
-- "#  #####  # ,,, , ,   %%%    %%%"
+- "##  #######   , ,, # ## , ,### ,, "
+- "#    #    #   ,,, ,   #, ,,# #, , "
+- "#    #   ###     ,   ,# ,,,### , ,"
+- "#        ,        ,   #,   ,      "
+- "#       , ,   ,   ,   #,,       , "
+- "#           ,  ,  ,  ##,    ,   ,,"
+- "####  #   #        , ,, ,,  ,    ,"
+- "#         #  ,, ,,,          ,    "
+- "#         #  ,,,, ,   ,          ,"
+- "#         #  ,,,,  , ,%%%    %%%,,"
+- "#         #   ,,,  ,  %        %, "
+- "#         #  , ,,,   ,%        %, "
+- "#         #  ,,,,,,  ,%        % ,"
+- "#         #  , ,,,   ,%        %, "
+- "#         #  ,,,,,,  ,%        %  "
+- "#  #####  # ,,, , ,   %%%    %%% ,"
 variables:
   # this contains variables that are associated with the worldspace itself, and are saved/loaded with it
   my-bool:   {type: double, value: 100}
@@ -82,6 +112,8 @@ entities:
   position: [15, 12]
 - entity:   block
   position: [2, 12]
+- entity:   block
+  position: [32, 4]
 items:
 - item:     apple
   position: [19, 2.5] # 1.0 is a single tile

@@ -1,16 +1,36 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveGeneric,  DeriveFunctor, GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+-- We provide some instances for common typeclasses in here for other library types
 
-module Kathu.Util.Types where
+{-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
 
-import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
-import Data.Map (Map)
-import Data.String
-import Data.Text (Text)
-import qualified Data.Vector as Vec
-import GHC.Generics
+module Kathu.Util.Types
+    ( Identifier(..)
+    , IDMap
+    , Range(..)
+    ) where
+
+import           Control.Monad            (replicateM)
+import           Data.Aeson
+import           Data.Aeson.Types         (typeMismatch)
+import qualified Data.ByteString          as B
+import           Data.Map                 (Map)
+import           Data.Serialize
+import qualified Data.Serialize.Get       as SG
+import qualified Data.Serialize.Put       as SP
+import           Data.String
+import           Data.Text                (Text)
+import qualified Data.Text.Encoding       as TE
+import qualified Data.Text.Encoding.Error as TEErr
+import qualified Data.Vector              as Vec
+import qualified Data.Vector.Generic      as GVec
+import qualified Data.Vector.Storable     as SVec
+import qualified Data.Vector.Unboxed      as UVec
+import           Data.Word
+import           GHC.Generics
 
 ----------------
 -- Identifier --
@@ -18,8 +38,8 @@ import GHC.Generics
 
 -- | A type use to represent the type that identifies the objects that compose the game world
 newtype Identifier = Identifier
-    { unID :: Text
-    } deriving (Eq, Generic, Ord, IsString, FromJSONKey)
+    { unID :: Text -- If needed, later we can change this to be a int hash
+    } deriving (Eq, Generic, Ord, IsString, FromJSONKey, Serialize)
 
 instance Show Identifier where
     show (Identifier idt) = show idt
@@ -50,3 +70,32 @@ instance FromJSON a => FromJSON (Range a) where
         where pInd = parseJSON . (Vec.!) a
               res  = Range <$> pInd 0 <*> pInd 1
     parseJSON e          = typeMismatch "Range" e
+
+instance Serialize a => Serialize (Range a)
+
+----------------------
+-- Orphan Instances --
+----------------------
+
+instance Serialize Text where
+    put txt = put (fromIntegral (B.length utf) :: Word32) >> SP.putByteString utf
+        where utf = TE.encodeUtf8 txt
+    get = TE.decodeUtf8With TEErr.lenientDecode <$> (SG.getByteString =<< get)
+
+putVector :: (Serialize a, GVec.Vector v a) => v a -> Put
+putVector v = put (fromIntegral (GVec.length v) :: Word32) >> GVec.mapM_ put v
+
+getVector :: (Serialize a, GVec.Vector v a) => Get (v a)
+getVector = GVec.fromList <$> ((flip replicateM) get =<< get)
+
+instance Serialize a => Serialize (Vec.Vector a) where
+    put = putVector
+    get = getVector
+
+instance (Serialize a, SVec.Storable a) => Serialize (SVec.Vector a) where
+    put = putVector
+    get = getVector
+
+instance (Serialize a, UVec.Unbox a) => Serialize (UVec.Vector a) where
+    put = putVector
+    get = getVector

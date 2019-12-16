@@ -28,8 +28,8 @@ appName = "Kathu"
 renderDelay :: Settings -> Word32
 renderDelay = max updateDelay . floor . (1000/) . targetFPS
 
-run :: Word32 -> SDL.Window -> RenderBuffer -> Word32 -> Word32 -> SystemT' IO ()
-run renDelay window renBuf !prevPhysTime !prevRendTime = do
+run :: Word32 -> SDL.Renderer -> RenderBuffer -> Word32 -> Word32 -> SystemT' IO ()
+run renDelay renderer renBuf !prevPhysTime !prevRendTime = do
     startTime <- SDL.ticks
     let (n, remainder) = (startTime - prevPhysTime) `divMod` updateDelay
 
@@ -44,13 +44,13 @@ run renDelay window renBuf !prevPhysTime !prevRendTime = do
     -- we delay unless physics took enough time that we should draw it again
     unless (renderDiffer >= renDelay) $ SDL.delay (renDelay - renderDiffer)
     -- render steps in variable time, so we must reflect that
-    newRenBuf <- runRender window renBuf renderDiffer
+    newRenBuf <- runRender renderer renBuf renderDiffer
     
     -- Physics steps back to ensure next update is on time; render goes whenever it can
     if not shouldContinue then
         pure ()
     else
-        run renDelay window newRenBuf (startTime - remainder) renderStartTime
+        run renDelay renderer newRenBuf (startTime - remainder) renderStartTime
 
 start :: IO ()
 start = do
@@ -58,22 +58,20 @@ start = do
     SDL.HintRenderScaleQuality $= SDL.ScaleNearest
     settings <- loadSettings
     world    <- Init.entityWorld
-    let winConfig = SDL.defaultWindow
-                    { SDL.windowInitialSize = SDL.V2 (fromIntegral . resolutionX $ settings) (fromIntegral . resolutionY $ settings)
-                    , SDL.windowOpenGL = Nothing
-                    }
-    window   <- SDL.createWindow appName winConfig
+    window   <- SDL.createWindow appName $ SDL.defaultWindow { SDL.windowInitialSize = fromIntegral <$> resolution settings }
     SDL.showWindow window
     SDLF.initialize
+    renderer <- SDL.createRenderer window (-1) $ SDL.RendererConfig (if isVSyncEnabled settings then SDL.AcceleratedVSyncRenderer else SDL.AcceleratedRenderer) False
 
     curTime      <- SDL.ticks
     renderBuffer <- mkRenderBuffer
     -- the main loop
     runWith world $
-        Init.system settings
-        >> run (renderDelay settings) window renderBuffer curTime curTime
+        Init.system renderer settings
+        >> run (renderDelay settings) renderer renderBuffer curTime curTime
 
     -- dispose of resources
+    SDL.destroyRenderer renderer
     SDL.destroyWindow window
     SDLF.quit
     SDL.quit

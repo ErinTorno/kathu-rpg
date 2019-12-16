@@ -1,7 +1,8 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns  #-}
 {-# LANGUAGE UnboxedTuples #-}
 
 module Kathu.App.Graphics.Drawing where
+
 import Control.Monad.IO.Class (MonadIO)
 import Foreign.C.Types (CInt)
 import Linear.V2 (V2(..))
@@ -26,10 +27,10 @@ mkRenderRectNoCenter bleed (V2 shiftX shiftY) scale (V2 x y) (SDL.Rectangle _ (V
     where x' = x - scale * shiftX
           y' = y - scale * fromIntegral h + shiftY
 
-blitRenderSprite :: MonadIO m => ImageManager -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite ImageID -> SDL.Surface -> m SDL.Surface
-blitRenderSprite im mkRect ren scr = blit ren >> pure scr
-    where draw bnd img = SDL.surfaceBlitScaled img (Just bnd) scr (Just . mkRect $ bnd)
-          blit (RSStatic (StaticSprite !iid !bnd)) = fetchImage iid im >>= draw (SDL.Rectangle (SDL.P (V2 0 0)) bnd)
-          blit dyn@(RSAnimated (AnimatedSprite {animation = anim})) = fetchImage (animAtlas anim) im >>= draw bounds
+blitRenderSprite :: MonadIO m => SDL.Renderer -> ImageManager -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite ImageID -> m ()
+blitRenderSprite renderer im mkRect ren = blit ren
+    where draw bnd tex = SDL.copy renderer tex (Just bnd) (Just . mkRect $ bnd)
+          blit (RSStatic (StaticSprite !iid !bnd)) = mapM_ (draw (SDL.Rectangle (SDL.P (V2 0 0)) bnd)) $ fetchTextures iid im
+          blit dyn@(RSAnimated (AnimatedSprite {animation = anim})) = mapM_ (draw bounds) $ fetchTextures (animAtlas anim) im
               where bounds = SDL.Rectangle (SDL.P boundsPos) boundsDim
                     (# boundsPos, boundsDim #) = currentBounds dyn

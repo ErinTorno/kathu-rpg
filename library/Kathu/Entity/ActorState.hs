@@ -2,9 +2,11 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, MonoLocalBinds, TypeOperators, UndecidableInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies  #-}
 
 module Kathu.Entity.ActorState where
 
+import qualified Apecs
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
 import Control.Lens
@@ -14,6 +16,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (maybe)
 import GHC.Generics
+
 import Kathu.Entity.Damage
 import Kathu.Entity.Resource
 import Kathu.Parsing.Aeson
@@ -40,6 +43,8 @@ data ActorState = ActorState
     , _resists :: Map DamageID (Static Double)
     } deriving (Show, Eq, Generic)
 makeLenses ''ActorState
+
+instance Apecs.Component ActorState where type Storage ActorState = Apecs.Map ActorState
 
 instance (FromJSON (Dependency s m DamageID), Monad m) => FromJSON (Dependency s m ActorState) where
     parseJSON (Object v) = getCompose $ mkActor <*> Compose (parseMapDPWith parseJSON (fmap pure . parseJSON) $ v Hash.! "resists")

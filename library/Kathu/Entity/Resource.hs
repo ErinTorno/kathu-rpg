@@ -1,11 +1,13 @@
-{-# LANGUAGE DeriveFunctor, DeriveGeneric #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveFunctor     #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Kathu.Entity.Resource where
 
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
+import Data.Serialize
 import Control.Lens hiding ((.=))
 import GHC.Generics
 import Kathu.Util.Numeric (clampBetween, fromScientific)
@@ -13,6 +15,8 @@ import Kathu.Util.Numeric (clampBetween, fromScientific)
 -- | A resource that is not expected to change frequently
 data Static a = Static {_stcBase :: a, _stcBonus :: a} deriving (Show, Eq, Functor, Generic)
 makeLenses ''Static
+
+instance Serialize a => Serialize (Static a)
 
 -- the resources can be loaded from either a single number (in which case the rest will be assumed), or from an object
 instance ToJSON a => ToJSON (Static a) where
@@ -27,6 +31,8 @@ instance (Fractional a, FromJSON a) => FromJSON (Static a) where
 -- | A resource that has a current value that ranges between the maximm and zero
 data Dynamic a = Dynamic {_dynCur :: a, _dynMax :: a, _dynBonus :: a} deriving (Show, Eq, Functor, Generic)
 makeLenses ''Dynamic
+
+instance Serialize a => Serialize (Dynamic a)
 
 instance ToJSON a => ToJSON (Dynamic a) where
     toJSON (Dynamic cur base bonus) = object ["cur" .= cur, "base" .= base, "bonus" .= bonus]

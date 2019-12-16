@@ -5,8 +5,9 @@ identity:
   description: This should never appear
 # This follows an Entity Component System. Everything component is optional, with only an ID part of an identity being required for config file entities
 tags: [player]
+life-time: persistant # we never let this entity get destroyed automatically
  # how many tiles you can cover per second; probably shouldn't go past 60, as after that you might be able to clip past tiles
-moving-speed: 12
+moving-speed: 11
 body-config:
   type:       dynamic
   group:      movement

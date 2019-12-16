@@ -1,11 +1,14 @@
 {-# LANGUAGE BangPatterns    #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies    #-}
 
 module Kathu.Entity.Action where
 
+import Apecs (Component, Map, Storage)
 import Control.Lens
-import Kathu.Util.Timing
 import Linear.V2 (V2(..))
+
+import Kathu.Util.Timing
 
 getDiagonal :: Fractional a => a -> a
 getDiagonal v = v * 0.707106781187 -- a constant so that we don't need to call the trigonometric functions each time
@@ -14,19 +17,22 @@ data Direction = North | Northeast | East | Southeast | South | Southwest | West
 
 data ActionSet = ActionSet
     { _controller      :: ActionSet -> ActionSet
-    , _moving          :: Maybe Direction
-    , _lastMoving      :: Maybe Direction
-    , _facingDirection :: Direction -- so even if waiting, we still know which direction to draw
-    , _usingPrimary    :: Maybe Double -- angle
-    , _usingSecondary  :: Maybe Double -- angle
+    , _moving          :: !(Maybe Direction)
+    , _lastMoving      :: !(Maybe Direction)
+    , _facingDirection :: !Direction -- so even if waiting, we still know which direction to draw
+    , _isFocused       :: !Bool
+    , _usingPrimary    :: !(Maybe Double) -- angle
+    , _usingSecondary  :: !(Maybe Double) -- angle; should be changed to TimeStamped to allow for charging
     }
 makeLenses ''ActionSet
+
+instance Component ActionSet where type Storage ActionSet = Map ActionSet
 
 newDirection :: ActionSet -> Bool
 newDirection aset = view moving aset /= view lastMoving aset
 
 emptyActionSet :: ActionSet
-emptyActionSet = ActionSet id Nothing Nothing South Nothing Nothing
+emptyActionSet = ActionSet id Nothing Nothing South False Nothing Nothing
 
 -- unlike NPCs, the player gives input that is later combined
 data ActionPressed = ActionPressed
@@ -34,13 +40,14 @@ data ActionPressed = ActionPressed
     , _moveEast     :: !(TimeStamped Bool)
     , _moveSouth    :: !(TimeStamped Bool)
     , _moveWest     :: !(TimeStamped Bool)
+    , _useFocus     :: !(TimeStamped Bool)
     , _usePrimary   :: !(TimeStamped Bool)
     , _useSecondary :: !(TimeStamped Bool)
     } deriving (Show, Eq)
 makeLenses ''ActionPressed
 
 emptyActionPressed :: ActionPressed
-emptyActionPressed = ActionPressed noPress noPress noPress noPress noPress noPress
+emptyActionPressed = ActionPressed noPress noPress noPress noPress noPress noPress noPress
     where noPress = TimeStamped False 0
 
 -- (\n -> if n == Nothing then n else error . show $ n)
@@ -56,7 +63,7 @@ getDirection ap = indexToDirection $ (nsComp + ewComp :: Int) -- positive x is e
 
 -- | When a character with a moving speed starts trying to move with a given movement speed, at what rate do we accelerate them?
 movingAcceleration :: Fractional a => a -> a -> a
-movingAcceleration mass s = 25 * mass * s
+movingAcceleration mass s = 54 * mass * s * 0.5
 
 -- positive x is east, positive y is south, positive z is upward
 getMoveVector :: (Fractional a, Ord a) => V2 a -> a -> a -> Maybe Direction -> V2 a

@@ -1,12 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kathu.App.SDLCommon where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Foreign.Storable (peek)
 import qualified SDL
 import qualified SDL.Internal.Types as SDLIn.Types
-import qualified SDL.Raw.Types as SDLRaw.Types
 import qualified SDL.Raw.Video as SDLRaw.Video
                              
 isOpen :: Maybe SDL.Event -> Bool
@@ -44,8 +41,3 @@ rectWidth (SDL.Rectangle _ (SDL.V2 w _)) = w
 
 rectHeight :: SDL.Rectangle a -> a
 rectHeight (SDL.Rectangle _ (SDL.V2 _ h)) = h
-
--- Lower level
-
-surfacePixelFormat :: MonadIO m => SDL.Surface -> m SDLRaw.Types.PixelFormat
-surfacePixelFormat (SDL.Surface sur _) = liftIO (peek . SDLRaw.Types.surfaceFormat =<< peek sur)

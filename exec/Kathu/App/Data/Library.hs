@@ -1,10 +1,12 @@
-{-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
 
 module Kathu.App.Data.Library
-    ( Library(..), images, uiConfig, prototypes, items, floorProperties, tiles, worldSpaces, font
+    ( Library(..), uiConfig, prototypes, items, floorProperties, tiles, worldSpaces, font
     , loadLibrary
     ) where
 
@@ -12,24 +14,25 @@ import Control.Lens
 import Data.Aeson
 import qualified Data.Map as Map
 import Data.Vector (Vector)
+import qualified SDL as SDL
 import qualified SDL.Font as SDLF
 
 import Kathu.App.Data.KathuStore
-import Kathu.App.Graphics.Image (Image, ImageID)
+import Kathu.App.Graphics.Image (ImageID)
 import Kathu.App.Graphics.UI
 import Kathu.Entity.Item
 import Kathu.Entity.Physics.Floor (FloorProperty(..))
 import Kathu.Entity.Prototype
 import Kathu.IO.File (parseAllDP, parseExactlyNDP)
 import Kathu.Util.Dependency
+import Kathu.Util.Flow (mapSnd)
 import Kathu.Util.Types (Identifier, IDMap)
 import Kathu.World.Tile hiding (Vector, MVector)
 import Kathu.World.WorldSpace
 
 -- | This data type plays the role as a collection of named values for the game to read from when loading a level
 data Library = Library
-    { _images          :: Vector Image
-    , _uiConfig        :: UIConfig
+    { _uiConfig        :: UIConfig
     , _prototypes      :: IDMap (EntityPrototype ImageID)
     , _floorProperties :: IDMap FloorProperty
     , _items           :: IDMap (Item ImageID)
@@ -51,14 +54,12 @@ addUnique :: Setter Library Library a a -> [a] -> Library -> Library
 addUnique setter (x:[]) lib = set setter x lib
 addUnique _ _ _ = error "Attempted to add more than one items that are marked as unique"
 
-setImages :: (Library, KathuStore) -> IO (Library, KathuStore)
-setImages (lib, plLib) = pure (set images (view plImages plLib) lib, plLib)
-
 -- once languages are implemented, the .lang files should configure font paths, not this
-loadFonts :: Library -> IO Library
-loadFonts lib = (flip (set font)) lib <$> SDLF.load "assets/font/VT323-Regular.ttf" 28
+loadFonts :: (Library, KathuStore) -> IO (Library, KathuStore)
+loadFonts (lib, store) = (,store) . (flip (set font)) lib <$> SDLF.load "assets/font/VT323-Regular.ttf" 28
 
-loadLibrary :: Library -> FilePath -> IO Library
+-- Surfaces are not stored in the library, as once ImageManager is done doing conversions we want to GC it
+loadLibrary :: Library -> FilePath -> IO (Library, Vector SDL.Surface)
 loadLibrary initialLibrary fldr = process
     where parseDependency initState = (>>=(((flip runDependency) initState) . flattenDependency))
           -- parses all files of a type requiring Dependencies
@@ -73,6 +74,7 @@ loadLibrary initialLibrary fldr = process
           psUnique ext setter (lib, plib) = (parseDependency plib . parseExactlyNDP 1 ext $ fldr) >>= \(nset, nplib) -> pure (addUnique setter nset lib, nplib)
           -- the set of elements to 
           start = (initialLibrary, emptyKathuStore)
+          process :: IO (Library, Vector SDL.Surface)
           process = pure start
                 >>= psDP ("item",   addAll items itemID)
                 >>= psDP ("entity", addEntities)
@@ -82,5 +84,5 @@ loadLibrary initialLibrary fldr = process
                 >>= \(library, store) -> pure (over tiles (Map.insert "empty" emptyTile) library, store)
                 >>= psDP ("world",  addAll worldSpaces worldID)
                 >>= psUnique "ui"   uiConfig
-                >>= setImages
-                >>= loadFonts . fst
+                >>= loadFonts
+                >>= pure . mapSnd (view plImages)

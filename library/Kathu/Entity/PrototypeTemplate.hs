@@ -10,7 +10,8 @@ import Data.List (nub)
 import Data.Maybe (maybe)
 import Language.Haskell.TH
 
-import Kathu.Entity.Components (SerializableComponent(..))
+import Kathu.Entity.Components (newExistingEntity)
+import Kathu.Entity.SerializableComponents
 import Kathu.Parsing.Aeson ((.:~?), (.:^?))
 import Kathu.Util.Dependency
 import Kathu.Util.Flow ((>>>=))
@@ -46,7 +47,7 @@ defineEntityCreator fnName prefix components = do
     lambdaExpr <- [| (maybe (pure ()) (set ety) . f $ proto) >> pure ety |]
     let lambdaSet         = LamE [VarP . mkName $ "f", VarP . mkName $ "ety"] lambdaExpr
         applyFor acc name = UInfixE acc (VarE '(>>=)) $ AppE lambdaSet . VarE $ fieldName prefix name
-    newEnt     <- [| newEntity () |]
+    newEnt     <- [| newExistingEntity () |]
     let body    = UInfixE (foldl applyFor newEnt . map compName $ components) (VarE '(>>=)) (VarE 'pure)
     pure . pure $ FunD (mkName fnName) [Clause param (NormalB body) []]
 

@@ -6,15 +6,16 @@ module Kathu.App.Events where
 import Apecs hiding (set)
 import Apecs.Physics
 import Control.Lens hiding (Identity)
-import Control.Monad (when)
+import Control.Monad (void, when)
 import qualified SDL
 
 import Kathu.App.Data.Settings
-import Kathu.App.Graphics.ImageManager (setPalette, currentPalette, availablePaletteCount)
+import Kathu.App.Graphics.ImageManager (nextPaletteManager, setPaletteManager)
 import Kathu.App.System
 import Kathu.Entity.Action
 import Kathu.Entity.Components
 import Kathu.Entity.System
+import Kathu.Entity.Time
 import Kathu.Graphics.Camera
 import Kathu.Util.Flow (whileFstM)
 import Kathu.Util.Timing
@@ -29,7 +30,11 @@ handleControls = do
     let updateTS nb ts@(TimeStamped b _) = if b /= nb then TimeStamped nb time else ts
         updateKeys (Local actions) = Local (mkNewActions actions)
             where ukp key getter = over getter (updateTS $ ikp key)
-                  mkNewActions = ukp (keyMoveWest cs) moveWest . ukp (keyMoveEast cs) moveEast . ukp (keyMoveNorth cs) moveNorth . ukp (keyMoveSouth cs) moveSouth
+                  mkNewActions = ukp (keyMoveWest cs) moveWest
+                               . ukp (keyMoveEast cs) moveEast
+                               . ukp (keyMoveNorth cs) moveNorth
+                               . ukp (keyMoveSouth cs) moveSouth
+                               . ukp (keyFocus cs) useFocus
     cmap updateKeys
 
 runEvents :: SystemT' IO Bool
@@ -53,8 +58,7 @@ runEvents = whileFstM (SDL.pollEvent >>= ev)
                   else if key == keyDebugPrintPhysics cs then printPhysics
                   else if key == keyDebugNextPalette cs  then do
                       im <- get global
-                      let nextPalette = (1 + currentPalette im) `mod` (availablePaletteCount im)
-                      global $= setPalette nextPalette im
+                      void $ setPaletteManager (nextPaletteManager im)
                   else pure ()
               pure (True, True)
           ev (Just _) = pure (True, True)

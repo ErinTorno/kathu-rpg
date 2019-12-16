@@ -21,19 +21,20 @@ import Kathu.Parsing.Aeson
 import Kathu.Util.Types (Identifier)
 
 data Settings = Settings
-    { targetFPS     :: Float
-    , resolution    :: V2 Word32
-    , serverPort    :: Word32
+    { targetFPS      :: Float
+    , resolution     :: V2 Word32
+    , isVSyncEnabled :: Bool
+    , serverPort     :: Word32
     --, language :: 
-    , modDir        :: Text
-    , baseSaveDir   :: Text
-    , moddedSaveDir :: Text
-    , canUseDebug   :: Bool
-    , controls      :: Controls
-    , randomSeed    :: Maybe Int -- if found, will override the random seed generated on game start
-    , misc          :: Map Text Text
+    , modDir         :: Text
+    , baseSaveDir    :: Text
+    , moddedSaveDir  :: Text
+    , canUseDebug    :: Bool
+    , controls       :: Controls
+    , randomSeed     :: Maybe Int -- if found, will override the random seed generated on game start
+    , misc           :: Map Text Text
     -- this is for testing purposes, and will be removed later
-    , initialWorld  :: Identifier
+    , initialWorld   :: Identifier
     } deriving (Generic)
 
 instance ToJSON Settings where
@@ -43,17 +44,18 @@ instance FromJSON Settings where
 
 defaultSettings :: Settings
 defaultSettings = Settings
-    { targetFPS     = 120.0
-    , resolution    = V2 1280 720
-    , serverPort    = 7777
-    , modDir        = "/mods"
-    , baseSaveDir   = "/saves"
-    , moddedSaveDir = "/modded-saves"
-    , canUseDebug   = False
-    , controls      = defaultControls
-    , randomSeed    = Nothing
-    , misc          = Map.empty
-    , initialWorld  = "test-world"
+    { targetFPS      = 120.0
+    , resolution     = V2 1280 720
+    , isVSyncEnabled = False
+    , serverPort     = 7777
+    , modDir         = "/mods"
+    , baseSaveDir    = "/saves"
+    , moddedSaveDir  = "/modded-saves"
+    , canUseDebug    = False
+    , controls       = defaultControls
+    , randomSeed     = Nothing
+    , misc           = Map.empty
+    , initialWorld   = "test-world"
     }
 
 data Controls = Controls
@@ -61,6 +63,7 @@ data Controls = Controls
     , keyMoveEast  :: SDL.Scancode
     , keyMoveSouth :: SDL.Scancode
     , keyMoveWest  :: SDL.Scancode
+    , keyFocus     :: SDL.Scancode
     , keyToggleDebug  :: SDL.Scancode
     , keyDebugZoomIn  :: SDL.Scancode
     , keyDebugZoomOut :: SDL.Scancode
@@ -89,6 +92,7 @@ defaultControls = Controls
     , keyMoveEast  = SDL.ScancodeD
     , keyMoveSouth = SDL.ScancodeS
     , keyMoveWest  = SDL.ScancodeA
+    , keyFocus     = SDL.ScancodeLShift
     , keyToggleDebug  = SDL.ScancodeF3
     , keyDebugZoomIn  = SDL.ScancodeKPMinus
     , keyDebugZoomOut = SDL.ScancodeKPPlus
@@ -101,7 +105,3 @@ loadSettings = fileExists fileName >>= bool (pure Nothing) (maybeLoad fileName) 
     where fileName     = "./settings.config"
           def Nothing  = saveToFile FormatYAML fileName defaultSettings >> pure defaultSettings
           def (Just s) = pure s
-
-resolutionX, resolutionY :: Settings -> Word32
-resolutionX settings = let (V2 x _) = resolution settings in x
-resolutionY settings = let (V2 _ y) = resolution settings in y

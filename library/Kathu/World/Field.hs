@@ -1,5 +1,4 @@
 {-# LANGUAGE BangPatterns  #-}
-{-# LANGUAGE LambdaCase    #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UnboxedTuples #-}
 
@@ -12,13 +11,13 @@ import           Control.Monad.ST            (RealWorld)
 import           Data.Map.Strict             (Map)
 import qualified Data.Map.Strict             as Map
 import           Data.Maybe                  (maybe)
-import qualified Data.Vector.Unboxed         as UVec
 import qualified Data.Vector                 as Vec
+import qualified Data.Vector.Unboxed         as UVec
 import qualified Data.Vector.Unboxed.Mutable as UMVec
 import           Linear.V2                   (V2(..))
 
 import           Kathu.Entity.System         (Tiles, fromTiles)
-import           Kathu.Util.MultiDimVector
+import           Kathu.Util.Flow             (mapPair, mapSnd)
 import           Kathu.Util.Polygon
 import           Kathu.World.Tile
 
@@ -126,44 +125,44 @@ fieldFoldWithEmptyM f !acc (Field fgTiles) = go fgTiles 0 0 acc
 ----------------
 -- Conversion --
 ----------------
-
-mkFields :: MonadIO m => Int -> Int -> m (Vector2D (Field))
-mkFields x y = repliVecM x (repliVecM y mkField)
-    where repliVecM n = fmap Vec.fromList . replicateM n
    
 -- | Creates a FieldSet from a given 2D Vector of Tiles 
-fromTileVector2D :: MonadIO m => Vector2D (Tile g) -> m FieldSet
-fromTileVector2D fgTiles = if yLayers == 0 || xLayers == 0 then empty else buildNew 
+fromTileVector2D :: MonadIO m => Vec.Vector (Vec.Vector (Tile g)) -> m FieldSet
+fromTileVector2D fgTiles = if yLayers == 0 || xLayers == 0 then empty else buildNew
     where empty                       = Map.singleton (V2 0 0) <$> mkField
           minFields :: (Integral a) => Float -> a -> Int
           minFields s                 = ceiling . (/s) . fromIntegral
           getContField x y   = fieldContainingCoord ((fromIntegral :: Int -> Double) x) (fromIntegral y)
-          -- tiles are stored as x y, rather than x y
           (yLen, xLen)       = (Vec.length fgTiles, Vec.length (fgTiles Vec.! 0))
           (yLayers, xLayers) = (minFields fieldDim yLen, minFields fieldDim xLen)
-          buildNew = liftIO (new2DWith xLayers yLayers Nothing) >>= go fgTiles 0 0 >>= convertToMap
-          go :: MonadIO m => Vector2D (Tile g) -> Int -> Int -> IOVector2D (Maybe Field) -> m (IOVector2D (Maybe Field))
-          go !tiles !x !y v | y == yLen = pure v
-                                   | x == xLen = go tiles 0 (y + 1) v
-                                   | otherwise = (runForTile (read2D y x tiles) writeTile) >> go tiles (x + 1) y v
+          buildNew = liftIO (go 0 0 Map.empty)
+          go :: Int -> Int -> Map (V2 Int) Field -> IO (Map (V2 Int) Field)
+          go !x !y m | y == yLen = pure m
+                     | x == xLen = go 0 (y + 1) m
+                     | otherwise = runForTile ((fgTiles Vec.! y) Vec.! x) writeTile >>= go (x + 1) y
               where (# fx, fy #) = getContField x y
-                    runForTile t f | t^.tileID == emptyTileID = pure () -- do nothing if wanting to write empty tile, since Fields are initialized with all emptyTile
-                                   | otherwise                = liftIO (mRead2D fx fy v) >>= \case
-                                       Just (m) -> f t m
-                                       Nothing  -> mkField >>= \field -> liftIO (mWrite2D fx fy (Just field) v) >> f t field
-                    writeTile t field = mkTileStateWithMetadata t >>= \newTileState -> setTileState x y newTileState field
-          convertToMap iovec = fmap Map.fromList . liftIO .  miFoldl2D foldf [] $ iovec
-              where foldf acc x y cur = pure $ maybe acc ((:acc) . (V2 x y,)) cur
+                    runForTile :: Tile g -> (Tile g -> Field -> IO Field) -> IO (Map (V2 Int) Field)
+                    runForTile t a | t^.tileID == emptyTileID = pure m -- do nothing if wanting to write empty tile, since Fields are initialized with all emptyTile
+                                   | otherwise                = case Map.lookup (V2 fx fy) m of
+                                       Just f  -> a t f >> pure m
+                                       Nothing -> ((flip (Map.insert (V2 fx fy))) m) <$> (a t =<< mkField)
+                    writeTile :: Tile g -> Field -> IO Field
+                    writeTile t field = do
+                        newTileState <- mkTileStateWithMetadata t
+                        setTileState (x - fx * fieldDim) (y - fy * fieldDim) newTileState field
+                        pure field
+          --debugPrint fs = (liftIO . putStrLn . concat $ ["x-len ", show xLen, "; y-len ", show yLen, "; x-layers ", show xLayers, "; y-layers ", show yLayers]) >> pure fs
 
 -- | Transforms a FieldSet into a list of V2 lists defining collision shapes
 mkCollisionPolygons :: MonadIO m => Tiles g -> FieldSet -> m [[V2 Double]]
-mkCollisionPolygons tiles = fmap (concat . fmap (concat . mkTriangles)) . mapM isSolidVec . Map.assocs
+mkCollisionPolygons tiles = fmap (concat . fmap mkTriangles) . mapM isSolidVec . Map.assocs
     where isSolidTS :: MonadIO m => TileState -> m Bool
           isSolidTS ts = view isSolid <$> (liftIO . fromTiles tiles $ ts)
           -- transforms field into a 1D vector of bools for if is solid; accessed at pos with indexFromCoord
           isSolidVec :: MonadIO m => (V2 Int, Field) -> m (V2 Int, UVec.Vector Bool)
           isSolidVec (pos, f) = fmap ((pos,) . UVec.fromList . reverse) . fieldFoldWithEmptyM (\acc _ ts -> (:acc) <$> isSolidTS ts) [] $ f
-          mkTriangles :: (V2 Int, UVec.Vector Bool) -> [[[V2 Double]]]
-          mkTriangles ((V2 wx wy), v) = fmap triangulate
-                                      . fmap (fmap ((+(V2 (-0.5) (-1))) . fmap fromIntegral . (+(V2 (wx * fieldDim) (wy * fieldDim)))))
-                                      $ polygonsFromBinaryGrid v fieldDim fieldDim
+          mkTriangles :: (V2 Int, UVec.Vector Bool) -> [[V2 Double]]
+          mkTriangles ((V2 wx wy), v) = uncurry (++)
+                                      . mapSnd (concat . fmap triangulate)
+                                      . mapPair (fmap (fmap ((+(V2 (-0.5) (-1))) . fmap fromIntegral . (+(V2 (wx * fieldDim) (wy * fieldDim))))))
+                                      $ convexAndConcaveFromBinaryGrid v fieldDim fieldDim

@@ -22,7 +22,7 @@ type Image = SDL.Surface
 newtype ImageID = ImageID Int deriving (Show, Eq, Ord)
 
 instance ( s `CanProvide` WorkingDirectory
-         , s `CanStoreEach` '[CountingIDs, (Vector Image)]
+         , s `CanStoreEach`  '[CountingIDs, (Vector SDL.Surface)]
          , MonadIO m
          ) => FromJSON (Dependency s m ImageID) where
     parseJSON (String s) = pure $ (ImageID . fromIntegral) <$> (url >>= lookupOrExecAndVerify adder "ImageID")
