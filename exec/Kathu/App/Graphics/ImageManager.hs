@@ -22,6 +22,7 @@ module Kathu.App.Graphics.ImageManager
     , loadPalettes
     , currentPalette
     , availablePaletteCount
+    , setWindowIcon
     ) where
 
 import           Apecs                       (SystemT, global)
@@ -42,6 +43,8 @@ import           Linear.V3                    (V3(..))
 import           Linear.V4                    (V4(..))
 import           SDL                          (($=))
 import qualified SDL
+import qualified SDL.Internal.Types           as SDLInternal
+import qualified SDL.Raw.Video                as SDLVRaw
 import qualified SDL.Raw.Types                as SDLRaw
 
 import           Kathu.App.Graphics.Image     (ImageID(..))
@@ -203,6 +206,10 @@ loadPalettes newPalettes im = liftIO (mapM updateSet . view textureSets $ im)
                               | otherwise          = pure pals -- just good friends :)
               where reqSlots = n * (paletteCount + 1)
                     palsLen  = MSVec.length pals
+
+-- Not strictly ImageManager related, but this module is filled with almost all of the ugly dangerous SDL rendering functions
+setWindowIcon :: MonadIO m => SDL.Window -> SDL.Surface -> m ()
+setWindowIcon (SDLInternal.Window window) (SDL.Surface surPtr _) = SDLVRaw.setWindowIcon window surPtr
 
 -------------
 -- Warning --

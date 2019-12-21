@@ -1,0 +1,6 @@
+lang-id: english
+name:    "english"
+fonts:
+  small:
+    file: "/fonts/VT323-Regular.ttf"
+    size: 28

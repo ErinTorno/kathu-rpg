@@ -1,5 +1,0 @@
-tile-id:  brick-door-unlocked
-name:     unlocked brick door
-render:   "brick-door-unlocked.png"
-is-solid: false
-break-behavior: unbreakable

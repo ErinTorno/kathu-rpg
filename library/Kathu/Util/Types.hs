@@ -17,6 +17,7 @@ import           Control.Monad            (replicateM)
 import           Data.Aeson
 import           Data.Aeson.Types         (typeMismatch)
 import qualified Data.ByteString          as B
+import           Data.Hashable
 import           Data.Map                 (Map)
 import           Data.Serialize
 import qualified Data.Serialize.Get       as SG
@@ -39,7 +40,7 @@ import           GHC.Generics
 -- | A type use to represent the type that identifies the objects that compose the game world
 newtype Identifier = Identifier
     { unID :: Text -- If needed, later we can change this to be a int hash
-    } deriving (Eq, Generic, Ord, IsString, FromJSONKey, Serialize)
+    } deriving (Eq, Generic, Ord, IsString, FromJSONKey, Serialize, Hashable)
 
 instance Show Identifier where
     show (Identifier idt) = show idt

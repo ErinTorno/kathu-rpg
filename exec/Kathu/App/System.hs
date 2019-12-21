@@ -17,6 +17,7 @@ import Data.Semigroup (Semigroup)
 
 import Kathu.App.Data.Library
 import Kathu.App.Data.Settings
+import Kathu.App.Graphics.Font
 import Kathu.App.Graphics.Image (ImageID)
 import Kathu.App.Graphics.ImageManager
 import Kathu.App.Graphics.UI
@@ -65,6 +66,10 @@ instance Semigroup ImageManager where (<>) = mappend
 instance Monoid ImageManager where mempty = defaultImageManager
 instance Component ImageManager where type Storage ImageManager = Global ImageManager
 
+instance Semigroup FontCache where (<>) = mappend
+instance Monoid FontCache where mempty = error "Attempted to use FontCache before it has been loaded"
+instance Component FontCache where type Storage FontCache = Global FontCache
+
 instance Semigroup UIConfig where (<>) = mappend
 instance Monoid UIConfig where mempty = error "Attempted to use UIConfig before it has been loaded"
 instance Component UIConfig where type Storage UIConfig = Global UIConfig
@@ -83,7 +88,7 @@ instance Component Library where type Storage Library = Global Library
 makeWorld "EntityWorld"
     $ [''Physics]
    ++ [''Existance, ''Identity, ''LifeTime, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
-   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Settings, ''ImageManager, ''UIConfig, ''WorldSpace', ''Library, ''Debug]
+   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Settings, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''Debug]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a

@@ -1,42 +1,28 @@
 world-id: test-world
 name:     test world
-initial-palette: night
+initial-palette: default
 palettes:
+  default:
+    background: "#101820"
   night:
-    background: "#151220"
+    background: "#100d1b"
     shader:
       fn: shift-hue-towards
       angle: 250
-      percent: 0.35
+      percent: 0.3
   volcanic:
-    background: "#47222c"
+    background: "#36171f"
     shader:
-      fn: shift-hue
-      angle: 45.0
-  night-forest:
-    background: "#121a20"
+      - fn:           shift-hue-towards-abs
+        target-angle: 50
+        shift-angle:  -20
+      - fn:      desaturate-by
+        percent: 0.2
+  harvest-night:
+    background: "#1b1027"
     shader:
-    - fn: shift-hue-towards
-      angle: 140
-      percent: 0.3
-    - fn: desaturate-by
-      percent: 0.3
-  night-to-night-forest:
-    cycle-duration: 3000
-    frames-per-second: 15
-    cycle-end-behavior: change-to night-forest
-    keyframes:
-      0:
-        background: "#151220"
-        shader: {fn: shift-hue-towards, angle: 250, percent: 0.35}
-      3000:
-        background: "#121a20"
-        shader: [{fn: shift-hue-towards, angle: 140, percent: 0.3}, {fn: desaturate-by, percent: 0.3}]
-  limited:
-    background: "#000000"
-    shader:
-      fn: match-nearest
-      color-set: ["#ffffff", "#fb3e6c", "#41c955", "#4176c9"]
+      fn:        match-nearest
+      color-set: ["#f2c792", "#ef9c66", "#d9454c", "#5b2933", "#352843"]
   poisoned:
     cycle-duration: 1500
     frames-per-second: 15
@@ -54,18 +40,17 @@ palettes:
     interpolate-fn: angular
     keyframes:
       0:
-        background: "#3b1822"
+        background: "#201017"
         shader: {fn: shift-hue, angle: 45.0}
       2000:
-        background: "#161f36"
+        background: "#101820"
         shader: {fn: shift-hue, angle: 165.0}
       4000:
-        background: "#11240a"
+        background: "#112010"
         shader: {fn: shift-hue, angle: 285.0}
       6000:
-        background: "#3b1822"
+        background: "#201017"
         shader: {fn: shift-hue, angle: 45.0}
-      
 load-point: [16, 4]
 legend:
   " ": empty
@@ -124,16 +109,21 @@ items:
 - item:     potion-mana
   position: [2.5, 2]
 - item:     key-small
-  position: [3, 8]
+  position: [3, 7]
 - item:     key-big
-  position: [4, 9]
+  position: [4, 8]
 - item:     key-odd
   position: [26.5, 12]
 - item:     sword
   position: [8, 7]
 - item:     bomb
-  position: [6, 4]
+  position: [7, 4.5]
 - item:     pumpkin
   position: [21, 1]
+- item:     pumpkin
+  position: [11, 6]
+- item:     spirit-lantern
+  position: [12, 1]
+
 
 

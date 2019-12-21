@@ -1,5 +1,0 @@
-tile-id:  brick-floor
-name:     brick floor
-render:   ["brick-floor.png"]
-is-solid: true
-break-behavior: unbreakable

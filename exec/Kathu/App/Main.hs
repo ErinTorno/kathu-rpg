@@ -67,7 +67,7 @@ start = do
     renderBuffer <- mkRenderBuffer
     -- the main loop
     runWith world $
-        Init.system renderer settings
+        Init.system window renderer settings
         >> run (renderDelay settings) renderer renderBuffer curTime curTime
 
     -- dispose of resources

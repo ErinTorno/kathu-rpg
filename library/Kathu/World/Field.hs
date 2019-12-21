@@ -10,7 +10,6 @@ import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Control.Monad.ST            (RealWorld)
 import           Data.Map.Strict             (Map)
 import qualified Data.Map.Strict             as Map
-import           Data.Maybe                  (maybe)
 import qualified Data.Vector                 as Vec
 import qualified Data.Vector.Unboxed         as UVec
 import qualified Data.Vector.Unboxed.Mutable as UMVec

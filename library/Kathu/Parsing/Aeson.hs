@@ -10,6 +10,7 @@ module Kathu.Parsing.Aeson where
 import           Control.Monad         (foldM, liftM, liftM2)
 import           Data.Aeson
 import           Data.Aeson.Types      (Parser, typeMismatch)
+import qualified Data.Bifunctor        as Bi
 import qualified Data.HashMap.Strict   as Hash
 import           Data.Functor.Compose
 import           Data.Map              (Map)
@@ -48,28 +49,28 @@ standardProjectOptions = defaultOptions {fieldLabelModifier = camelTo2 '-' . dro
 
 -- same as .:~, but returns a Maybe
 (.:~?) :: (Monad m, FromJSON (m a)) => Object -> Text -> Compose Parser m (Maybe a)
-(.:~?) obj t = Compose (nestedChange <$> obj .:? t)
-    where nestedChange = maybe (return Nothing) (\v -> v >>= return . Just)
+(.:~?) obj t = Compose (maybe (pure Nothing) (fmap Just) <$> obj .:? t)
 
 (.!=~) :: Monad m => Compose Parser m (Maybe a) -> a -> Compose Parser m a
-(.!=~) p def = fmap (fromMaybe def) p
+(.!=~) p def = fromMaybe def <$> p
 
 parseListDPWith :: Monad m => (Value -> Parser (Dependency s m a)) -> Value -> Parser (Dependency s m [a])
 parseListDPWith parser (Array a) = foldM append (pure []) a
-    where append acc cur = parser cur >>= pure . (flip (liftM2 (:))) acc
+    where append acc cur         = (flip (liftM2 (:))) acc <$> parser cur
 parseListDPWith _ v              = typeMismatch "[Dependency s m a]" v
 
 parseListDP :: (FromJSON (Dependency s m a), Monad m) => Value -> Parser (Dependency s m [a])
 parseListDP = parseListDPWith parseJSON
 
 parseMapDPWith :: (Monad m, Ord k) => (Value -> Parser (Dependency s m k)) -> (Value -> Parser (Dependency s m a)) -> Value -> Parser (Dependency s m (Map k a))
-parseMapDPWith keyParser parser (Object v) = (foldM append (pure []) . map toValue . Hash.toList $ v) >>>= pure . Map.fromList
-    where append acc (key, val) = makeTuple key val >>= pure . (flip (liftM2 (:))) acc 
-          makeTuple key val  = (liftM2 . liftM2) (,) (keyParser key) (parser val)
-          toValue (key, value) = (String key, value)
+parseMapDPWith keyParser parser (Object v) = resultList v >>>= pure . Map.fromList
+    where resultList            = foldM append (pure []) . map (Bi.first String) . Hash.toList
+        
+          append acc (key, val) = (flip (liftM2 (:))) acc <$> makeTuple key val
+          makeTuple key val     = (liftM2 . liftM2) (,) (keyParser key) (parser val)
 parseMapDPWith _ _ v            = typeMismatch "Map k (Dependency s m a)" v
 
-parseMapDP :: (FromJSON (Dependency s m a), Monad m) => Value -> Parser (Dependency s m (Map Text a))
+parseMapDP :: (FromJSON (Dependency s m a), FromJSON k, Ord k, Monad m) => Value -> Parser (Dependency s m (Map k a))
 parseMapDP = parseMapDPWith (fmap pure . parseJSON) parseJSON
 
 --------------------
@@ -94,38 +95,41 @@ instance FromJSON CInt where
 -- We serialize to an array now, as it avoids needing to use x y .. names as they might not always be appropriate for the specific vector
 
 instance ToJSON a => ToJSON (V2 a) where
-    -- toJSON (V2 x y) = object ["x" .= x, "y" .= y]
     toJSON (V2 x y) = toJSON [x, y]
 
 instance FromJSON a => FromJSON (V2 a) where
-    parseJSON (Object m) = V2 <$> m .: "x" <*> m .: "y"
-    parseJSON (Array a)  = if Vec.length a /= 2 then fail ("V2 array is not of length 2 (" ++ show a ++ ")") else res
-        where pInd = parseJSON . (Vec.!) a
-              res  = pInd 0 >>= \x -> pInd 1 >>= \y -> pure $ V2 x y
-    parseJSON e          = typeMismatch "V2" e
+    parseJSON (Object m)    = V2 <$> m .: "x" <*> m .: "y"
+    parseJSON (Array a)
+        | Vec.length a /= 2 = fail ("V2 array is not of length 2 (" ++ show a ++ ")")
+        | otherwise         = V2 <$> pInd 0 <*> pInd 1
+        where pInd          = parseJSON . (Vec.!) a
+
+    parseJSON e             = typeMismatch "V2" e
 
 -- V3
 
 instance ToJSON a => ToJSON (V3 a) where
-    -- toJSON (V3 x y z) = object ["x" .= x, "y" .= y, "z" .= z]
     toJSON (V3 x y z) = toJSON [x, y, z]
 
 instance FromJSON a => FromJSON (V3 a) where
-    parseJSON (Object m) = V3 <$> m .: "x" <*> m .: "y" <*> m .: "z"
-    parseJSON (Array a)  = if Vec.length a /= 3 then fail ("V3 array is not of length 3 (" ++ show a ++ ")") else res
-        where pInd = parseJSON . (Vec.!) a
-              res  = pInd 0 >>= \x -> pInd 1 >>= \y -> pInd 2 >>= \z -> pure $ V3 x y z
-    parseJSON e          = typeMismatch "V3" e
+    parseJSON (Object m)    = V3 <$> m .: "x" <*> m .: "y" <*> m .: "z"
+    parseJSON (Array a)
+        | Vec.length a /= 3 = fail ("V3 array is not of length 3 (" ++ show a ++ ")")
+        | otherwise         = V3 <$> pInd 0 <*> pInd 1 <*> pInd 2
+        where pInd          = parseJSON . (Vec.!) a
+
+    parseJSON e             = typeMismatch "V3" e
 
 -- V4
 
 instance ToJSON a => ToJSON (V4 a) where
-    -- toJSON (V4 t x y z) = object ["t" .= t, "x" .= x, "y" .= y, "z" .= z]
     toJSON (V4 t x y z) = toJSON [t, x, y, z]
 
 instance FromJSON a => FromJSON (V4 a) where
-    parseJSON (Object m) = V4 <$> m .: "t" <*> m .: "x" <*> m .: "y" <*> m .: "z"
-    parseJSON (Array a)  = if Vec.length a /= 4 then fail ("V4 array is not of length 4 (" ++ show a ++ ")") else res
-        where pInd = parseJSON . (Vec.!) a
-              res  = pInd 0 >>= \t -> pInd 1 >>= \x -> pInd 2 >>= \y -> pInd 3 >>= \z -> pure $ V4 t x y z
-    parseJSON e          = typeMismatch "V3" e
+    parseJSON (Object m)    = V4 <$> m .: "t" <*> m .: "x" <*> m .: "y" <*> m .: "z"
+    parseJSON (Array a)
+        | Vec.length a /= 4 = fail ("V4 array is not of length 4 (" ++ show a ++ ")")
+        | otherwise         = V4 <$> pInd 0 <*> pInd 1 <*> pInd 2 <*> pInd 3
+        where pInd          = parseJSON . (Vec.!) a
+
+    parseJSON e             = typeMismatch "V3" e

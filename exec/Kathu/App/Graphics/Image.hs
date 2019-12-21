@@ -21,6 +21,11 @@ type Image = SDL.Surface
 
 newtype ImageID = ImageID Int deriving (Show, Eq, Ord)
 
+instance (s `CanProvide` WorkingDirectory, MonadIO m) => FromJSON (Dependency s m Image) where
+    parseJSON (String s) = pure $ (fmap T.pack . resolveAssetPathDP . T.unpack) s
+                       >>= liftDependency . SDLI.load . T.unpack
+    parseJSON v          = typeMismatch "Image" v
+
 instance ( s `CanProvide` WorkingDirectory
          , s `CanStoreEach`  '[CountingIDs, (Vector SDL.Surface)]
          , MonadIO m

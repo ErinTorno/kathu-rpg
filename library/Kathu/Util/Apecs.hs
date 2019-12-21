@@ -9,10 +9,12 @@
 module Kathu.Util.Apecs where
 
 import           Apecs
-import           Apecs.Core          (explGet, explMembers, explSet)
-import           Control.Monad       (when)
-import           Data.Kind           (Constraint)
-import qualified Data.Vector.Unboxed as U
+import           Apecs.Core            (explGet, explMembers, explSet)
+import           Control.Monad         (when)
+import           Data.Kind             (Constraint)
+import qualified Data.Vector.Unboxed   as U
+
+import           Kathu.Util.Collection (fromJustElseError)
 
 type family ReadWrite w m c :: Constraint where
     ReadWrite w m c = (Get w m c, Has w m c, Set w m c)
@@ -32,6 +34,12 @@ type family GetEach w m cs :: Constraint where
 type family SetEach w m cs :: Constraint where
     SetEach w m '[]       = ()
     SetEach w m (c ': cs) = (Set w m c, SetEach w m cs)
+
+getUnique :: forall w m c. (Members w m c, Get w m c) => SystemT w m (Maybe c)
+getUnique = cfold (\_ c -> Just c) Nothing
+
+getUniqueElseError :: forall w m c. (Members w m c, Get w m c) => String -> SystemT w m c
+getUniqueElseError errMsg = fromJustElseError errMsg <$> getUnique
 
 -- Same logic as Apec's cmapIf implementation, just with f returning in a monad
 {-# INLINE cmapIfM #-}

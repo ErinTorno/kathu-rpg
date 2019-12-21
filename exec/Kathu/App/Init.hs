@@ -13,7 +13,9 @@ import qualified System.Random as R
 
 import Kathu.App.Data.Library
 import Kathu.App.Data.Settings
+import Kathu.App.Graphics.Font (initFontCache)
 import Kathu.App.Graphics.ImageManager
+import Kathu.App.Graphics.UI
 import Kathu.App.System
 import Kathu.App.World (loadWorldSpace)
 import Kathu.Entity.Action
@@ -34,8 +36,8 @@ localPlayer ety = do
     ety $= Local emptyActionPressed
     ety $= emptyActionSet
 
-system :: SDL.Renderer -> Settings -> SystemT' IO ()
-system renderer settings = do
+system :: SDL.Window -> SDL.Renderer -> Settings -> SystemT' IO ()
+system window renderer settings = do
     (library, surfaces) <- lift . loadLibrary mempty $ assetPath
     seed    <- lift . maybe (R.randomIO :: IO Int) pure . randomSeed $ settings
     manager <- lift . mkImageManager renderer $ surfaces
@@ -45,11 +47,16 @@ system renderer settings = do
     global  $= Random (R.mkStdGen seed)
     global  $= tilesV
     global  $= settings
-    global  $= library ^. uiConfig
+    global  $= library^.uiConfig
     global  $= (Gravity $ V2 0 0) -- no gravity, as the game is top-down
+
+    setWindowIcon window (library^.uiConfig.to gameIcon)
 
     floorPropEtys <- mapM initFloorProperty . view floorProperties $ library
     global  $= FloorProperties (floorPropEtys Map.! "default") floorPropEtys
+
+    fontCache <- initFontCache renderer (Map.singleton "" (library^.font))
+    global    $= fontCache
 
     let getLib g t = (view g library) Map.! t
     

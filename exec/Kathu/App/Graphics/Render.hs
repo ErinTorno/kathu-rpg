@@ -72,16 +72,18 @@ updateAnimations dT = do
     -- anim frames are updated
     let updateFramesIfAnim (RSAnimated !anim) = RSAnimated $ updateFrames dT anim
         updateFramesIfAnim s                  = s
+        -- just advances to next frame, no special animation-switching is needed
         updateWithoutController :: (Render ImageID, Not ActionSet) -> Render ImageID
         updateWithoutController (Render sprites, _) = Render $ updateFramesIfAnim <$> sprites
+        -- since this has actions, we also need to check and see if it should change animation states
         updateAnimated :: (Render ImageID, ActionSet) -> Render ImageID
-        updateAnimated ((Render sprites), ActionSet {_moving = m, _lastMoving = lm, _facingDirection = fac}) = Render $ updateEach <$> sprites
-            where updateEach s@(RSStatic _)     = s
-                  updateEach (RSAnimated anim)  = RSAnimated $ update m lm fac anim
-                  update Nothing _ fc anim = anim {activeAnim = dirToAnimIndex fc, currentFrame = 0, animTime = timeBeforeFrameChange anim} -- we ensure that this is paused and waiting on first frame
-                  update mv@(Just d) lmv _ anim
-                      | mv == lmv || dir == act = updateFrames dT anim -- if same direction, we just update its frames
-                      | otherwise               = switchAnimation dir anim -- we switch to new animation and reset
+        updateAnimated ((Render sprites), ActionSet {_moving = m, _facingDirection = fac}) = Render $ updateEach <$> sprites
+            where updateEach (RSAnimated anim)  = RSAnimated $ update m anim
+                  updateEach static             = static
+                  update Nothing anim = anim {activeAnim = dirToAnimIndex fac, currentFrame = 0, animTime = timeBeforeFrameChange anim} -- we ensure that this is paused and waiting on first frame
+                  update (Just d) anim
+                      | dir == act = updateFrames dT anim -- if same direction, we just update its frames
+                      | otherwise  = switchAnimation dir anim -- we switch to new animation and reset
                           where dir = dirToAnimIndex d
                                 act = activeAnim anim
     -- only update frames for those without any controller for them
@@ -89,6 +91,7 @@ updateAnimations dT = do
     -- if it has an ActionSet, we have to deal with swapping animations
     cmap updateAnimated
 
+    -- since tile graphics information isn't stored as entities, we instead just grab all tiles and update their animations
     (Tiles tileVector) <- get global :: SystemT' IO (Tiles ImageID)
     lift . mapMVec tileVector $ (over tileRender $ Render . fmap updateFramesIfAnim . unRender)
 

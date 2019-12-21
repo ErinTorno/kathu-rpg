@@ -14,6 +14,7 @@ extra-source-files:  ChangeLog.md
 
 library kathu-lib
   exposed-modules:  Kathu.Game,
+                    Kathu.Language,
                     -- Entity
                     Kathu.Entity.Action,
                     Kathu.Entity.ActorState,
@@ -60,7 +61,9 @@ library kathu-lib
                     text, bytestring,
                     apecs >=0.8.2 && <0.9, apecs-physics >=0.4.3 && <0.5,
                     containers,
-                    hgeometry >=0.9 && <0.10, hgeometry-combinatorial >=0.9 && <0.10,
+                    hgeometry >=0.9 && <0.10,
+                    hgeometry-combinatorial >=0.9 && <0.10,
+                    hashable  >=1.3 && <1.4,
                     lens, linear, mtl, primitive, random, scientific, template-haskell, unordered-containers, vector, vector-th-unbox,
                     directory, filepath,
                     aeson, cereal, yaml
@@ -82,13 +85,20 @@ executable kathu
                     -- Graphics
                     Kathu.App.Graphics.Debug,
                     Kathu.App.Graphics.Drawing,
+                    Kathu.App.Graphics.Font,
                     Kathu.App.Graphics.Image,
                     Kathu.App.Graphics.ImageManager,
                     Kathu.App.Graphics.Render,
                     Kathu.App.Graphics.RenderBuffer,
                     Kathu.App.Graphics.UI
-  build-depends:    base >=4.12 && <4.13, kathu-lib,
-                    aeson, apecs >=0.8.2 && <0.9, apecs-physics >=0.4.3 && <0.5, containers, lens, linear, mtl, random, sdl2, sdl2-image, sdl2-ttf, text, vector, vector-algorithms
+  build-depends:    base             >=4.12  && <4.13,
+                    kathu-lib,
+                    aeson            >=1.4   && <1.5,
+                    apecs            >=0.8.2 && <0.9,
+                    apecs-physics    >=0.4.3 && <0.5,
+                    hashtables       >=1.2.0 && <1.3.0,
+                    mono-traversable >=1.0.9 && <1.1,
+                    containers, lens, linear, mtl, random, sdl2, sdl2-image, sdl2-ttf, text, vector, vector-algorithms
   hs-source-dirs:   exec
   default-language: Haskell2010
 

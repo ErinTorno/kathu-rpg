@@ -15,7 +15,7 @@ import Linear.V2 (V2(..))
 import qualified SDL
 
 import Kathu.App.Graphics.Drawing
-import Kathu.App.Graphics.Image (ImageID)
+import Kathu.App.Graphics.Image
 import Kathu.App.Graphics.ImageManager
 import Kathu.Entity.ActorState
 import Kathu.Entity.Resource
@@ -45,7 +45,7 @@ data DisplayBar = DisplayBar
 
 data UIConfig = UIConfig
     { isEnabled :: Bool
-    , gameIcon  :: ImageID
+    , gameIcon  :: Image -- Not just ImageID, as this is stored differently to allow SDL to use its pixels as the icon
     , healthBar :: DisplayBar
     , manaBar   :: DisplayBar
     }
@@ -63,6 +63,7 @@ instance (FromJSON (Dependency s m (RenderSprite ImageID)), Monad m) => FromJSON
     parseJSON v = typeMismatch "DisplayBar" v
 
 instance ( FromJSON (Dependency s m (RenderSprite ImageID))
+         , FromJSON (Dependency s m Image)
          , FromJSON (Dependency s m ImageID)
          , Monad m
          ) => FromJSON (Dependency s m UIConfig) where

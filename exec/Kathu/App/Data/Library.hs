@@ -56,7 +56,7 @@ addUnique _ _ _ = error "Attempted to add more than one items that are marked as
 
 -- once languages are implemented, the .lang files should configure font paths, not this
 loadFonts :: (Library, KathuStore) -> IO (Library, KathuStore)
-loadFonts (lib, store) = (,store) . (flip (set font)) lib <$> SDLF.load "assets/font/VT323-Regular.ttf" 28
+loadFonts (lib, store) = (,store) . (flip (set font)) lib <$> SDLF.load "assets/fonts/VT323-Regular.ttf" 28
 
 -- Surfaces are not stored in the library, as once ImageManager is done doing conversions we want to GC it
 loadLibrary :: Library -> FilePath -> IO (Library, Vector SDL.Surface)
@@ -83,6 +83,6 @@ loadLibrary initialLibrary fldr = process
                 -- All tiles must innately know of empty, since it isn't loaded through parsing
                 >>= \(library, store) -> pure (over tiles (Map.insert "empty" emptyTile) library, store)
                 >>= psDP ("world",  addAll worldSpaces worldID)
-                >>= psUnique "ui"   uiConfig
+                >>= psUnique "hud"  uiConfig
                 >>= loadFonts
                 >>= pure . mapSnd (view plImages)

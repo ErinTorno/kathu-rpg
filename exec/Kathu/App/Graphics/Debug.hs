@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Kathu.App.Graphics.Debug (renderDebug) where
@@ -10,9 +11,8 @@ import qualified Data.Text                       as T
 import qualified Data.Vector.Storable            as SVec
 import           SDL                             (($=))
 import qualified SDL
-import qualified SDL.Font                        as SDLF
 
-import           Kathu.App.Data.Library          (font)
+import           Kathu.App.Graphics.Font         (renderText)
 import           Kathu.App.Graphics.Image        (ImageID)
 import           Kathu.App.Graphics.ImageManager (currentPalette)
 import           Kathu.App.System                (SystemT')
@@ -48,9 +48,6 @@ renderDebug renderer logicToRenderPos = do
     cmapM_ $ \(Position pos, Shape _ (Convex vecs _), _ :: Identity) -> renderCollision primaryCollisionBoxColor pos vecs
     renderDebugText renderer
 
--- This method of rendering text takes up a ridiculous amount of CPU
--- Current when this is being called, CPU more than doubles
--- This'll need to be moved over to a cached-based system, especially if we want to have other text
 renderDebugText :: SDL.Renderer -> SystemT' IO ()
 renderDebugText renderer = do
     world :: WorldSpace ImageID <- get global
@@ -59,6 +56,10 @@ renderDebugText renderer = do
 
     let displayText = T.pack . concat $ ["palette: ", show (currentPalette manager), " zoom: ", show (1 / cZoom), " | world: ", show (unID . worldID $ world), " x: ", show camX, " y: ", show camY]
 
+    fontCache <- get global
+    void $ renderText renderer fontCache "" white (V2 0 0) displayText
+
+    {-
     library <- get global
     textSurface <- SDLF.solid (library^.font) (unColor white) displayText
     textTexture <- SDL.createTextureFromSurface renderer textSurface
@@ -68,4 +69,4 @@ renderDebugText renderer = do
 
     SDL.freeSurface textSurface
     SDL.destroyTexture textTexture
-    
+    -}

@@ -8,6 +8,12 @@ import           Data.Vector.Mutable (MVector)
 import qualified Data.Vector.Mutable as MVec
 import           Numeric (showHex)
 
+-- Maybe functions
+
+fromJustElseError :: String -> Maybe a -> a
+fromJustElseError _ (Just a) = a
+fromJustElseError errMsg _   = error errMsg
+
 -- List functions
 
 -- | Drops the first element if it equals the given value

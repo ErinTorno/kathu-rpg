@@ -1,7 +1,6 @@
 module Kathu.App.SDLCommon where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Foreign.Storable (peek)
+import Control.Monad.IO.Class (MonadIO)
 import qualified SDL
 import qualified SDL.Internal.Types as SDLIn.Types
 import qualified SDL.Raw.Video as SDLRaw.Video

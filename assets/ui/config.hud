@@ -1,15 +1,15 @@
-game-icon: heart-large-full.png # change later, doesn't really matter for now
+game-icon: /temp-icon.png
 health-bar:
   starts-at:        [5, 10]
   points-per-part:  20
   primary-width:    10 # size plus 1 pixel for space
   secondary-width:  8
-  primary-full:     heart-large-full.png
+  primary-full:     heart-large-4q.png
   primary-3q:       heart-large-3q.png
-  primary-half:     heart-large-half.png
+  primary-half:     heart-large-2q.png
   primary-1q:       heart-large-1q.png
-  secondary-full:   heart-small-full.png
-  secondary-empty:  heart-small-empty.png
+  secondary-full:   heart-small-4q.png
+  secondary-empty:  heart-small-0q.png
 mana-bar:
   starts-at:        [5, 15]
   points-per-part:  20
@@ -19,9 +19,9 @@ mana-bar:
   cap-ending:       mana-cap-ending.png
   primary-width:    7
   secondary-width:  7
-  primary-full:     mana-full.png
+  primary-full:     mana-4q.png
   primary-3q:       mana-3q.png
-  primary-half:     mana-half.png
+  primary-half:     mana-2q.png
   primary-1q:       mana-1q.png
-  secondary-full:   mana-full.png
-  secondary-empty:  mana-empty.png
+  secondary-full:   mana-4q.png
+  secondary-empty:  mana-0q.png

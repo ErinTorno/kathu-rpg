@@ -68,7 +68,7 @@ runEvents = whileFstM (SDL.pollEvent >>= ev)
 printPhysics :: SystemT' IO ()
 printPhysics = do
     liftIO . putStrLn $ "### Print Physics ###"
-
+    
     (Gravity g)    <- get global
     (Iterations i) <- get global
     liftIO . putStrLn . concat $ ["global (gravity ", show g, "; iterations ", show i, ")"]
