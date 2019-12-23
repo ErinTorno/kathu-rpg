@@ -12,7 +12,6 @@ module Kathu.App.System where
 import Apecs
 import Apecs.Physics
 import Control.Monad.IO.Class (MonadIO)
-import qualified Data.Map as Map
 import Data.Semigroup (Semigroup)
 
 import Kathu.App.Data.Library
@@ -80,7 +79,7 @@ instance Monoid WorldSpace'  where mempty = emptyWorldSpace
 instance Component WorldSpace'  where type Storage WorldSpace'  = Global WorldSpace' 
 
 instance Semigroup Library where (<>) = mappend
-instance Monoid Library where mempty = Library mempty Map.empty Map.empty Map.empty Map.empty Map.empty (error "No font loaded")
+instance Monoid Library where mempty = emptyLibrary
 instance Component Library where type Storage Library = Global Library
 
 -- World

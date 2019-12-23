@@ -1,6 +1,6 @@
-lang-id:   english
-name:      "english"
-# no line files given, as English is the default and has no need to override text
+lang-id:   esperanto
+name:      "esperanto"
+directory: "./esperanto"
 fonts:
   small:
     file: "/fonts/VT323-Regular.ttf"

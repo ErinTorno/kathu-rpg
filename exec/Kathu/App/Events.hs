@@ -7,6 +7,7 @@ import Apecs hiding (set)
 import Apecs.Physics
 import Control.Lens hiding (Identity)
 import Control.Monad (void, when)
+import qualified Data.Text.IO as T
 import qualified SDL
 
 import Kathu.App.Data.Settings
@@ -19,6 +20,7 @@ import Kathu.Entity.Time
 import Kathu.Graphics.Camera
 import Kathu.Util.Flow (whileFstM)
 import Kathu.Util.Timing
+import Kathu.Util.Types (unID)
 
 handleControls :: System' ()
 handleControls = do
@@ -74,14 +76,15 @@ printPhysics = do
     liftIO . putStrLn . concat $ ["global (gravity ", show g, "; iterations ", show i, ")"]
 
     -- Torque and force are ignored, as those are set to zero every update, and so this would always print 0's for them
-    cmapM_ $ \(Identity idt _ _, (Position p, Velocity v), (BodyMass mass, Moment moment), (Angle a, AngularVelocity a', CenterOfGravity cog), Entity etyID :: Entity) ->
-        liftIO . putStrLn . concat $
-            [ show etyID
-            , " (", show idt
-            , "): pos ", show p
+    cmapM_ $ \(Identity idt _ _, (Position p, Velocity v, BodyMass mass), (Angle a, AngularVelocity a', CenterOfGravity cog), Entity etyID :: Entity) -> liftIO $ do
+        putStr . show $ etyID
+        putStr " ("
+        T.putStr . unID $ idt -- this is separate to prevent unicode encoding issues with show
+        putStr ")"
+        putStrLn . concat $
+            [ ": pos ", show p
             , "; vel ", show v
             , "; mass ", show mass
-            , "; moment ", show moment
             , "; angle ", show a
             , "; angle-v ", show a'
             , "; center-of-g ", show cog

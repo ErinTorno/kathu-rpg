@@ -12,13 +12,18 @@
 * The player can hold shift to focus to slow down movement
 * The player's sprite now has more frames; still mostly programmer art though
 
-### 0.1.9.1 -- 
+### 0.1.9.1 -- 2019-12-21
 * New text rendering system that is easier on the GC; still needs improvements
 * Added support for window icons
 * Overhaul of game's base palette; now uses a modified version of Davit Masia's MATRIAX8C
 * Mana and magic is now blue instead of green, to prevent issues with deuteranopia and add more contrast when using extreme map shaders
 * Fixed bug where player would occasionally face wrong direction when walking after quickly changing directions
 * Started adding support for languages and custom UI's
+
+### 0.1.9.2 -- 2019-12-22
+* Added support for loading fonts from files; fonts are defined in .lang files
+* Languages are also supported, although replacing text with it isn't yet supported
+* Fixed issue with displaying and printing unicode characters
 
 ## 0.1.8.0 -- 2019-11-17
 

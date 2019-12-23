@@ -12,7 +12,7 @@ import qualified Data.Vector.Storable            as SVec
 import           SDL                             (($=))
 import qualified SDL
 
-import           Kathu.App.Graphics.Font         (renderText)
+import           Kathu.App.Graphics.Font         (defaultFont, renderText)
 import           Kathu.App.Graphics.Image        (ImageID)
 import           Kathu.App.Graphics.ImageManager (currentPalette)
 import           Kathu.App.System                (SystemT')
@@ -54,19 +54,13 @@ renderDebugText renderer = do
     manager <- get global
     ((V2 camX camY), cZoom) <- cfold (\_ (Position pos, Camera z) -> (pos, z)) ((V2 0 0), 1)
 
-    let displayText = T.pack . concat $ ["palette: ", show (currentPalette manager), " zoom: ", show (1 / cZoom), " | world: ", show (unID . worldID $ world), " x: ", show camX, " y: ", show camY]
+    let displayText = T.concat $
+            [ "palette: ",  T.pack . show . currentPalette $ manager
+            , " zoom: ",    T.pack . show $ 1 / cZoom
+            , " | world: ", unID . worldID $ world
+            , " x: ",       T.pack . show $ camX
+            , " y: ",       T.pack . show $ camY
+            ]
 
     fontCache <- get global
-    void $ renderText renderer fontCache "" white (V2 0 0) displayText
-
-    {-
-    library <- get global
-    textSurface <- SDLF.solid (library^.font) (unColor white) displayText
-    textTexture <- SDL.createTextureFromSurface renderer textSurface
-    textSize    <- SDL.surfaceDimensions textSurface
-
-    void $ SDL.copy renderer textTexture Nothing (Just $ SDL.Rectangle (SDL.P (V2 0 0)) textSize)
-
-    SDL.freeSurface textSurface
-    SDL.destroyTexture textTexture
-    -}
+    void $ renderText renderer fontCache defaultFont white (V2 0 0) displayText

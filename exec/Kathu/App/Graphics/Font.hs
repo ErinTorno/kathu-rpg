@@ -1,10 +1,15 @@
-{-# LANGUAGE Strict #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Strict            #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Kathu.App.Graphics.Font where
 
 import           Control.Monad           (forM_)
 import           Control.Monad.IO.Class  (MonadIO, liftIO)
 import           Control.Monad.ST        (RealWorld, stToIO)
+import           Data.Aeson
 import           Data.HashTable.ST.Basic (HashTable)
 import qualified Data.HashTable.ST.Basic as HT
 import           Data.MonoTraversable    (ofoldlM)
@@ -21,7 +26,21 @@ import qualified SDL                     as SDL
 import qualified SDL.Font                as SDLF
 
 import           Kathu.Graphics.Color
+import           Kathu.IO.Directory
+import           Kathu.Util.Dependency
 import           Kathu.Util.Types        (Identifier, IDMap)
+
+type Font = SDLF.Font
+
+-- | This font is always assumed to be loaded by a language, and is used for debugging purposes
+defaultFont :: Identifier
+defaultFont = "small"
+
+instance (s `CanProvide` WorkingDirectory, MonadIO m) => FromJSON (Dependency s m SDLF.Font) where
+    parseJSON = withObject "Font" $ \v -> do
+        filePath <- resolveAssetPathDP <$> v .: "file"
+        size     <- v .: "size"
+        pure $ liftDependency . (flip SDLF.load) size =<< filePath
 
 -- in future, might want to load this from language file
 defaultCachedChars :: [Char]

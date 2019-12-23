@@ -21,13 +21,20 @@ newtype WorkingDirectory = WorkingDirectory {unWorkingDir :: FilePath}
 assetPath :: FilePath
 assetPath = "./assets"
 
+-- | Strips unnecessary-but-informative `./` from relative file paths
+sanitizeRelativePath :: FilePath -> FilePath
+sanitizeRelativePath ('.':'/':ending) = ending
+sanitizeRelativePath ending           = ending
+
 -- Strings that begin with / are absolute, otherwise they are relative to the current directory
 -- as such, using C:\\ or similar notations to access outside of the directory is not allowed
+-- Current Directory -> Given Path -> Absolute Path
 resolveAssetPath :: FilePath -> FilePath -> FilePath
 resolveAssetPath _ ('/':cs) = concat [assetPath, "/", cs]
-resolveAssetPath "" ending  = concat [assetPath, "/", ending]
-resolveAssetPath p ending | assetPath `isPrefixOf` p = concat [p, "/", ending]
-                          | otherwise                = concat [assetPath, "/", p, "/", ending]
+resolveAssetPath "" ending  = concat [assetPath, "/", sanitizeRelativePath ending]
+resolveAssetPath p ending
+    | assetPath `isPrefixOf` p = concat [p, "/", sanitizeRelativePath ending]
+    | otherwise                = concat [assetPath, "/", p, "/", sanitizeRelativePath ending]
 
 resolveAssetPathDP :: (s `CanProvide` WorkingDirectory, Monad m) => FilePath -> Dependency s m FilePath
 resolveAssetPathDP path = ((flip resolveAssetPath) path . unWorkingDir) <$> provide

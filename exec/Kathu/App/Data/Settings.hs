@@ -25,7 +25,7 @@ data Settings = Settings
     , resolution     :: V2 Word32
     , isVSyncEnabled :: Bool
     , serverPort     :: Word32
-    --, language :: 
+    , language       :: Identifier
     , modDir         :: Text
     , baseSaveDir    :: Text
     , moddedSaveDir  :: Text
@@ -48,6 +48,7 @@ defaultSettings = Settings
     , resolution     = V2 1280 720
     , isVSyncEnabled = False
     , serverPort     = 7777
+    , language       = "english"
     , modDir         = "/mods"
     , baseSaveDir    = "/saves"
     , moddedSaveDir  = "/modded-saves"
@@ -100,8 +101,13 @@ defaultControls = Controls
     , keyDebugPrintPhysics = SDL.ScancodeF7
     }
 
+settingsFileName :: String
+settingsFileName = "./settings.config"
+
+saveSettings :: Settings -> IO ()
+saveSettings = saveToFile FormatYAML settingsFileName
+
 loadSettings :: IO Settings
-loadSettings = fileExists fileName >>= bool (pure Nothing) (maybeLoad fileName) >>= def
-    where fileName     = "./settings.config"
-          def Nothing  = saveToFile FormatYAML fileName defaultSettings >> pure defaultSettings
+loadSettings = fileExists settingsFileName >>= bool (pure Nothing) (maybeLoad settingsFileName) >>= def
+    where def Nothing  = saveSettings defaultSettings >> pure defaultSettings
           def (Just s) = pure s

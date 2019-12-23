@@ -6,7 +6,8 @@
 {-# LANGUAGE TupleSections     #-}
 
 module Kathu.App.Data.Library
-    ( Library(..), uiConfig, prototypes, items, floorProperties, tiles, worldSpaces, font
+    ( Library(..), uiConfig, prototypes, items, languages, floorProperties, tiles, worldSpaces
+    , emptyLibrary
     , loadLibrary
     ) where
 
@@ -15,9 +16,10 @@ import Data.Aeson
 import qualified Data.Map as Map
 import Data.Vector (Vector)
 import qualified SDL as SDL
-import qualified SDL.Font as SDLF
 
+import Kathu.Language
 import Kathu.App.Data.KathuStore
+import Kathu.App.Graphics.Font  (Font)
 import Kathu.App.Graphics.Image (ImageID)
 import Kathu.App.Graphics.UI
 import Kathu.Entity.Item
@@ -36,11 +38,14 @@ data Library = Library
     , _prototypes      :: IDMap (EntityPrototype ImageID)
     , _floorProperties :: IDMap FloorProperty
     , _items           :: IDMap (Item ImageID)
+    , _languages       :: IDMap (Language Font)
     , _tiles           :: IDMap (Tile ImageID)
     , _worldSpaces     :: IDMap (WorldSpace ImageID)
-    , _font            :: SDLF.Font -- later on this should become a collection
     }
 makeLenses ''Library
+
+emptyLibrary :: Library
+emptyLibrary = Library (error "Attempted to use UIConfig before it has been loaded") Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty
 
 addEntities :: [EntityPrototype ImageID] -> Library -> Library
 addEntities ety = set prototypes (etyMap ety)
@@ -53,10 +58,6 @@ addAll setter getKey elems = set setter map'
 addUnique :: Setter Library Library a a -> [a] -> Library -> Library
 addUnique setter (x:[]) lib = set setter x lib
 addUnique _ _ _ = error "Attempted to add more than one items that are marked as unique"
-
--- once languages are implemented, the .lang files should configure font paths, not this
-loadFonts :: (Library, KathuStore) -> IO (Library, KathuStore)
-loadFonts (lib, store) = (,store) . (flip (set font)) lib <$> SDLF.load "assets/fonts/VT323-Regular.ttf" 28
 
 -- Surfaces are not stored in the library, as once ImageManager is done doing conversions we want to GC it
 loadLibrary :: Library -> FilePath -> IO (Library, Vector SDL.Surface)
@@ -76,6 +77,7 @@ loadLibrary initialLibrary fldr = process
           start = (initialLibrary, emptyKathuStore)
           process :: IO (Library, Vector SDL.Surface)
           process = pure start
+                >>= psDP ("lang",   addAll languages langID)
                 >>= psDP ("item",   addAll items itemID)
                 >>= psDP ("entity", addEntities)
                 >>= psDP ("floor",  addAll floorProperties propTextID)
@@ -84,5 +86,4 @@ loadLibrary initialLibrary fldr = process
                 >>= \(library, store) -> pure (over tiles (Map.insert "empty" emptyTile) library, store)
                 >>= psDP ("world",  addAll worldSpaces worldID)
                 >>= psUnique "hud"  uiConfig
-                >>= loadFonts
                 >>= pure . mapSnd (view plImages)

@@ -1,0 +1,4 @@
+item:
+  sword:
+    name:        {default: "glavo", cases: {akuz: "glavon", plu: "glavoj", akuz-plu: "glavojn"}}
+    description: "tranĉa, brila klingo"
