@@ -4,7 +4,7 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeFamilies               #-}
@@ -22,6 +22,8 @@ import           Data.Map               (Map)
 import qualified Data.Map               as Map
 import           Data.Map.Merge.Strict  (merge, preserveMissing, zipWithMatched)
 import           Data.Text              (Text)
+import           Data.Vector            (Vector)
+import qualified Data.Vector            as Vec
 
 import           Kathu.IO.File          (parseAll)
 import           Kathu.IO.Directory
@@ -31,13 +33,13 @@ import           Kathu.Util.Types
 
 data LangUnit = LangUnit
     { luValue :: !Text            -- the default value for this part of speech
-    --, luTags  :: !(Vector Text) -- innate attributes associated with this part of speech
+    , luTags  :: !(Vector Text)   -- innate attributes associated with this part of speech
     , luCases :: !(Map Text Text) -- different variations of the value for different situations (such as grammatical case or gender)
     }
 
 instance FromJSON LangUnit where
-    parseJSON (String s) = pure $ LangUnit s Map.empty
-    parseJSON (Object v) = LangUnit <$> v .: "default" <*> v .: "cases"
+    parseJSON (String s) = pure $ LangUnit s Vec.empty Map.empty
+    parseJSON (Object v) = LangUnit <$> v .: "default" <*> v .: "tags" <*> v .: "cases"
     parseJSON e          = typeMismatch "LangUnit" e
 
 -- Category -> ID -> Key -> Text

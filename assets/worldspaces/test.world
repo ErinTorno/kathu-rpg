@@ -56,30 +56,31 @@ legend:
   " ": empty
   "#": brick-wall
   "%": brick-wall-cold
+  "V": brick-wall-vibrant
   "*": brick-floor
   ",": tall-grass
 tiles:
-- "##  #######   , ,, # ## , ,### ,, "
-- "#    #    #   ,,, ,   #, ,,# #, , "
-- "#    #   ###     ,   ,# ,,,### , ,"
-- "#        ,        ,   #,   ,      "
-- "#       , ,   ,   ,   #,,       , "
-- "#           ,  ,  ,  ##,    ,   ,,"
-- "####  #   #        , ,, ,,  ,    ,"
-- "#         #  ,, ,,,          ,    "
-- "#         #  ,,,, ,   ,          ,"
-- "#         #  ,,,,  , ,%%%    %%%,,"
-- "#         #   ,,,  ,  %        %, "
-- "#         #  , ,,,   ,%        %, "
-- "#         #  ,,,,,,  ,%        % ,"
-- "#         #  , ,,,   ,%        %, "
-- "#         #  ,,,,,,  ,%        %  "
-- "#  #####  # ,,, , ,   %%%    %%% ,"
+- "##  #######   , ,, # ## , ,,,   #####, #####, "
+- "#    #    #   ,,, ,   #, ,,,,   #   #, # # #, "
+- "#    #   ###     ,   ,# ,,,    ,# # # ,#####,,"
+- "#        ,        ,   #,        #   #    ,,,, "
+- "#       , ,   ,   ,   #,,       #####, ,, , , "
+- "#           ,  ,  ,  ##,   ,  ,      ,,, , ,, "
+- "####  #   #        , ,, ,, ,, ,       ,, ,, ,,"
+- "#         #  ,, ,,,          , ,       ,,,  , "
+- "#         #  ,,,, ,   ,           ,,,  , ,V, ,"
+- "#         #  ,,,,  , ,%%%    %%%,,    , , V ,V"
+- "#         #   ,,,  ,  %        %,,     , ,V  ,"
+- "#         #  , ,,,   ,%        %,     ,, ,V , "
+- "#         #  ,,,,,,  ,%        % , ,,  ,, V, ,"
+- "#         #  , ,,,   ,%        %, ,,,  , ,V,,,"
+- "#         #  ,,,,,,  ,%        %  ,, ,,VVVV ,,"
+- "#  #####  # ,,, , ,   %%%    %%% ,,  ,, ,  , ,"
 variables:
   # this contains variables that are associated with the worldspace itself, and are saved/loaded with it
-  my-bool:   {type: double, value: 100}
-  my-double: {type: int,    value: 4.25}
-  my-int:    {type: bool,   value: true}
+  my-bool:   {type: bool,   value: true}
+  my-double: {type: double, value: 100.25}
+  my-int:    {type: int,    value: 32}
 entities:
 - entity:   chest-locked
   position: [6.5, 1]
@@ -98,10 +99,10 @@ entities:
 - entity:   block
   position: [2, 12]
 - entity:   block
-  position: [32, 4]
+  position: [30, 4]
 items:
 - item:     apple
-  position: [19, 2.5] # 1.0 is a single tile
+  position: [19, 2.5]
 - item:     apple
   position: [15.5, 8.5]
 - item:     potion-health

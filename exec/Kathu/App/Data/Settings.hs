@@ -44,7 +44,7 @@ instance FromJSON Settings where
 
 defaultSettings :: Settings
 defaultSettings = Settings
-    { targetFPS      = 120.0
+    { targetFPS      = 60.0
     , resolution     = V2 1280 720
     , isVSyncEnabled = False
     , serverPort     = 7777
@@ -52,7 +52,7 @@ defaultSettings = Settings
     , modDir         = "/mods"
     , baseSaveDir    = "/saves"
     , moddedSaveDir  = "/modded-saves"
-    , canUseDebug    = False
+    , canUseDebug    = True
     , controls       = defaultControls
     , randomSeed     = Nothing
     , misc           = Map.empty
@@ -60,15 +60,15 @@ defaultSettings = Settings
     }
 
 data Controls = Controls
-    { keyMoveNorth :: SDL.Scancode
-    , keyMoveEast  :: SDL.Scancode
-    , keyMoveSouth :: SDL.Scancode
-    , keyMoveWest  :: SDL.Scancode
-    , keyFocus     :: SDL.Scancode
-    , keyToggleDebug  :: SDL.Scancode
-    , keyDebugZoomIn  :: SDL.Scancode
-    , keyDebugZoomOut :: SDL.Scancode
-    , keyDebugNextPalette :: SDL.Scancode
+    { keyMoveNorth         :: SDL.Scancode
+    , keyMoveEast          :: SDL.Scancode
+    , keyMoveSouth         :: SDL.Scancode
+    , keyMoveWest          :: SDL.Scancode
+    , keyFocus             :: SDL.Scancode
+    , keyToggleDebug       :: SDL.Scancode
+    , keyDebugZoomIn       :: SDL.Scancode
+    , keyDebugZoomOut      :: SDL.Scancode
+    , keyDebugNextPalette  :: SDL.Scancode
     , keyDebugPrintPhysics :: SDL.Scancode
     } deriving (Generic)
 
@@ -89,15 +89,15 @@ instance FromJSON Controls where
 
 defaultControls :: Controls
 defaultControls = Controls
-    { keyMoveNorth = SDL.ScancodeW
-    , keyMoveEast  = SDL.ScancodeD
-    , keyMoveSouth = SDL.ScancodeS
-    , keyMoveWest  = SDL.ScancodeA
-    , keyFocus     = SDL.ScancodeLShift
-    , keyToggleDebug  = SDL.ScancodeF3
-    , keyDebugZoomIn  = SDL.ScancodeKPMinus
-    , keyDebugZoomOut = SDL.ScancodeKPPlus
-    , keyDebugNextPalette = SDL.ScancodeF5
+    { keyMoveNorth         = SDL.ScancodeW
+    , keyMoveEast          = SDL.ScancodeD
+    , keyMoveSouth         = SDL.ScancodeS
+    , keyMoveWest          = SDL.ScancodeA
+    , keyFocus             = SDL.ScancodeLShift
+    , keyToggleDebug       = SDL.ScancodeF3
+    , keyDebugZoomIn       = SDL.ScancodeKPMinus
+    , keyDebugZoomOut      = SDL.ScancodeKPPlus
+    , keyDebugNextPalette  = SDL.ScancodeF5
     , keyDebugPrintPhysics = SDL.ScancodeF7
     }
 

@@ -25,6 +25,12 @@
 * Languages are also supported, although replacing text with it isn't yet supported
 * Fixed issue with displaying and printing unicode characters
 
+### 0.1.9.3 -- 2020-01-19
+* Tiles arranged so as to create shapes with holes in them now correctly have walkable collision inside of the holes
+* Config file formats are now determined by adding ~FORMAT before the .EXTENSION
+* Added support for parsing some UI stuctures to use for future file-config-based game UIs
+* Added color util functions for brightness/darkness
+
 ## 0.1.8.0 -- 2019-11-17
 
 * The game now has physics! Entities can specify their collision shapes and mass, density, friction, elasticity, and collision group

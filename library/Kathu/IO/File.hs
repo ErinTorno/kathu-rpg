@@ -1,26 +1,28 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MonoLocalBinds, TypeOperators #-}
+{-# LANGUAGE MonoLocalBinds    #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Kathu.IO.File where
 
-import Control.Monad (liftM2, mapM)
-import Control.Monad.State
-import Data.Aeson
-import Data.Aeson.Text (encodeToLazyText)
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Lazy.Char8 as CL8
-import Data.Text.Lazy.IO as IL
-import qualified Data.Yaml as Y
-import System.Directory
-import System.FilePath
+import           Control.Monad              (liftM2, mapM)
+import           Control.Monad.State
+import           Data.Aeson
+import           Data.Aeson.Text            (encodeToLazyText)
+import qualified Data.Bifunctor             as Bi
+import qualified Data.ByteString            as B
+import qualified Data.ByteString.Lazy       as BL
+import           Data.List                  (isPrefixOf)
+import           Data.Text.Lazy.IO          as IL
+import qualified Data.Yaml                  as Y
+import           System.Directory
+import           System.FilePath
 
-import Kathu.IO.Directory
-import Kathu.Util.Dependency
-import Kathu.Util.Flow (partitionM)
+import           Kathu.IO.Directory
+import           Kathu.Util.Dependency
+import           Kathu.Util.Flow            (partitionM)
 
 toStrict :: BL.ByteString -> B.ByteString
 toStrict = B.concat . BL.toChunks
@@ -33,17 +35,19 @@ fileExists = doesFileExist
 loadError :: String -> FilePath -> a
 loadError file = error . (++) (file ++ " | ")
 
--- we tell json vs yaml by checking if first char is { or [. In yaml this will only happen if the key is a list or object, which we never plan on doing
 loadWithHandlers :: FromJSON a => (String -> b) -> (a -> b) -> FilePath -> IO b
-loadWithHandlers onFail onSuccess fp = (BL.readFile fp) >>= \d -> pure $ decodeFormat (CL8.head d) d
-    where decodeFormat t d | t == '{' || t == '[' = either (onFail . show) onSuccess (eitherDecode d)
-                           | otherwise            = either (onFail . show) onSuccess (Y.decodeEither' . toStrict $ d)
+loadWithHandlers onFail onSuccess filepath
+    | typePrefix "~json" = handle eitherDecode
+    | otherwise          = handle (Bi.first show . Y.decodeEither' . toStrict) -- we default to yaml when nothing matches
+    where -- files types are put into the path, in the format of "filename~FORMAT.ext"
+          typePrefix c   = c `isPrefixOf` (takeBaseName filepath)
+          handle decoder  = either onFail onSuccess . decoder <$> BL.readFile filepath
 
 loadFromFile :: FromJSON a => FilePath -> IO a
 loadFromFile fp = loadWithHandlers (loadError fp) id fp
 
 maybeLoad :: FromJSON a => FilePath -> IO (Maybe a)
-maybeLoad = loadWithHandlers (\_ -> Nothing) Just
+maybeLoad = loadWithHandlers (const Nothing) Just
 
 saveToFile :: ToJSON a => Format -> FilePath -> a -> IO ()
 saveToFile FormatJSON fd config = IL.writeFile fd (encodeToLazyText config)

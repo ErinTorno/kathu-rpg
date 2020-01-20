@@ -1,8 +1,8 @@
 # this component can be shortened to "identity: myID" for entities without names or descriptions visible
 identity:
   id: player
-  name: This should never appear
-  description: This should never appear
+  name: jupiter
+  description: this should never appear
 # This follows an Entity Component System. Everything component is optional, with only an ID part of an identity being required for config file entities
 tags: [player]
 life-time: persistant # we never let this entity get destroyed automatically
@@ -18,7 +18,6 @@ body-config:
 # - {shape: circle,    radius: 0.25,        origin: [0, -0.25]}
   - {shape: rectangle, bounds: [0.5, 0.25], origin: [-0.25, -0.25]}
 # - {shape: rectangle, bounds: [1, 1],   origin: [0.5, 0.75]}
-# in future palette will be chosen by the player
 render:
 - atlas: "player.png"
   bounds: [23, 32] # kind of irregular

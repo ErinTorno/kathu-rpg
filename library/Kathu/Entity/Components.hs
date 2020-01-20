@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DataKinds             #-}
@@ -6,11 +5,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
 
 module Kathu.Entity.Components where
 
@@ -24,7 +19,7 @@ import GHC.Generics
 import Kathu.Entity.Action
 import Kathu.Util.Types (Identifier(..))
 
-type CacheSize = 2048
+type CacheSize = 4096
 
 -- Component types and instances
 

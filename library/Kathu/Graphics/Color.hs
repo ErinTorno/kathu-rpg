@@ -1,11 +1,12 @@
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE TupleSections              #-}
 
 module Kathu.Graphics.Color
     ( Color(..)
-    , HSVColor
+    , HSVColor(..)
     -- RGB
     , mkColor
     , desaturate
@@ -13,6 +14,8 @@ module Kathu.Graphics.Color
     , blendColor
     , invertRGB
     , nearestColor
+    , brightestColor
+    , darkestColor
     -- HSV
     , getHSVDifference
     , applyHSVDifference
@@ -38,19 +41,22 @@ module Kathu.Graphics.Color
     )
     where
 
-import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
-import Data.Fixed (mod')
-import Data.List (foldl')
-import qualified Data.Text as T
-import Data.Word
-import Foreign.Storable
-import GHC.Generics
-import Linear.V4 (V4(..))
-import Numeric (readHex)
-import Kathu.Util.Collection (padShowHex)
-import Kathu.Util.Flow (readElseFail)
-import Kathu.Util.Numeric (closestToZero)
+import           Data.Aeson
+import           Data.Aeson.Types      (typeMismatch)
+import           Data.Fixed            (mod')
+import qualified Data.Foldable         as F
+import           Data.Function         (on)
+import           Data.List             (foldl')
+import qualified Data.Text             as T
+import           Data.Word
+import           Foreign.Storable
+import           GHC.Generics
+import           Linear.V4             (V4(..))
+import           Numeric               (readHex)
+
+import           Kathu.Util.Collection (padShowHex)
+import           Kathu.Util.Flow       (readElseFail)
+import           Kathu.Util.Numeric    (closestToZero)
 
 -----------
 -- Color --
@@ -81,7 +87,7 @@ instance ToJSON Color where
 instance FromJSON Color where
     parseJSON (String s) = readElseFail failMsg . T.unpack $ s
         where failMsg = concat $ ["Couldn't parse String \"", show s, "\" into Color"]
-    parseJSON e = typeMismatch "Color" e
+    parseJSON e          = typeMismatch "Color" e
 
 mkColor :: Word8 -> Word8 -> Word8 -> Word8 -> Color
 mkColor r g b a = Color $ V4 r g b a
@@ -127,6 +133,21 @@ nearestColor colors color = fst . foldl' minWeight (color, 1/0) . fmap (weigh co
               where weight   = (2 + rAvg / 256) * (dsqr xr yr) + 4 * (dsqr xg yg) + (2 + (255 - rAvg) / 256) * (dsqr xb yb) + 6 * (dsqr xa ya)
                     rAvg     = (fromIntegral xr + fromIntegral yr) / 2
                     dsqr a b = (fromIntegral a - fromIntegral b) ** 2
+
+brightestColor :: (Foldable t, Functor t) => t Color -> Maybe Color
+brightestColor = colorByBrightness F.maximumBy
+
+darkestColor :: (Foldable t, Functor t) => t Color -> Maybe Color
+darkestColor = colorByBrightness F.minimumBy
+
+colorByBrightness :: (Foldable t, Functor t) => (forall a. (a -> a -> Ordering) -> t a -> a) -> t Color -> Maybe Color
+colorByBrightness chooseColor = getMin . fmap brightness
+    where getMin f | F.null f  = Nothing
+                   | otherwise = Just . fst . chooseColor (compare `on` snd) $ f
+          weight f a = fromIntegral a / 255 * f
+          -- gets the brightness weighting by human perception
+          brightness :: Color -> (Color, Double)
+          brightness c@(Color (V4 r g b a)) = (c, weight 0.30 r + weight 0.59 g + weight 0.11 b + weight 0.25 a)
 
 --------------------
 -- Manipulate HSV --

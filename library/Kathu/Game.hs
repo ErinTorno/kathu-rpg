@@ -40,8 +40,10 @@ runPhysics = do
             facingDir = fromMaybe (as^.facingDirection) dir
          in set isFocused (timedVal $ press^.useFocus) . set facingDirection facingDir . set moving dir . set lastMoving (as^.moving) $ as
     -- Applies for all moving acting entities
-    cmap $ \(MovingSpeed s, Velocity v, Mass m, as) -> Force . getMoveVector v m (if as^.isFocused then s / 2 else s) . view moving $ as
-
+    cmap $ \(MovingSpeed s, Velocity v, Mass m, as) -> Force
+                                                     . getMoveVector v (movingAcceleration m s) (if as^.isFocused then s / 2 else s)
+                                                     . view moving
+                                                     $ as
     pure ()
     
 runGame :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, ReadWriteEach w m '[ActionSet, Existance, FloorProperties, LifeTime, Local, LogicTime, MovingSpeed, WorldFloor, WorldTime])

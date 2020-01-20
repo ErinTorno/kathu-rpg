@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Strict #-}
 
-module Kathu.App.Main (start) where
+module Kathu.App.Main (start, startWith) where
 
 import Apecs (runWith)
 import Apecs.Physics (stepPhysics)
@@ -53,12 +53,16 @@ run renDelay renderer renBuf !prevPhysTime !prevRendTime = do
         run renDelay renderer newRenBuf (startTime - remainder) renderStartTime
 
 start :: IO ()
-start = do
+start = startWith $ \settings -> let config = SDL.defaultWindow { SDL.windowInitialSize = fromIntegral <$> resolution settings }
+                                  in SDL.createWindow appName config
+
+startWith :: (Settings -> IO SDL.Window) -> IO ()
+startWith createWindow = do
     SDL.initialize [SDL.InitVideo]
     SDL.HintRenderScaleQuality $= SDL.ScaleNearest
     settings <- loadSettings
     world    <- Init.entityWorld
-    window   <- SDL.createWindow appName $ SDL.defaultWindow { SDL.windowInitialSize = fromIntegral <$> resolution settings }
+    window   <- createWindow settings
     SDL.showWindow window
     SDLF.initialize
     renderer <- SDL.createRenderer window (-1) $ SDL.RendererConfig (if isVSyncEnabled settings then SDL.AcceleratedVSyncRenderer else SDL.AcceleratedRenderer) False

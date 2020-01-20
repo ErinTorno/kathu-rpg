@@ -8,7 +8,3 @@ A dungeon/puzzle focused RPG written in Haskell.
 * Add AI support for other entities
 * Support game state serialization and loading
 * Support separate mod asset directories and overriding game assets
-
-## Known Issues
-
-* Holes fully enclosed in solid tiles will also have solid collision

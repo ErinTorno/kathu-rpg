@@ -92,14 +92,15 @@ initWorldSpace destroyEty mkEntity ws = do
     mapM_ (\(pos, ety)  -> mkEntity ety >>= (flip ($=)) (Position pos)) (worldEntities ws)
     mapM_ (\(pos, item) -> newEntityFromItem item pos) (worldItems ws)
     
-    let addWorldCollision []           = pure ()
-        addWorldCollision (poly:polys) = do
-            ety <- newExistingEntity (StaticBody, Position (V2 0 0))
-            ety $= (Shape ety $ Convex poly 0)
-            let go []     = pure ()
-                go (p:ps) = newExistingEntity (Shape ety $ Convex p 0) >> go ps
-            go polys
+    let addWorldCollision polygons
+            | Vec.null polygons = pure ()
+            | otherwise         = do
+                ety <- newExistingEntity (StaticBody, Position (V2 0 0))
+                ety $= (Shape ety $ Convex (Vec.head polygons) 0)
+                
+                mapM_ (\p -> newExistingEntity (Shape ety $ Convex p 0)) . Vec.tail $ polygons
     colPolys <- mkCollisionPolygons tiles . worldFields $ ws
+
     addWorldCollision colPolys
 
 -- as of right now, count not considered; this will be added when picking up is implemented

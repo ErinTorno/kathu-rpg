@@ -68,9 +68,8 @@ movingAcceleration mass s = 54 * mass * s * 0.5
 -- positive x is east, positive y is south, positive z is upward
 getMoveVector :: (Fractional a, Ord a) => V2 a -> a -> a -> Maybe Direction -> V2 a
 getMoveVector _ _ _ Nothing           = V2 0 0 
-getMoveVector (V2 !x !y) !mass !s (Just dir) =
+getMoveVector (V2 !x !y) !acc !s (Just dir) =
     let diagS     = getDiagonal s
-        acc       = movingAcceleration mass s
         diagAcc   = getDiagonal acc
         diag !x' !y' !ax !ay -- when we are moving diagonally, we need to check both the x and y components
             | x' > diagS && y' > diagS = V2 0 0
