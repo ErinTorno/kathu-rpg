@@ -1,6 +1,10 @@
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, TypeOperators #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module Kathu.App.Data.KathuStore where
 
@@ -23,14 +27,14 @@ import Kathu.Util.Types (IDMap)
 import Kathu.World.Tile (emptyTile, reservedTileIDMap, Tile)
 
 data KathuStore = KathuStore
-    { _plImages         :: Vector Image
-    , _countingIDs      :: CountingIDs
-    , _plEntities       :: IDMap (EntityPrototype ImageID)
-    , _plFloors         :: IDMap FloorProperty
-    , _plItems          :: IDMap (Item ImageID)
-    , _plTiles          :: IDMap (Tile ImageID)
-    , _damageProfiles   :: IDMap (DamageProfile (RenderSprite ImageID))
-    , _workingDirectory :: WorkingDirectory
+    { _plImages         :: !(Vector Image)
+    , _countingIDs      :: !(CountingIDs)
+    , _plEntities       :: !(IDMap (EntityPrototype ImageID))
+    , _plFloors         :: !(IDMap FloorProperty)
+    , _plItems          :: !(IDMap (Item ImageID))
+    , _plTiles          :: !(IDMap (Tile ImageID))
+    , _damageProfiles   :: !(IDMap (DamageProfile (RenderSprite ImageID)))
+    , _workingDirectory :: !(WorkingDirectory)
     }
 makeLenses ''KathuStore
 

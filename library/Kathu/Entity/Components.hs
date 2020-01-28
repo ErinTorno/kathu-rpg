@@ -14,10 +14,11 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
 import Data.Text (Text)
+import Data.Vector (Vector)
 import GHC.Generics
 
 import Kathu.Entity.Action
-import Kathu.Util.Types (Identifier(..))
+import Kathu.Util.Types (Identifier, mkIdentifier)
 
 type CacheSize = 4096
 
@@ -39,14 +40,14 @@ data Identity = Identity
 instance Component Identity where type Storage Identity = Cache CacheSize (Map Identity)
 
 instance FromJSON Identity where
-    parseJSON (String s) = pure $ Identity (Identifier s) "" "" -- basic one with only an id
+    parseJSON (String s) = pure $ Identity (mkIdentifier s) "" "" -- basic one with only an id
     parseJSON (Object v) = Identity <$> v .: "id" <*> v .:? "name" .!= "" <*> v .:? "description" .!= ""
     parseJSON e          = typeMismatch "Identity" e
 
 newtype MovingSpeed = MovingSpeed Double deriving (Show, Eq, Generic, ToJSON, FromJSON)
 instance Component MovingSpeed where type Storage MovingSpeed = Map MovingSpeed
 
-newtype Tags = Tags [Text] deriving (Show, Eq, Generic, ToJSON, FromJSON)
+newtype Tags = Tags (Vector Text) deriving (Show, Eq, Generic, ToJSON, FromJSON)
 instance Component Tags where type Storage Tags = Map Tags
 
 -- Uniques

@@ -1,6 +1,6 @@
 cabal-version:       2.4
 name:                kathu
-version:             0.1.9.3
+version:             0.1.10.0
 -- synopsis:
 -- description:
 license:             GPL-3.0-only
@@ -26,7 +26,9 @@ library kathu-lib
                     Kathu.Entity.Physics.CollisionGroup,
                     Kathu.Entity.Physics.Floor,
                     Kathu.Entity.Prototype,
+                    Kathu.Entity.PrototypeTemplate,
                     Kathu.Entity.Resource,
+                    Kathu.Entity.SerializableComponent,
                     Kathu.Entity.System,
                     Kathu.Entity.Time,
                     -- Graphics
@@ -47,6 +49,13 @@ library kathu-lib
                     -- Parsing
                     Kathu.Parsing.Aeson,
                     Kathu.Parsing.Counting,
+                    -- Scripting
+                    Kathu.Scripting.Event,
+                    Kathu.Scripting.Lua,
+                    Kathu.Scripting.Lua.Component,
+                    Kathu.Scripting.Lua.Global,
+                    Kathu.Scripting.Lua.Types,
+                    Kathu.Scripting.Variables,
                     -- Utility
                     Kathu.Util.Apecs,
                     Kathu.Util.Collection,
@@ -56,15 +65,17 @@ library kathu-lib
                     Kathu.Util.Polygon,
                     Kathu.Util.Timing,
                     Kathu.Util.Types
-  other-modules:    Kathu.Entity.PrototypeTemplate,
-                    Kathu.Entity.SerializableComponents
-  build-depends:    base >=4.12 && <4.13,
-                    text, bytestring,
-                    apecs >=0.8.2 && <0.9, apecs-physics >=0.4.3 && <0.5,
+--other-modules:    
+  build-depends:    base                    >=4.12    && <4.13,
+                    apecs                   >=0.8.2   && <0.9,
+                    apecs-physics           >=0.4.3   && <0.5,
+                    hgeometry               >=0.10    && <0.11,
+                    hgeometry-combinatorial >=0.10    && <0.11,
+                    hashable                >=1.3     && <1.4,
+                    hashtables              >=1.2.0 && <1.3.0,
+                    hslua                   >=1.0.0.0 && <1.1.0.0,
                     containers,
-                    hgeometry >=0.10 && <0.11,
-                    hgeometry-combinatorial >=0.10 && <0.11,
-                    hashable  >=1.3 && <1.4,
+                    text, bytestring,
                     lens, linear, mtl, primitive, random, scientific, template-haskell, unordered-containers, vector, vector-th-unbox,
                     directory, filepath,
                     aeson, cereal, yaml

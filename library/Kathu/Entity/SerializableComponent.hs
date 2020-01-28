@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Kathu.Entity.SerializableComponents where
+module Kathu.Entity.SerializableComponent where
 
 import Language.Haskell.TH.Syntax (Name)
 

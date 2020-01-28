@@ -22,7 +22,6 @@ import           Kathu.App.World                 (loadWorldSpace)
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.Floor
-import           Kathu.Entity.Prototype
 import           Kathu.Entity.System
 import           Kathu.IO.Directory              (assetPath)
 import           Kathu.Graphics.Camera

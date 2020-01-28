@@ -1,5 +1,12 @@
 # Revision history for kathu
 
+## 0.1.10.0 -- 2020-01-27
+* Lua scripts can now be loaded and ran from files
+* Scripts can be attached to entities and worldspaces
+* Scripts are able to get and set most entity components, get global and unique ones, and change the world's palette
+* Scripts can be configured for different events to run when they occur
+* Identifiers are now pre-hashed for faster lookup
+
 ## 0.1.9.0 -- 2019-12-15
 
 * SDL rendering is done through textures instead of surfaces, significantly reducing CPU at the cost of GPU
@@ -13,6 +20,7 @@
 * The player's sprite now has more frames; still mostly programmer art though
 
 ### 0.1.9.1 -- 2019-12-21
+
 * New text rendering system that is easier on the GC; still needs improvements
 * Added support for window icons
 * Overhaul of game's base palette; now uses a modified version of Davit Masia's MATRIAX8C
@@ -21,11 +29,13 @@
 * Started adding support for languages and custom UI's
 
 ### 0.1.9.2 -- 2019-12-22
+
 * Added support for loading fonts from files; fonts are defined in .lang files
 * Languages are also supported, although replacing text with it isn't yet supported
 * Fixed issue with displaying and printing unicode characters
 
 ### 0.1.9.3 -- 2020-01-19
+
 * Tiles arranged so as to create shapes with holes in them now correctly have walkable collision inside of the holes
 * Config file formats are now determined by adding ~FORMAT before the .EXTENSION
 * Added support for parsing some UI stuctures to use for future file-config-based game UIs

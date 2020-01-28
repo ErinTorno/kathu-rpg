@@ -4,28 +4,32 @@
 {-# LANGUAGE BangPatterns               #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 
 module Kathu.Util.Types
     ( Identifier(..)
     , IDMap
+    , IDHashTable
     , Range(..)
+    , mkIdentifier
     ) where
 
 import           Control.Monad            (replicateM)
+import           Control.Monad.ST         (RealWorld)
 import           Data.Aeson
 import           Data.Aeson.Types         (typeMismatch)
 import qualified Data.ByteString          as B
 import           Data.Hashable
+import           Data.HashTable.ST.Basic  (HashTable)
 import           Data.Map                 (Map)
 import           Data.Serialize
 import qualified Data.Serialize.Get       as SG
 import qualified Data.Serialize.Put       as SP
 import           Data.String
 import           Data.Text                (Text)
+import qualified Data.Text                as T
 import qualified Data.Text.Encoding       as TE
-import qualified Data.Text.Encoding.Error as TEErr
+import qualified Data.Text.Encoding.Error as TE
 import qualified Data.Vector              as Vec
 import qualified Data.Vector.Generic      as GVec
 import qualified Data.Vector.Storable     as SVec
@@ -38,20 +42,41 @@ import           GHC.Generics
 ----------------
 
 -- | A type use to represent the type that identifies the objects that compose the game world
-newtype Identifier = Identifier
-    { unID :: Text -- If needed, later we can change this to be a int hash
-    } deriving (Eq, Generic, Ord, IsString, FromJSONKey, Serialize, Hashable)
+data Identifier = Identifier
+    { hashID :: !Int
+    , unID   :: !Text
+    } deriving (Eq, Generic, Ord)
+
+mkIdentifier :: Text -> Identifier
+mkIdentifier t = Identifier (hash t) t
 
 instance Show Identifier where
-    show (Identifier idt) = show idt
+    show (Identifier _ idt) = show idt
+
+instance IsString Identifier where
+    fromString = mkIdentifier . T.pack
+
+instance FromJSONKey Identifier where
+    fromJSONKey = FromJSONKeyText mkIdentifier
+
 instance ToJSON Identifier where
-    toJSON (Identifier identifier) = toJSON identifier
+    toJSON (Identifier _ identifier) = toJSON identifier
 instance FromJSON Identifier where
-    parseJSON (String s) = pure . Identifier $ s
+    parseJSON (String s) = pure . mkIdentifier $ s
     parseJSON e          = typeMismatch "Identifier" e
+
+instance Serialize Identifier where
+    put (Identifier _ idt) = put idt
+    get                    = mkIdentifier <$> get
+
+instance Hashable Identifier where
+    hash (Identifier h _) = h
+    hashWithSalt i (Identifier _ idt) = hashWithSalt i idt
 
 -- Frequent enough that it's nice to have an alias
 type IDMap = Map Identifier
+
+type IDHashTable a = HashTable RealWorld Identifier a
 
 -----------
 -- Range --
@@ -81,7 +106,7 @@ instance Serialize a => Serialize (Range a)
 instance Serialize Text where
     put txt = put (fromIntegral (B.length utf) :: Word32) >> SP.putByteString utf
         where utf = TE.encodeUtf8 txt
-    get = TE.decodeUtf8With TEErr.lenientDecode <$> (SG.getByteString =<< get)
+    get = TE.decodeUtf8With TE.lenientDecode <$> (SG.getByteString =<< get)
 
 putVector :: (Serialize a, GVec.Vector v a) => v a -> Put
 putVector v = put (fromIntegral (GVec.length v) :: Word32) >> GVec.mapM_ put v

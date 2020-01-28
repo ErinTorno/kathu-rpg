@@ -39,7 +39,7 @@ import           Data.Word
 
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Color
-import           Kathu.Util.Types      (Identifier(..))
+import           Kathu.Util.Types      (Identifier, mkIdentifier)
     
 data StaticPalette = StaticPalette
     { background :: Color
@@ -96,7 +96,7 @@ instance FromJSON CycleEnd where
     parseJSON (String "restart") = pure Restart
     parseJSON (String "reverse") = pure Reverse
     parseJSON (String s)         = case T.unpack s of
-        ('c':'h':'a':'n':'g':'e':'-':'t':'o':' ':xs) -> pure $ ChangeTo (Identifier . T.strip . T.pack $ xs)
+        ('c':'h':'a':'n':'g':'e':'-':'t':'o':' ':xs) -> pure $ ChangeTo (mkIdentifier . T.strip . T.pack $ xs)
         e                                            -> fail $ "Unknown CycleEnd type " ++ show e
     parseJSON e                  = typeMismatch "CycleEnd" e
 

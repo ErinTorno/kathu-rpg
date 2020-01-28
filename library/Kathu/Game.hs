@@ -1,7 +1,9 @@
-{-# LANGUAGE BangPatterns     #-}
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE ExplicitForAll   #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE ExplicitForAll      #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Kathu.Game (runGame, updateDelay) where
 
@@ -19,6 +21,8 @@ import Kathu.Entity.LifeTime
 import Kathu.Entity.Physics.Floor
 import Kathu.Entity.System
 import Kathu.Entity.Time
+import Kathu.Scripting.Event
+import qualified Kathu.Scripting.Lua as Lua
 import Kathu.Util.Apecs
 import Kathu.Util.Timing
 import Kathu.World.Time (WorldTime)
@@ -46,7 +50,7 @@ runPhysics = do
                                                      $ as
     pure ()
     
-runGame :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, ReadWriteEach w m '[ActionSet, Existance, FloorProperties, LifeTime, Local, LogicTime, MovingSpeed, WorldFloor, WorldTime])
+runGame :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, ReadWriteEach w m '[ActionSet, Lua.ActiveScript, Existance, FloorProperties, LifeTime, Local, LogicTime, MovingSpeed, WorldFloor, WorldTime])
         => (Entity -> SystemT w m ()) -- We take a function to destroy an entity, since there are more components than this module knows about
         -> Word32
         -> SystemT w m ()
@@ -56,4 +60,7 @@ runGame destroyEntity !dT = do
     stepLogicTime dT
     stepWorldTime dT
     runPhysics
+
+    cmapIfM (Lua.shouldScriptRun OnUpdate) $ \(activeScript, Entity ety) ->
+        liftIO $ Lua.execFor activeScript (Lua.call "onUpdate" ety)
     pure ()

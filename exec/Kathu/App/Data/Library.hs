@@ -73,7 +73,7 @@ loadLibrary initialLibrary fldr = process
           -}
           psUnique :: FromJSON (Dependency KathuStore IO a) => String -> Setter Library Library a a -> (Library, KathuStore) -> IO (Library, KathuStore) 
           psUnique ext setter (lib, plib) = (parseDependency plib . parseExactlyNDP 1 ext $ fldr) >>= \(nset, nplib) -> pure (addUnique setter nset lib, nplib)
-          -- the set of elements to 
+          
           start = (initialLibrary, emptyKathuStore)
           process :: IO (Library, Vector SDL.Surface)
           process = pure start

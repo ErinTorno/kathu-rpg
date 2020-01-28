@@ -1,5 +1,6 @@
 world-id: test-world
 name:     test world
+script:   "test.lua"
 initial-palette: default
 palettes:
   default:
@@ -81,6 +82,7 @@ variables:
   my-bool:   {type: bool,   value: true}
   my-double: {type: double, value: 100.25}
   my-int:    {type: int,    value: 32}
+  my-text:   {type: text,   value: "this is an example sentence"}
 entities:
 - entity:   chest-locked
   position: [6.5, 1]

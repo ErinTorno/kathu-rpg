@@ -19,7 +19,7 @@ import           Kathu.Graphics.Drawable (Render, RenderSprite)
 import           Kathu.Graphics.Color
 import           Kathu.Parsing.Aeson
 import           Kathu.Util.Dependency
-import           Kathu.Util.Types        (Identifier(..))
+import           Kathu.Util.Types        (Identifier, mkIdentifier)
 
 -- These two need to have some space for the default attributes and resources, as well as user defined
 
@@ -101,7 +101,7 @@ instance ToJSON UIResourceType where
 instance FromJSON UIResourceType where
     parseJSON (String "health") = pure UIHealth
     parseJSON (String "mana")   = pure UIMana
-    parseJSON (String e)        = pure . UIMiscResource . Identifier $ e
+    parseJSON (String e)        = pure . UIMiscResource . mkIdentifier $ e
     parseJSON e                 = typeMismatch "UIResourceType" e
 
 instance ToJSON UIAttributeType where
@@ -112,7 +112,7 @@ instance ToJSON UIAttributeType where
 instance FromJSON UIAttributeType where
     parseJSON (String "armor") = pure UIArmor
     parseJSON (String "aura")  = pure UIAura
-    parseJSON (String e)       = pure . UIMiscAttribute . Identifier $ e
+    parseJSON (String e)       = pure . UIMiscAttribute . mkIdentifier $ e
     parseJSON e                = typeMismatch "UIAttributeType" e
 
 instance (FromJSON (Dependency s m (RenderSprite g)), Monad m) => FromJSON (Dependency s m (DisplayBar g)) where

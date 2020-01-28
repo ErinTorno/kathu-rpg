@@ -9,31 +9,36 @@
 
 module Kathu.App.System where
 
-import Apecs
-import Apecs.Physics
-import Control.Monad.IO.Class (MonadIO)
-import Data.Semigroup (Semigroup)
+import           Apecs
+import           Apecs.Physics
+import           Control.Monad.IO.Class          (MonadIO)
+import           Data.Semigroup                  (Semigroup)
 
-import Kathu.App.Data.Library
-import Kathu.App.Data.Settings
-import Kathu.App.Graphics.Font
-import Kathu.App.Graphics.Image (ImageID)
-import Kathu.App.Graphics.ImageManager
-import Kathu.App.Graphics.UI
-import Kathu.Entity.Action
-import Kathu.Entity.ActorState
-import Kathu.Entity.Components
-import Kathu.Entity.Item (Inventory)
-import Kathu.Entity.LifeTime
-import Kathu.Entity.Physics.Floor (WorldFloor)
-import Kathu.Entity.System
-import Kathu.Entity.Time
-import Kathu.Graphics.Camera
-import Kathu.Graphics.Drawable (Render)
-import Kathu.Graphics.Palette (PaletteManager)
-import Kathu.World.Stasis (WorldStases)
-import Kathu.World.Time (WorldTime)
-import Kathu.World.WorldSpace (WorldSpace, emptyWorldSpace)
+import           Kathu.App.Data.Library
+import           Kathu.App.Data.Settings
+import           Kathu.App.Graphics.Font
+import           Kathu.App.Graphics.Image        (ImageID)
+import           Kathu.App.Graphics.ImageManager
+import           Kathu.App.Graphics.UI
+import           Kathu.Entity.Action
+import           Kathu.Entity.ActorState
+import           Kathu.Entity.Components
+import           Kathu.Entity.Item               (Inventory)
+import           Kathu.Entity.LifeTime
+import           Kathu.Entity.Physics.BodyConfig (setBodyConfig)
+import           Kathu.Entity.Physics.Floor      (WorldFloor)
+import           Kathu.Entity.Prototype
+import           Kathu.Entity.System
+import           Kathu.Entity.Time
+import qualified Kathu.Scripting.Lua             as Lua
+import           Kathu.Scripting.Lua.Types       (ActiveScript)
+import           Kathu.Graphics.Camera
+import           Kathu.Graphics.Drawable         (Render)
+import           Kathu.Graphics.Palette          (PaletteManager)
+import           Kathu.Util.Apecs
+import           Kathu.World.Stasis              (WorldStases)
+import           Kathu.World.Time                (WorldTime)
+import           Kathu.World.WorldSpace          (WorldSpace, emptyWorldSpace)
 
 type Inventory' = Inventory ImageID
 instance Component Inventory' where type Storage Inventory' = Map Inventory'
@@ -45,6 +50,7 @@ instance Component Render' where type Storage Render' = Map Render'
 -- selects all unique and non-unique components that an individual entity might have
 type AllComponents =
     ( Existance
+    , ActiveScript
     , (Identity, LifeTime, WorldFloor, Tags, Render', Body)
     , (MovingSpeed, ActorState, Inventory', ActionSet)
     , (Local, Camera)
@@ -86,7 +92,7 @@ instance Component Library where type Storage Library = Global Library
 
 makeWorld "EntityWorld"
     $ [''Physics]
-   ++ [''Existance, ''Identity, ''LifeTime, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
+   ++ [''Existance, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
    ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Settings, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''Debug]
 
 type System' a = System EntityWorld a
@@ -94,5 +100,26 @@ type SystemT' m a = SystemT EntityWorld m a
 
 -- Entity functions
 
+externalFunctions :: Lua.ExternalFunctions EntityWorld
+externalFunctions = Lua.ExternalFunctions
+    { Lua.setPalette = setPaletteManager
+    }
+
 destroyEntity :: MonadIO m => Entity -> SystemT' m ()
-destroyEntity ety = destroy ety (Proxy @AllComponents)
+destroyEntity ety = do
+    whenExists ety $ \active -> liftIO (Lua.releaseActiveScript active)
+    
+    destroy ety (Proxy @AllComponents)
+
+newFromPrototype :: EntityPrototype ImageID -> SystemT' IO Entity
+newFromPrototype proto = do
+    ety <- newFromSimplePrototype proto
+
+    setBodyConfig ety . bodyConfig $ proto
+    case script proto of
+        Nothing    -> pure ()
+        (Just scr) -> do
+            activeScr <- Lua.loadScript externalFunctions scr
+            ety $= activeScr
+
+    pure ety

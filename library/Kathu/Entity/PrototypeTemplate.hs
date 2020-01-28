@@ -11,7 +11,7 @@ import Data.Maybe (maybe)
 import Language.Haskell.TH
 
 import Kathu.Entity.Components (newExistingEntity)
-import Kathu.Entity.SerializableComponents
+import Kathu.Entity.SerializableComponent
 import Kathu.Parsing.Aeson ((.:~?), (.:^?))
 import Kathu.Util.Dependency
 import Kathu.Util.Flow ((>>>=))

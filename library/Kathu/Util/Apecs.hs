@@ -41,6 +41,18 @@ getUnique = cfold (\_ c -> Just c) Nothing
 getUniqueElseError :: forall w m c. (Members w m c, Get w m c) => String -> SystemT w m c
 getUniqueElseError errMsg = fromJustElseError errMsg <$> getUnique
 
+getIfExists :: forall w m c. (Members w m c, Get w m c) => Entity -> SystemT w m (Maybe c)
+getIfExists ety = do
+    doesExist <- exists ety (Proxy :: Proxy c)
+    if doesExist
+    then Just <$> get ety
+    else pure Nothing
+
+whenExists :: forall w m c. (Members w m c, Get w m c) => Entity -> (c -> SystemT w m ()) -> SystemT w m ()
+whenExists ety f = do
+    doesExist <- exists ety (Proxy :: Proxy c)
+    when doesExist (get ety >>= f)
+
 -- Same logic as Apec's cmapIf implementation, just with f returning in a monad
 {-# INLINE cmapIfM #-}
 cmapIfM :: forall w m cp cx cy. (Get w m cx, Get w m cp, Members w m cx, Set w m cy)
