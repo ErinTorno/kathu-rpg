@@ -31,7 +31,8 @@ import           Kathu.Entity.Prototype
 import           Kathu.Entity.System
 import           Kathu.Entity.Time
 import qualified Kathu.Scripting.Lua             as Lua
-import           Kathu.Scripting.Lua.Types       (ActiveScript)
+import           Kathu.Scripting.Lua.Types       (ActiveScript, ScriptBank)
+import           Kathu.Scripting.Variables       (Variables)
 import           Kathu.Graphics.Camera
 import           Kathu.Graphics.Drawable         (Render)
 import           Kathu.Graphics.Palette          (PaletteManager)
@@ -82,27 +83,35 @@ instance Component UIConfig where type Storage UIConfig = Global UIConfig
 type WorldSpace' = WorldSpace ImageID
 instance Semigroup WorldSpace'  where (<>) = mappend
 instance Monoid WorldSpace'  where mempty = emptyWorldSpace
-instance Component WorldSpace'  where type Storage WorldSpace'  = Global WorldSpace' 
+instance Component WorldSpace'  where type Storage WorldSpace'  = Global WorldSpace'
 
 instance Semigroup Library where (<>) = mappend
 instance Monoid Library where mempty = emptyLibrary
 instance Component Library where type Storage Library = Global Library
+
+instance Semigroup ScriptBank where (<>) = mappend
+instance Monoid ScriptBank where mempty = error "Attempted to use ScriptBank before it has been loaded"
+instance Component ScriptBank where type Storage ScriptBank = Global ScriptBank
 
 -- World
 
 makeWorld "EntityWorld"
     $ [''Physics]
    ++ [''Existance, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
-   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Settings, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''Debug]
+   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug]
+   ++ [''Settings, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a
 
 -- Entity functions
 
-externalFunctions :: Lua.ExternalFunctions EntityWorld
+externalFunctions :: Lua.ExternalFunctions EntityWorld ImageID
 externalFunctions = Lua.ExternalFunctions
-    { Lua.setPalette = setPaletteManager
+    { Lua.setPalette         = setPaletteManager
+    , Lua.getEntityPrototype = error "getEntityPrototype not implemented"
+    , Lua.newFromPrototype   = newFromPrototype
+    , Lua.destroyEntity      = error "destroyEntity not implemented" -- destroyEntity -- don't use yet, game halts with "<<loop>>" with just this
     }
 
 destroyEntity :: MonadIO m => Entity -> SystemT' m ()

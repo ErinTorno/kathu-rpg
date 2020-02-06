@@ -13,7 +13,7 @@
 
 module Kathu.Scripting.Lua.Types where
 
-import           Apecs                       (Component, Map, Storage, SystemT)
+import           Apecs                       (Component, Map, Storage)
 import           Control.Concurrent.MVar
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Data.Aeson
@@ -31,15 +31,21 @@ import           Kathu.Util.Dependency
 import           Kathu.Util.Types
 
 data Script = Script
-    { mainScript       :: !ByteString -- this is main script
+    { scriptID         :: !Identifier -- a unique identifier to refer to this script (usually its file path)
+    , mainScript       :: !ByteString -- this is main script
     , scriptEventFlags :: !EventFlag
+    , isSingleton      :: !Bool       -- if True, then there all users of this script share the same instance and state
     }
 
 instance (s `CanProvide` WorkingDirectory, MonadIO m) => FromJSON (Dependency s m Script) where
-    parseJSON e = let readF f = liftDependency . liftIO . BS.readFile =<< (resolveAssetPathDP . T.unpack) f
+    parseJSON e = let readF f = do path <- (resolveAssetPathDP . T.unpack) f
+                                   bstr <- liftDependency . liftIO . BS.readFile $ path
+                                   pure $ Script (mkIdentifier . T.pack $ path) bstr
                    in case e of
-        (String s) -> pure $ Script <$> readF s <*> pure noEventFlags
-        (Object v) -> getCompose $ Script <$> Compose (readF <$> v .: "file") <*> v .:^? "events" .!=~ noEventFlags
+        (String s) -> pure $ readF s <*> pure noEventFlags <*> pure False
+        (Object v) -> getCompose $ Compose (readF <$> v .: "file")
+                  <*> v .:^? "events" .!=~ noEventFlags
+                  <*> v .:^? "is-singleton" .!=~ False
         v          -> typeMismatch "Script" v
 
 data ActiveScript = ActiveScript
@@ -49,7 +55,4 @@ data ActiveScript = ActiveScript
 
 instance Component ActiveScript where type Storage ActiveScript = Map ActiveScript
 
--- | A collection of functions that are not currently possible to implement with just the library project, but are required for scripts to run
-data ExternalFunctions w = ExternalFunctions
-    { setPalette :: Identifier -> SystemT w IO Bool -- Identifier to change to -> True if successful change
-    }
+newtype ScriptBank = ScriptBank {unScriptBank :: IDHashTable ActiveScript }

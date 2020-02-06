@@ -1,14 +1,16 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TupleSections              #-}
 
 module Kathu.World.Stasis where
 
 import           Data.Int
+import qualified Data.Map                  as Map
 import           Data.Serialize
-import qualified Data.Vector.Storable      as SVec
+import qualified Data.Vector.Unboxed       as UVec
 import           Linear.V2                 (V2(..))
 
 import           Kathu.Scripting.Variables
-import           Kathu.Util.Types          (IDMap)
+import           Kathu.Util.Types          (Identifier, IDMap)
 
 ------------
 -- Stasis --
@@ -20,10 +22,13 @@ data WorldStasis = WorldStasis
     -- Where the player entered the world from so we can reset them back to it
     -- Optionally, the player's actual location if the world supports it
     , playerEntryPoint :: !(V2 Double)
-    , removedEntities  :: SVec.Vector Int32     -- The index IDs of entities that are to be removed from the world's entity vector before spawning
-    , removedItems     :: SVec.Vector Int32     -- Same but for items
+    , removedEntities  :: UVec.Vector Int32     -- The index IDs of entities that are to be removed from the world's entity vector before spawning
+    , removedItems     :: UVec.Vector Int32     -- Same but for items
     --, leftItems       :: ?
     }
+
+emptyWorldStasis :: WorldStasis
+emptyWorldStasis = WorldStasis Map.empty (V2 0 0) UVec.empty UVec.empty
 
 worldStasisVersion :: Int32
 worldStasisVersion = -1 -- unstable, no guarantee of backwards compatibility until >= 0
@@ -40,3 +45,11 @@ instance Serialize WorldStasis where
 
 -- | A global component used for accessing the stases of hibernating WorldSpaces
 newtype WorldStases = WorldStases {unStases :: IDMap WorldStasis} deriving Serialize
+
+updateStasis :: Identifier -> WorldStases -> (WorldStasis -> WorldStasis) -> WorldStases
+updateStasis idt (WorldStases w) f = WorldStases . Map.alter applyF idt $ w
+    where applyF Nothing  = Just $ f emptyWorldStasis
+          applyF (Just s) = Just $ f s
+
+getStasis :: Identifier -> WorldStases -> Maybe WorldStasis
+getStasis idt (WorldStases w) = Map.lookup idt $ w

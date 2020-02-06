@@ -1,6 +1,8 @@
 world-id: test-world
 name:     test world
-script:   "test.lua"
+script:
+  file:   "test.lua"
+  events: []
 initial-palette: default
 palettes:
   default:
@@ -102,6 +104,10 @@ entities:
   position: [2, 12]
 - entity:   block
   position: [30, 4]
+- entity:   orb-switch
+  position: [34, 11]
+- entity:   orb-switch
+  position: [29, 11]
 items:
 - item:     apple
   position: [19, 2.5]

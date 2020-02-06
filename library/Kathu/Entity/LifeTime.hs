@@ -6,6 +6,7 @@ module Kathu.Entity.LifeTime where
 import Apecs
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
+import Data.Int
 import Data.Scientific  (toRealFloat)
 import Data.Word
 
@@ -13,7 +14,7 @@ import Kathu.Entity.Components (CacheSize)
 
 data LifeTime
     = LifeTimeGroup {-# UNPACK #-} !Word32
-    | LifeTimeTimer {-# UNPACK #-} !Word32
+    | LifeTimeTimer {-# UNPACK #-} !Int32
     | Persistant -- Special state that marks this object as never being automatically deleted in cases such as world change
       deriving (Show, Eq)
 
@@ -26,7 +27,7 @@ instance FromJSON LifeTime where
     parseJSON e                     = typeMismatch "LifeTime" e
 
 updateLifeTime :: Word32 -> LifeTime -> LifeTime
-updateLifeTime dT (LifeTimeTimer t) = LifeTimeTimer $ t - dT
+updateLifeTime dT (LifeTimeTimer t) = LifeTimeTimer $ t - fromIntegral dT
 updateLifeTime _ l = l
 
 hasExpired :: LifeTime -> Bool

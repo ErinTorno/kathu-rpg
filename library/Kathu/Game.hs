@@ -59,8 +59,9 @@ runGame destroyEntity !dT = do
     cmapM_ $ \(life, ety) -> when (hasExpired life) (destroyEntity ety)
     stepLogicTime dT
     stepWorldTime dT
-    runPhysics
 
     cmapIfM (Lua.shouldScriptRun OnUpdate) $ \(activeScript, Entity ety) ->
         liftIO $ Lua.execFor activeScript (Lua.call "onUpdate" ety)
+
+    runPhysics
     pure ()

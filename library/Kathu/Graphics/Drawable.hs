@@ -85,8 +85,8 @@ instance ( s `CanProvide` (ImageBounds (Dependency s m) g)
 newtype Render g = Render {unRender :: Vector (RenderSprite g)}
 
 instance (FromJSON (Dependency s m (RenderSprite g)), Monad m) => FromJSON (Dependency s m (Render g)) where
-    parseJSON obj@(Object _) = (\v -> v >>= pure . Render . Vec.singleton) <$> parseJSON obj
-    parseJSON str@(String _) = (\v -> v >>= pure . Render . Vec.singleton) <$> parseJSON str
+    parseJSON obj@(Object _) = (fmap $ Render . Vec.singleton) <$> parseJSON obj
+    parseJSON str@(String _) = (fmap $ Render . Vec.singleton) <$> parseJSON str
     parseJSON (Array a)      = toRender <$> Vec.foldM run (pure []) a
         where run acc cur = (\rn -> rn >>= \inner -> (inner:) <$> acc) <$> parseJSON cur
               toRender ls = Render <$> (Vec.fromList <$> ls)
@@ -98,7 +98,7 @@ instance (FromJSON (Dependency s m (RenderSprite g)), Monad m) => FromJSON (Depe
 
 -- we use this so that rapidly starting and stopping moving in one direction is still animated
 timeBeforeFrameChange :: AnimatedSprite g -> Word32
-timeBeforeFrameChange animspr = (subtract 1) . delay . (Vec.!curAnim) . animStrips . animation $ animspr
+timeBeforeFrameChange !animspr = (subtract 1) . delay . (Vec.!curAnim) . animStrips . animation $ animspr
     where curAnim = activeAnim animspr
 
 currentBounds :: RenderSprite g -> (# V2 CInt, V2 CInt #)
@@ -106,18 +106,18 @@ currentBounds (RSStatic (StaticSprite _ !bnd)) = (# V2 0 0, bnd #)
 currentBounds (RSAnimated !anim) = (# V2 xCoord yCoord, dims #)
     where xCoord = ((*) w . fromIntegral . currentFrame $ anim)
           yCoord = ((*) h . fromIntegral . activeAnim $ anim)
-          dims@(V2 w h) = animBounds . animation $ anim
+          dims@(V2 !w !h) = animBounds . animation $ anim
 
 isAnimated :: RenderSprite g -> Bool
 isAnimated (RSStatic _)   = False
 isAnimated (RSAnimated _) = True
 
 switchAnimation :: Int -> AnimatedSprite g -> AnimatedSprite g
-switchAnimation !i anim = anim {activeAnim = i, currentFrame = 0, animTime = timeBeforeFrameChange anim}
+switchAnimation !i !anim = anim {activeAnim = i, currentFrame = 0, animTime = timeBeforeFrameChange anim}
 
 -- updates current time, and switches to new frame if we reach it
 updateFrames :: Word32 -> AnimatedSprite g -> AnimatedSprite g
-updateFrames dT d@(AnimatedSprite {animTime = animT, activeAnim = act, animation = anim}) = d {animTime = newTime, currentFrame = newFrame}
+updateFrames !dT !d@(AnimatedSprite {animTime = animT, activeAnim = act, animation = anim}) = d {animTime = newTime, currentFrame = newFrame}
     where newTime  = animT + dT
           curStrip = (animStrips anim) Vec.! act
           newFrame = fromIntegral (newTime `quot` (delay curStrip)) `rem` (frameCount curStrip)

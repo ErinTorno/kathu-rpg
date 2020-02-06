@@ -7,6 +7,12 @@
 * Scripts can be configured for different events to run when they occur
 * Identifiers are now pre-hashed for faster lookup
 
+## 0.1.10.1 -- 2020-02-05
+* Lua scripts can now check if debug mode is enabled, and can get and set global and world variables
+* Lua scripts can be set to be singletons, and will use a shared script instance among all objects marked as such
+* Fixed scripts not logging exceptions through execFor/runFor
+* Fixed LifeTime roll-over issue causing timed-out entities to not be deleted
+
 ## 0.1.9.0 -- 2019-12-15
 
 * SDL rendering is done through textures instead of surfaces, significantly reducing CPU at the cost of GPU

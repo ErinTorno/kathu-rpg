@@ -21,7 +21,7 @@ import           Data.Aeson
 import           Data.Aeson.Types          (Parser, typeMismatch)
 import           Data.Map                  (Map)
 import qualified Data.Map                  as Map
-import           Data.Maybe                (catMaybes, fromMaybe)
+import           Data.Maybe                (catMaybes, fromMaybe, maybe)
 import           Data.Text                 (Text)
 import qualified Data.Text                 as T
 import           Data.Vector               (Vector)
@@ -77,7 +77,7 @@ fieldsSurrounding v ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
 -- System Related --
 --------------------
 
-initWorldSpace :: forall w m g. (MonadIO m , Get w m EntityCounter, Get w m (Tiles g), Has w m Physics, ReadWriteEach w m '[Existance, Local, LifeTime, Lua.ActiveScript, Render g, WorldSpace g, WorldStases])
+initWorldSpace :: forall w m g. (MonadIO m, Get w m EntityCounter, Get w m (Tiles g), Has w m Physics, ReadWriteEach w m '[Existance, Local, LifeTime, Lua.ActiveScript, Render g, Variables, WorldSpace g, WorldStases])
                => (Entity -> SystemT w m ())
                -> (EntityPrototype g -> SystemT w m Entity)
                -> (Lua.Script -> SystemT w m Lua.ActiveScript)
@@ -89,6 +89,8 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
     -- for those that have them, we clear those that are not persistant
     cmapM_ $ \(lf :: LifeTime, ety)    -> when (lf /= Persistant) $ destroyEty ety
     
+    saveWorldVariables ws
+
     global $= ws
     tiles :: Tiles g <- get global
 
@@ -113,6 +115,24 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
         (Just scr) -> do
             active <- loadScript scr
             void $ newExistingEntity active
+
+-- | Loads in the new variables for the current world, and saves the previous to its Stasis
+saveWorldVariables :: forall w m g. (MonadIO m, ReadWriteEach w m '[Variables, WorldSpace g, WorldStases]) => WorldSpace g -> SystemT w m ()
+saveWorldVariables newWS = do
+    oldWS :: WorldSpace g <- get global
+    variables <- get global
+    stases    <- get global
+
+    let oldID = worldID oldWS
+
+    -- if we already have this world saved, we get its saved variables; otherwise we use the default ones
+    let newVars = maybe (worldVariables newWS) statisVariables . getStasis oldID $ stases
+
+    prevWorldVars <- replaceWorldVariables variables newVars
+
+    let saveVar stasis = stasis {statisVariables = prevWorldVars}
+
+    global $= updateStasis oldID stases saveVar
 
 -- as of right now, count not considered; this will be added when picking up is implemented
 -- currently use StaticBody, although DynamicBody will be used once these have a shape and mass

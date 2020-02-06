@@ -1,6 +1,6 @@
 cabal-version:       2.4
 name:                kathu
-version:             0.1.10.0
+version:             0.1.10.1
 -- synopsis:
 -- description:
 license:             GPL-3.0-only
@@ -51,6 +51,7 @@ library kathu-lib
                     Kathu.Parsing.Counting,
                     -- Scripting
                     Kathu.Scripting.Event,
+                    Kathu.Scripting.ExternalFunctions,
                     Kathu.Scripting.Lua,
                     Kathu.Scripting.Lua.Component,
                     Kathu.Scripting.Lua.Global,

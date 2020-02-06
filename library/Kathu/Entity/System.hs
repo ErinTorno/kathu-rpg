@@ -27,6 +27,7 @@ import qualified System.Random as R
 import           Kathu.Entity.Physics.Floor (FloorPropEntity)
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Palette (PaletteManager, staticManager)
+import           Kathu.Scripting.Variables (Variables)
 import           Kathu.Util.Types (IDMap)
 import           Kathu.World.Stasis
 import           Kathu.World.Tile (Tile(..), TileID(..), tileID, TileState(..), tileTextID, unTileID)
@@ -66,10 +67,14 @@ instance Semigroup FloorProperties where (<>) = mappend
 instance Monoid FloorProperties where mempty  = error "Attempted to access the FloorProperties before it has been initialized"
 instance Component FloorProperties where type Storage FloorProperties = Global FloorProperties
 
-newtype  Debug = Debug Bool
+newtype  Debug = Debug {unDebug :: Bool}
 instance Semigroup Debug where (<>) = mappend
 instance Monoid Debug where mempty  = Debug False
 instance Component Debug where type Storage Debug = Global Debug
+
+instance Semigroup Variables where (<>) = mappend
+instance Monoid Variables where mempty = error "Attempted to access Variables global component before it has been initialized"
+instance Component Variables where type Storage Variables = Global Variables
 
 -- Entity functions
 

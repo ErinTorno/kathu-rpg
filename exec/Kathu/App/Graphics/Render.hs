@@ -168,10 +168,10 @@ runRender !renderer !renderBuffer !dT = do
         gatherRender pair = cfoldM gatherEntityRender pair >>= gatherTileRender
         
         renderEvery :: Int -> Int -> RenderBuffer -> IO ()
-        renderEvery !i !len !buf | i == len  = pure ()
-                                 | otherwise = MVec.unsafeRead buf i >>= drawRender >> renderEvery (i + 1) len buf
-            where drawRender (V2 x y, sprs) = Vec.forM_ sprs (drawEach $ V2 x y)
-                  drawEach pos ren      = blitRenderSprite renderer imageManager (mkRenderRect edgeBleedScaling resToCenter scale pos) ren
+        renderEvery !i !len !buf | i == len    = pure ()
+                                 | otherwise   = MVec.unsafeRead buf i >>= drawRender >> renderEvery (i + 1) len buf
+            where drawRender (V2 !x !y, !sprs) = Vec.forM_ sprs (drawEach $ V2 x y)
+                  drawEach !pos !ren           = blitRenderSprite renderer imageManager (mkRenderRect edgeBleedScaling resToCenter scale pos) ren
 
     (sprCount, renBuf') <- gatherRender (0, renderBuffer)
     when (sprCount > 0) $

@@ -26,6 +26,8 @@ import           Kathu.Entity.System
 import           Kathu.IO.Directory              (assetPath)
 import           Kathu.Graphics.Camera
 import           Kathu.Language
+import           Kathu.Scripting.Lua             (mkScriptBank)
+import           Kathu.Scripting.Variables       (initVariables)
 import           Kathu.Util.Types                (unID)
 
 entityWorld :: IO EntityWorld
@@ -64,9 +66,13 @@ initLanguage window renderer settings library = do
 system :: SDL.Window -> SDL.Renderer -> Settings -> SystemT' IO ()
 system window renderer settings = do
     (library, surfaces) <- lift . loadLibrary mempty $ assetPath
-    seed    <- lift . maybe (R.randomIO :: IO Int) pure . randomSeed $ settings
-    manager <- lift . mkImageManager renderer $ surfaces
-    tilesV  <- lift . makeTiles . view tiles $ library
+    seed       <- lift . maybe (R.randomIO :: IO Int) pure . randomSeed $ settings
+    manager    <- lift . mkImageManager renderer $ surfaces
+    tilesV     <- lift . makeTiles . view tiles $ library
+    scriptbank <- lift mkScriptBank
+    variables  <- initVariables
+    global  $= scriptbank
+    global  $= variables
     global  $= library
     global  $= manager
     global  $= Random (R.mkStdGen seed)

@@ -1,0 +1,16 @@
+identity: orb-switch
+script:
+  file:   "orb-switch.lua"
+  events: []
+  is-singleton: true
+render:
+- atlas: "orb-switch.png"
+  bounds: [16, 16]
+  strips:
+  - {id: cold, frames: 1, row: 0, delay: 1000}
+  - {id: warm, frames: 1, row: 1, delay: 1000}
+body-config:
+  type:   static
+  group:  movement
+  shapes:
+  - {shape: rectangle, bounds: [1.0, 0.25], origin: [-0.5, -0.25]}
