@@ -60,11 +60,12 @@ setPaletteLua :: ExternalFunctions w g -> w -> Text -> Lua Bool
 setPaletteLua extFuns !world !idt = liftIO . Apecs.runWith world $ runW
     where runW = (setPalette extFuns) . mkIdentifier $ idt
 
-newFromPrototypeLua :: ExternalFunctions w g -> w -> Text -> Lua Int
+newFromPrototypeLua :: ExternalFunctions w g -> w -> Text -> Lua (Optional Int)
 newFromPrototypeLua extFuns !world !protoID = liftIO . Apecs.runWith world $ mkEntity
-    where mkEntity = (getEntityPrototype extFuns) (mkIdentifier protoID)
-                 >>= newFromPrototype extFuns
-                 >>= return . unEntity
+    where mkEntity = (getEntityPrototype extFuns) (mkIdentifier protoID) >>= mkIfPres
+          mkIfPres Nothing   = return $ Optional Nothing
+          mkIfPres (Just pr) = newFromPrototype extFuns pr
+                         >>= return . Optional . Just . unEntity
     
 destroyEntityLua :: ExternalFunctions w g -> w -> Int -> Lua ()
 destroyEntityLua extFuns !world !ety = liftIO . Apecs.runWith world $ (destroyEntity extFuns) (Entity ety)

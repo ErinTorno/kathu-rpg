@@ -7,7 +7,7 @@
 * Scripts can be configured for different events to run when they occur
 * Identifiers are now pre-hashed for faster lookup
 
-## 0.1.10.1 -- 2020-02-05
+### 0.1.10.1 -- 2020-02-05
 * Lua scripts can now check if debug mode is enabled, and can get and set global and world variables
 * Lua scripts can be set to be singletons, and will use a shared script instance among all objects marked as such
 * Fixed scripts not logging exceptions through execFor/runFor

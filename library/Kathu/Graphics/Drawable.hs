@@ -8,7 +8,6 @@ module Kathu.Graphics.Drawable where
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
 import Data.Functor.Compose (getCompose)
-import Data.Text (Text)
 import Data.Word
 import Data.Vector (Vector)
 import qualified Data.Vector as Vec
@@ -18,13 +17,14 @@ import Linear.V2 (V2(..))
 import Kathu.Parsing.Aeson
 import Kathu.Util.Dependency
 import Kathu.Util.Flow ((>>>=))
+import Kathu.Util.Types
 
 -- | A newtype wrapper around a function that can grab image dimension information as a Dependency
 newtype ImageBounds m g = ImageBounds {unImageBounds :: g -> m (V2 CInt)}
 
 -- a drawable that can change
 data AnimationStrip = AnimationStrip
-    { animID     :: Text
+    { animID     :: !Identifier
     , frameCount :: {-# UNPACK #-} !Int
     , row        :: {-# UNPACK #-} !Int
     , delay      :: {-# UNPACK #-} !Word32
@@ -114,6 +114,11 @@ isAnimated (RSAnimated _) = True
 
 switchAnimation :: Int -> AnimatedSprite g -> AnimatedSprite g
 switchAnimation !i !anim = anim {activeAnim = i, currentFrame = 0, animTime = timeBeforeFrameChange anim}
+
+switchAnimationByID :: Identifier -> AnimatedSprite g -> AnimatedSprite g
+switchAnimationByID !idt !anim = case Vec.findIndex ((==idt) . animID) . animStrips . animation $ anim of
+    Just idx -> switchAnimation idx anim
+    Nothing  -> anim -- no switching if invalid is given; maybe should change this later?
 
 -- updates current time, and switches to new frame if we reach it
 updateFrames :: Word32 -> AnimatedSprite g -> AnimatedSprite g
