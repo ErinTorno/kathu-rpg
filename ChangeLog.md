@@ -13,6 +13,13 @@
 * Fixed scripts not logging exceptions through execFor/runFor
 * Fixed LifeTime roll-over issue causing timed-out entities to not be deleted
 
+### 0.1.10.2 -- 2020-02-11
+* Scripts can register listeners on global and world variables that will be called when the variable changes
+* Added on-init and on-destroy script events
+* Scripts can set animation state
+* Fixed issue where singleton scripts would get closed prematurely
+* More tiles and decorations were added
+
 ## 0.1.9.0 -- 2019-12-15
 
 * SDL rendering is done through textures instead of surfaces, significantly reducing CPU at the cost of GPU

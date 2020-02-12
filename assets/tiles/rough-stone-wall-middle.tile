@@ -1,0 +1,5 @@
+tile-id:  rough-stone-wall-middle
+name:     rough stone wall
+render:   ["rough-stone-wall-middle.png"]
+is-solid: true
+break-behavior: unbreakable

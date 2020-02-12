@@ -15,7 +15,7 @@ module Kathu.World.WorldSpace where
 
 import           Apecs                     hiding (Map)
 import           Apecs.Physics             hiding (Map)
-import           Control.Monad             (foldM, void, when)
+import           Control.Monad             (foldM, when)
 import           Control.Monad.IO.Class    (MonadIO)
 import           Data.Aeson
 import           Data.Aeson.Types          (Parser, typeMismatch)
@@ -80,7 +80,7 @@ fieldsSurrounding v ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
 initWorldSpace :: forall w m g. (MonadIO m, Get w m EntityCounter, Get w m (Tiles g), Has w m Physics, ReadWriteEach w m '[Existance, Local, LifeTime, Lua.ActiveScript, Render g, Variables, WorldSpace g, WorldStases])
                => (Entity -> SystemT w m ())
                -> (EntityPrototype g -> SystemT w m Entity)
-               -> (Lua.Script -> SystemT w m Lua.ActiveScript)
+               -> (Entity -> Lua.Script -> SystemT w m Lua.ActiveScript)
                -> WorldSpace g
                -> SystemT w m ()
 initWorldSpace destroyEty mkEntity loadScript ws = do
@@ -113,8 +113,9 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
     case worldScript ws of
         Nothing    -> pure ()
         (Just scr) -> do
-            active <- loadScript scr
-            void $ newExistingEntity active
+            ety    <- newExistingEntity ()
+            active <- loadScript ety scr
+            ety    $= active
 
 -- | Loads in the new variables for the current world, and saves the previous to its Stasis
 saveWorldVariables :: forall w m g. (MonadIO m, ReadWriteEach w m '[Variables, WorldSpace g, WorldStases]) => WorldSpace g -> SystemT w m ()

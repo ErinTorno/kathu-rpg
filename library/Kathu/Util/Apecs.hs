@@ -21,7 +21,7 @@ type family ReadWrite w m c :: Constraint where
 
 type family ReadWriteEach w m cs :: Constraint where
     ReadWriteEach w m '[]       = ()
-    ReadWriteEach w m (c ': cs) = (Has w m c, Set w m c, Get w m c, ReadWriteEach w m cs)
+    ReadWriteEach w m (c ': cs) = (Get w m c, Has w m c, Set w m c, ReadWriteEach w m cs)
 
 type family HasEach w m cs :: Constraint where
     HasEach w m '[]       = ()

@@ -1,10 +1,10 @@
-identity: orb-switch
+identity: orb-toggle
 script:
-  file:   "orb-switch.lua"
-  events: []
+  file:   "orb-toggle.lua"
+  events: [on-init]
   is-singleton: true
 render:
-- atlas: "orb-switch.png"
+- atlas: "orb-toggle.png"
   bounds: [16, 16]
   strips:
   - {id: cold, frames: 1, row: 0, delay: 1000}

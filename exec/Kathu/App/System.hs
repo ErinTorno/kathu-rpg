@@ -11,7 +11,7 @@ module Kathu.App.System where
 
 import           Apecs
 import           Apecs.Physics
-import           Control.Monad.IO.Class          (MonadIO)
+import           Control.Monad                   (void)
 import           Data.Semigroup                  (Semigroup)
 
 import           Kathu.App.Data.Library
@@ -30,12 +30,12 @@ import           Kathu.Entity.Physics.Floor      (WorldFloor)
 import           Kathu.Entity.Prototype
 import           Kathu.Entity.System
 import           Kathu.Entity.Time
-import qualified Kathu.Scripting.Lua             as Lua
-import           Kathu.Scripting.Lua.Types       (ActiveScript, ScriptBank)
-import           Kathu.Scripting.Variables       (Variables)
 import           Kathu.Graphics.Camera
 import           Kathu.Graphics.Drawable         (Render)
 import           Kathu.Graphics.Palette          (PaletteManager)
+import qualified Kathu.Scripting.Lua             as Lua
+import           Kathu.Scripting.Lua.Types       (ActiveScript, RunningScriptEntity(..), ScriptBank, ScriptEventBuffer(..))
+import           Kathu.Scripting.Variables       (Variables)
 import           Kathu.Util.Apecs
 import           Kathu.World.Stasis              (WorldStases)
 import           Kathu.World.Time                (WorldTime)
@@ -93,13 +93,21 @@ instance Semigroup ScriptBank where (<>) = mappend
 instance Monoid ScriptBank where mempty = error "Attempted to use ScriptBank before it has been loaded"
 instance Component ScriptBank where type Storage ScriptBank = Global ScriptBank
 
+instance Semigroup RunningScriptEntity where (<>) = mappend
+instance Monoid RunningScriptEntity where mempty = RunningScriptEntity Nothing
+instance Component RunningScriptEntity where type Storage RunningScriptEntity = Global RunningScriptEntity
+
+instance Semigroup ScriptEventBuffer where (<>) = mappend
+instance Monoid ScriptEventBuffer where mempty = ScriptEventBuffer []
+instance Component ScriptEventBuffer where type Storage ScriptEventBuffer = Global ScriptEventBuffer
+
 -- World
 
 makeWorld "EntityWorld"
     $ [''Physics]
    ++ [''Existance, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
-   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug]
-   ++ [''Settings, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank]
+   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Counter]
+   ++ [''Settings, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a
@@ -114,9 +122,9 @@ externalFunctions = Lua.ExternalFunctions
     , Lua.destroyEntity      = error "destroyEntity not implemented" -- destroyEntity -- don't use yet, game halts with "<<loop>>" with just this
     }
 
-destroyEntity :: MonadIO m => Entity -> SystemT' m ()
+destroyEntity :: Entity -> SystemT' IO ()
 destroyEntity ety = do
-    whenExists ety $ \active -> liftIO (Lua.releaseActiveScript active)
+    whenExists ety Lua.releaseActiveScript
     
     destroy ety (Proxy @AllComponents)
 
@@ -127,8 +135,6 @@ newFromPrototype proto = do
     setBodyConfig ety . bodyConfig $ proto
     case script proto of
         Nothing    -> pure ()
-        (Just scr) -> do
-            activeScr <- Lua.loadScript externalFunctions scr
-            ety $= activeScr
+        (Just scr) -> void $ Lua.loadScript externalFunctions ety scr
 
-    pure ety
+    return ety

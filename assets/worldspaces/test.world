@@ -2,7 +2,7 @@ world-id: test-world
 name:     test world
 script:
   file:   "test.lua"
-  events: []
+  events: [on-update]
 initial-palette: default
 palettes:
   default:
@@ -62,6 +62,11 @@ legend:
   "V": brick-wall-vibrant
   "*": brick-floor
   ",": tall-grass
+  "^": spikes
+  "|": rough-stone-wall-single
+  "[": rough-stone-wall-left
+  "]": rough-stone-wall-right
+  "=": rough-stone-wall-middle
 tiles:
 - "##  #######   , ,, # ## , ,,,   #####, #####, "
 - "#    #    #   ,,, ,   #, ,,,,   #   #, # # #, "
@@ -79,6 +84,10 @@ tiles:
 - "#         #  , ,,,   ,%        %, ,,,  , ,V,,,"
 - "#         #  ,,,,,,  ,%        %  ,, ,,VVVV ,,"
 - "#  #####  # ,,, , ,   %%%    %%% ,,  ,, ,  , ,"
+- ", ,,, ,, ,, ,,, , , ,,,    , ,,  , , ,,^^^ , ,"
+- ", ,,   ,, ,,  , , , ,,,      , ,  , , ,^^^,  ,"
+- ", ,,|  |, , ,    ,  , , ,, , ,   ,,  ,,^^^ , ,"
+- ", []|  |[=]|[=],, , ,  ,  , , ,, , , ,,, , , ,"
 variables:
   # this contains variables that are associated with the worldspace itself, and are saved/loaded with it
   my-bool:   {type: bool,   value: true}
@@ -96,18 +105,20 @@ entities:
   position: [2.5, 0]
 - entity:   door-brick-wide-unlocked
   position: [1.5, 15]
-- entity:   door-brick-wide-unlocked
-  position: [8.5, 15]
+- entity:   door-brick-wide
+  position: [5.5, 19]
 - entity:   block
   position: [15, 12]
 - entity:   block
   position: [2, 12]
 - entity:   block
   position: [30, 4]
-- entity:   orb-switch
+- entity:   orb-toggle
   position: [34, 11]
-- entity:   orb-switch
+- entity:   orb-toggle
   position: [29, 11]
+- entity:   pot-small
+  position: [32, 5]
 items:
 - item:     apple
   position: [19, 2.5]

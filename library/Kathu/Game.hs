@@ -50,18 +50,21 @@ runPhysics = do
                                                      $ as
     pure ()
     
-runGame :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, ReadWriteEach w m '[ActionSet, Lua.ActiveScript, Existance, FloorProperties, LifeTime, Local, LogicTime, MovingSpeed, WorldFloor, WorldTime])
-        => (Entity -> SystemT w m ()) -- We take a function to destroy an entity, since there are more components than this module knows about
+runGame :: forall w. (Get w IO EntityCounter, Has w IO Physics, ReadWriteEach w IO 
+               [ActionSet, Existance, FloorProperties, LifeTime, Local, LogicTime, MovingSpeed, WorldFloor, WorldTime
+               , Lua.ActiveScript, Lua.RunningScriptEntity, Lua.ScriptEventBuffer
+               ])
+        => (Entity -> SystemT w IO ()) -- We take a function to destroy an entity, since there are more components than this module knows about
         -> Word32
-        -> SystemT w m ()
+        -> SystemT w IO ()
 runGame destroyEntity !dT = do
     cmap   $ updateLifeTime dT
     cmapM_ $ \(life, ety) -> when (hasExpired life) (destroyEntity ety)
     stepLogicTime dT
     stepWorldTime dT
 
-    cmapIfM (Lua.shouldScriptRun OnUpdate) $ \(activeScript, Entity ety) ->
-        liftIO $ Lua.execFor activeScript (Lua.call "onUpdate" ety)
+    cmapIfM (Lua.shouldScriptRun onUpdate) $ \(activeScript, Entity ety) ->
+        Lua.execFor activeScript (Lua.call "onUpdate" ety)
 
     runPhysics
     pure ()
