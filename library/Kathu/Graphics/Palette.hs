@@ -1,14 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 -- The PaletteManager record has names for its components which arent supported, but clarify what they mean
 
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE ExplicitForAll      #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections       #-}
 
 module Kathu.Graphics.Palette
     ( AnimatedPalette(..)
@@ -60,7 +57,7 @@ applyAnimatedPalette :: AnimatedPalette -> Color -> [Color]
 applyAnimatedPalette apal col = interpolateAnimatedColors (\(StaticPalette _ (Shader s)) -> s col) apal
 
 animatedPaletteBackgrounds :: AnimatedPalette -> [Color]
-animatedPaletteBackgrounds apal = interpolateAnimatedColors background apal
+animatedPaletteBackgrounds = interpolateAnimatedColors background
 
 interpolateAnimatedColors :: (StaticPalette -> Color) -> AnimatedPalette -> [Color]
 interpolateAnimatedColors getCol (AnimatedPalette frames delay dur _ intrp) = fromFrame . getFrames <$> [0,delay..dur]
@@ -73,7 +70,7 @@ interpolateAnimatedColors getCol (AnimatedPalette frames delay dur _ intrp) = fr
               let tcur = fromIntegral t
               (ti, coli) <- IntMap.lookupLE tcur colorFrames
               (tf, colf) <- IntMap.lookupGE tcur colorFrames
-              if (ti == tf) then -- if same time, we just return first, as they must be the same color and otherwise we'd divide by 0
+              if ti == tf then -- if same time, we just return first, as they must be the same color and otherwise we'd divide by 0
                   pure coli
               else               -- blends between the two boundary colors found
                   pure $ intrp (fromIntegral (tcur - ti) / fromIntegral (tf - ti)) coli colf
@@ -106,12 +103,12 @@ instance FromJSON StaticPalette where
 
 instance FromJSON AnimatedPalette where
     parseJSON (Object v) = verify =<< AnimatedPalette
-                       <$> ((IntMap.fromList . Map.assocs) <$> v .: "keyframes")
+                       <$> (IntMap.fromList . Map.assocs <$> v .: "keyframes")
                        <*> ((1000`quot`) <$> (v .:? "frames-per-second" .!= 15)) -- 15 palette shifts per second by default
                        <*> v .: "cycle-duration"
                        <*> v .:? "cycle-end-behavior" .!= Reverse
                        <*> (intrp =<< v .:? "interpolation-fn" .!= "linear")
-        where verify pal@(AnimatedPalette {paletteKeyFrames = frames, cycleDuration = dur})
+        where verify pal@AnimatedPalette {paletteKeyFrames = frames, cycleDuration = dur}
                   | IntMap.size frames < 2              = fail "Attempted to load AnimatedPalette with 0 or 1 keyframes"
                   | outOfDur dur . IntMap.keys $ frames = fail . concat $ ["AnimatedPalette contained keyframe with a time outside of the duration (", show dur, ")"]
                   | otherwise                           = pure pal
@@ -129,14 +126,14 @@ instance FromJSON Palette where
     parseJSON e            = typeMismatch "Palette" e
 
 instance FromJSON Shader where
-    parseJSON (Array a)  = composeShaders <$> (mapM parseJSON a)
+    parseJSON (Array a)  = composeShaders <$> mapM parseJSON a
     parseJSON (Object v) = v .: "fn" >>= parseFn
         where parseFn str = fmap Shader $ case str of
                   "set-color"     -> const <$> v .: "color"
                   "desaturate"    -> pure desaturate
                   "desaturate-by" -> desaturateBy <$> (v .: "percent" :: Parser Double)
                   "blend-color"   -> blendColor <$> (v .: "percent" :: Parser Double) <*> v .: "color"
-                  "shift-hue"     -> (fromHSVFunction . shiftHue) <$> v .: "angle"
+                  "shift-hue"     -> fromHSVFunction . shiftHue <$> v .: "angle"
                   "invert-hue"    -> pure . fromHSVFunction $ invertHue
                   "invert-rgb"    -> pure invertRGB
                   "match-nearest" -> nearestColor <$> (v .: "color-set" :: Parser (Vec.Vector Color))
@@ -169,7 +166,7 @@ staticManager :: Int -> PaletteManager
 staticManager idx = PaletteManager (\setIdx _ -> setIdx idx) (\_ _ _ -> pure ())
 
 animatedManager :: AnimatedPaletteState -> PaletteManager
-animatedManager !conf@(AnimatedPaletteState (AnimatedPalette {renderDelay = delay, cycleEnd = cycEnd}) minIdx maxIdx isRev curPalette lastTime) = PaletteManager initi run
+animatedManager conf@(AnimatedPaletteState AnimatedPalette {renderDelay = delay, cycleEnd = cycEnd} minIdx maxIdx isRev curPalette lastTime) = PaletteManager initi run
     where initi changeFrame _ = changeFrame minIdx
           run (changeFrame :: Int -> SystemT w m ()) changePalette _ = do
               RenderTime curTime <- get global
@@ -188,7 +185,7 @@ animatedManager !conf@(AnimatedPaletteState (AnimatedPalette {renderDelay = dela
                       Reverse      -> do
                           changeFrame (maxIdx - 1)
                           global $= animatedManager (conf {isReversing = True, currentFrame = maxIdx - 1, lastChangeTime = curTime})
-                      ChangeTo idt -> do
+                      ChangeTo idt ->
                           changePalette idt
                   else do
                       -- normal behavior, change and move on

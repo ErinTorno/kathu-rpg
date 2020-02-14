@@ -24,7 +24,7 @@ import           Linear.V2               (V2(..))
 import           Linear.V3               (V3(..))
 import           Linear.V4               (V4(..))
 import           SDL                     (($=))
-import qualified SDL                     as SDL
+import qualified SDL
 import qualified SDL.Font                as SDLF
 
 import           Kathu.Graphics.Color
@@ -42,7 +42,7 @@ instance (s `CanProvide` WorkingDirectory, MonadIO m) => FromJSON (Dependency s 
     parseJSON = withObject "Font" $ \v -> do
         filePath <- resolveAssetPathDP <$> v .: "file"
         size     <- v .: "size"
-        pure $ liftDependency . (flip SDLF.load) size =<< filePath
+        pure $ liftDependency . flip SDLF.load size =<< filePath
 
 -- in future, might want to load this from language file
 defaultCachedChars :: [Char]
@@ -80,7 +80,7 @@ renderText renderer (FontCache fonts caches) fontID (Color (V4 r g b a)) (V2 x0 
     let -- generic error message so that we don't use the generic key-not-found one
         missingCache t = error $ "Could not find font " ++ show fontID ++ " in " ++ t ++ " cache"
         font           = fromMaybe (missingCache "font") . Map.lookup fontID $ fonts
-    cache <- liftIO . stToIO $ (fromMaybe (missingCache "character")) <$> HT.lookup caches fontID
+    cache <- liftIO . stToIO $ fromMaybe (missingCache "character") <$> HT.lookup caches fontID
 
     let drawChar x ch = do
             (size@(V2 w _), texture) <- getCharacter renderer font cache ch

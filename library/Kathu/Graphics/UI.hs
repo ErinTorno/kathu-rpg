@@ -89,7 +89,7 @@ instance ( FromJSON (Dependency s m g)
         "resource-label"    -> getCompose $ UIResource    <$> v .:^ "title" <*> v .:^ "resource" <*> v .:^ "color" <*> v .:^ "max-color" <*> v .:^ "bonus-color"
         "resource-bar"      -> getCompose $ UIResourceBar <$> v .:^ "resource" <*> Compose (parseJSON obj)
         "image"             -> getCompose $ UIImage       <$> v .:~ "render"
-        "item-box"          -> getCompose $ UIItemBox     <$> v .:~ "background" <*> ((flip Item.ContainerSlot) Nothing <$> v .:^ "slot")
+        "item-box"          -> getCompose $ UIItemBox     <$> v .:~ "background" <*> (flip Item.ContainerSlot Nothing <$> v .:^ "slot")
         e                   -> fail $ "Unknown UI element type " ++ show e
     parseJSON e              = typeMismatch "UIElementConfig" e
     

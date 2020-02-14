@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns               #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -11,12 +10,12 @@
 
 module Kathu.Util.Dependency where
 
-import Control.Lens
-import Control.Monad.State
-import Data.Kind (Constraint)
-import Data.Map (Map)
-import qualified Data.Map as Map
-import Data.Maybe
+import           Control.Lens
+import           Control.Monad.State
+import           Data.Kind           (Constraint)
+import           Data.Map            (Map)
+import qualified Data.Map            as Map
+import           Data.Maybe
 
 -- | A wrapper around a monad with a state that can be used to retrieve dependencies or store values
 newtype Dependency s m a = Dependency (StateT s m a)
@@ -77,11 +76,18 @@ dependencyMapLookup key = Map.lookup key <$> provide
 
 dependencyMapLookupElseError :: (s `CanProvide` (Map k a), Monad m, Ord k, Show k) => String -> k -> Dependency s m a
 dependencyMapLookupElseError category key = fromMaybe failMsg <$> dependencyMapLookup key
-    where failMsg = error . concat $ ["Couldn't find element with key ", show key, " within ", category, " map in the stored dependencies"]
+    where failMsg = error . concat $ [ "Couldn't find element with key "
+                                     , show key
+                                     , " within "
+                                     , category
+                                     , " map in the stored dependencies"
+                                     ]
 
 dependencyMapInsert :: (s `CanStore` (Map k a), Monad m, Ord k) => k -> a -> Dependency s m ()
-dependencyMapInsert key value = (Map.insert key value <$> readStore) >>= writeStore
+dependencyMapInsert key value = (Map.insert key value <$> readStore)
+                            >>= writeStore
 
 -- a bit specialized, but a very common scenario
 storeWithKeyFn :: (s `CanStore` (Map k a), Monad m, Ord k) => (a -> k) -> a -> Dependency s m a
-storeWithKeyFn getID value = dependencyMapInsert (getID value) value >> pure value 
+storeWithKeyFn getID value = dependencyMapInsert (getID value) value
+                          >> return value 

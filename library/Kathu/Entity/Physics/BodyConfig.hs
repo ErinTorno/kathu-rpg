@@ -38,7 +38,7 @@ data BodyConfig = BodyConfig
 
 setBodyConfig :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, Has w m Existance, Set w m Existance, Get w m LifeTime, Has w m LifeTime, Set w m LifeTime, Has w m WorldFloor, Set w m WorldFloor)
               => Entity -> Maybe BodyConfig -> SystemT w m ()
-setBodyConfig ety (Nothing)   = ety $= StaticBody -- if no config given, we at least need to give it a StaticBody so it can have a position
+setBodyConfig ety Nothing     = ety $= StaticBody -- if no config given, we at least need to give it a StaticBody so it can have a position
 setBodyConfig ety (Just conf) = do
     ety $= (body conf, sensor conf)
 
@@ -46,7 +46,7 @@ setBodyConfig ety (Just conf) = do
 
     let setShape :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, Has w m Existance, Set w m Existance, Has w m LifeTime, Set w m LifeTime) => Maybe LifeTime -> [Convex] -> SystemT w m ()
         setShape _ []      = pure ()
-        setShape lf (x:xs) = ety $= (Shape ety x) >> setShapes lf xs -- if there is one shape, we can set it on our entity; otherwise, we can give the first shape to the main ety itself
+        setShape lf (x:xs) = ety $= Shape ety x >> setShapes lf xs -- if there is one shape, we can set it on our entity; otherwise, we can give the first shape to the main ety itself
         setShapes Nothing mShapes   = forM_ mShapes (newExistingEntity . Shape ety)       -- otherwise, we create new entities for holding that shape information, linked back to ety
         setShapes (Just lf) mShapes = forM_ mShapes (newExistingEntity . (,lf) . Shape ety) -- if the parent has a lifetime, we should inherit that too
     
@@ -99,5 +99,5 @@ instance FromJSON BodyConfig where
             <*> v .:? "friction"
             <*> v .:? "elasticity"
         where check :: BodyConfig -> Parser BodyConfig
-              check config = (\len -> if len > 0 then pure config else fail ("Attempted to load BodyConfig without any shapes")) . length . shapes $ config
+              check config = (\len -> if len > 0 then pure config else fail "Attempted to load BodyConfig without any shapes") . length . shapes $ config
     parseJSON e          = typeMismatch "BodyConfig" e

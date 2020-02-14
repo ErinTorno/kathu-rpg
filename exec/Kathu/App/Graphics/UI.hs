@@ -1,6 +1,11 @@
-{-# LANGUAGE ExplicitForAll #-}
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, MonoLocalBinds, TypeOperators, UndecidableInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE ExplicitForAll       #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE MonoLocalBinds       #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Kathu.App.Graphics.UI where
 
@@ -97,7 +102,7 @@ drawBar renderer scale im dyn (DisplayBar startingPos ppu capBegin capEnd capw p
           drawCap cap x = maybe (pure x) (\i -> drawAt i capw x) cap
           (V2 sx sy) = (*scale) <$> startingPos
           unitCount :: Int
-          unitCount  = ceiling $ (totalMaximum dyn) / ppu
+          unitCount  = ceiling $ totalMaximum dyn / ppu
           fullUnits, partialRem :: Int
           (fullUnits, partialRem) = fixPartial . mapSnd (ceiling . (*4) . (/ppu)) $ (dyn ^. dynCur) `divMod'` ppu
           -- if we have perfectly rounded, we drop the full units by one to draw a large one of four quarters

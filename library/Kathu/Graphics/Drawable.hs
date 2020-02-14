@@ -1,7 +1,12 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DataKinds, FlexibleContexts, FlexibleInstances, MonoLocalBinds, TypeOperators, UndecidableInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MonoLocalBinds        #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UnboxedTuples         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Kathu.Graphics.Drawable where
 
@@ -16,7 +21,7 @@ import Linear.V2 (V2(..))
 
 import Kathu.Parsing.Aeson
 import Kathu.Util.Dependency
-import Kathu.Util.Flow ((>>>=))
+import Kathu.Util.Flow ((>>>=), (<$$>))
 import Kathu.Util.Types
 
 -- | A newtype wrapper around a function that can grab image dimension information as a Dependency
@@ -72,7 +77,7 @@ instance ( s `CanProvide` (ImageBounds (Dependency s m) g)
          , FromJSON (Dependency s m g)
          , Monad m
          ) => FromJSON (Dependency s m (RenderSprite g)) where
-    parseJSON s@(String _) = parseJSON s >>>= \graphics -> (\bnd -> RSStatic . (flip StaticSprite) bnd $ graphics) <$> bounds graphics
+    parseJSON s@(String _) = parseJSON s >>>= \graphics -> (\bnd -> RSStatic . flip StaticSprite bnd $ graphics) <$> bounds graphics
         where bounds :: (s `CanProvide` (ImageBounds (Dependency s m) g), Monad m) => g -> Dependency s m (V2 CInt)
               bounds graphics   = provide >>= ($graphics) . unImageBounds
     parseJSON o@(Object _) = parseJSON o >>>= \graphics -> pure . RSAnimated $ AnimatedSprite graphics 0 0 0 
@@ -85,10 +90,10 @@ instance ( s `CanProvide` (ImageBounds (Dependency s m) g)
 newtype Render g = Render {unRender :: Vector (RenderSprite g)}
 
 instance (FromJSON (Dependency s m (RenderSprite g)), Monad m) => FromJSON (Dependency s m (Render g)) where
-    parseJSON obj@(Object _) = (fmap $ Render . Vec.singleton) <$> parseJSON obj
-    parseJSON str@(String _) = (fmap $ Render . Vec.singleton) <$> parseJSON str
+    parseJSON obj@(Object _) = Render . Vec.singleton <$$> parseJSON obj
+    parseJSON str@(String _) = Render . Vec.singleton <$$> parseJSON str
     parseJSON (Array a)      = toRender <$> Vec.foldM run (pure []) a
-        where run acc cur = (\rn -> rn >>= \inner -> (inner:) <$> acc) <$> parseJSON cur
+        where run acc cur = (>>=(\inner -> (inner:) <$> acc)) <$> parseJSON cur
               toRender ls = Render <$> (Vec.fromList <$> ls)
     parseJSON e              = typeMismatch "Render" e
 
@@ -98,14 +103,14 @@ instance (FromJSON (Dependency s m (RenderSprite g)), Monad m) => FromJSON (Depe
 
 -- we use this so that rapidly starting and stopping moving in one direction is still animated
 timeBeforeFrameChange :: AnimatedSprite g -> Word32
-timeBeforeFrameChange !animspr = (subtract 1) . delay . (Vec.!curAnim) . animStrips . animation $ animspr
+timeBeforeFrameChange !animspr = subtract 1 . delay . (Vec.!curAnim) . animStrips . animation $ animspr
     where curAnim = activeAnim animspr
 
 currentBounds :: RenderSprite g -> (# V2 CInt, V2 CInt #)
 currentBounds (RSStatic (StaticSprite _ !bnd)) = (# V2 0 0, bnd #)
 currentBounds (RSAnimated !anim) = (# V2 xCoord yCoord, dims #)
-    where xCoord = ((*) w . fromIntegral . currentFrame $ anim)
-          yCoord = ((*) h . fromIntegral . activeAnim $ anim)
+    where xCoord = (*w) . fromIntegral . currentFrame $ anim
+          yCoord = (*h) . fromIntegral . activeAnim $ anim
           dims@(V2 !w !h) = animBounds . animation $ anim
 
 isAnimated :: RenderSprite g -> Bool
@@ -122,7 +127,7 @@ switchAnimationByID !idt !anim = case Vec.findIndex ((==idt) . animID) . animStr
 
 -- updates current time, and switches to new frame if we reach it
 updateFrames :: Word32 -> AnimatedSprite g -> AnimatedSprite g
-updateFrames !dT !d@(AnimatedSprite {animTime = animT, activeAnim = act, animation = anim}) = d {animTime = newTime, currentFrame = newFrame}
+updateFrames !dT d@AnimatedSprite {animTime = animT, activeAnim = act, animation = anim} = d {animTime = newTime, currentFrame = newFrame}
     where newTime  = animT + dT
-          curStrip = (animStrips anim) Vec.! act
-          newFrame = fromIntegral (newTime `quot` (delay curStrip)) `rem` (frameCount curStrip)
+          curStrip = animStrips anim Vec.! act
+          newFrame = fromIntegral (newTime `quot` delay curStrip) `rem` frameCount curStrip

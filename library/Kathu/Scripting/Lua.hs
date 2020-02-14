@@ -2,7 +2,6 @@
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE ExplicitForAll   #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TupleSections    #-}
 
 -- Meant to be imported qualified
 
@@ -19,7 +18,7 @@ module Kathu.Scripting.Lua
 import           Apecs
 import           Apecs.Physics                     (Force, Mass, Physics, Position, Velocity)
 import           Control.Concurrent.MVar
-import           Control.Monad                     (when)
+import           Control.Monad                     (unless, when)
 import           Control.Monad.IO.Class            (liftIO)
 import           Control.Monad.ST                  (stToIO)
 import qualified Data.HashTable.ST.Basic           as HT
@@ -41,10 +40,9 @@ import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
 import           Kathu.Util.Apecs
 
+-- in future an actual log file should be used and acessed through the world
 logLua :: String -> Lua ()
-logLua str = do
-    -- in future an actual log file should be used and acessed through the world
-    liftIO . putStrLn $ str
+logLua = liftIO . putStrLn
 
 call :: Lua.LuaCallFunc a => String -> a
 call = callFunc
@@ -64,12 +62,12 @@ mkActiveScript !ety !singStatus !initLua (Script _ mainScr flags _) = mkActive <
 releaseActiveScript :: forall w. (ReadWriteEach w IO [RunningScriptEntity, ScriptEventBuffer, Variables]) => ActiveScript -> SystemT w IO ()
 releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched singStatus) = do
     let ety = unEntity scriptEntity
-    when (scriptEntity /= global && shouldScriptRun onDestroy as) $ do
+    when (scriptEntity /= global && shouldScriptRun onDestroy as) $
         execFor as (call "onDestroy" ety)
 
     -- don't want to fully release an singleton instance at this time if we aren't clearing the master, non-shared script state
     when (singStatus /= SingletonReference) $ do
-        when (not $ Vec.null watched) $ do
+        unless (Vec.null watched) $ do
             vars <- get global
             Vec.forM_ watched $ deleteListener ety vars
 
@@ -100,7 +98,7 @@ loadScript extFuns ety script
               sbank     <- unScriptBank <$> get global
               curScript <- liftIO . stToIO $ HT.lookup sbank sID
               case curScript of
-                  Just as -> do return $ as {instanceEntity = ety, singletonStatus = SingletonReference}
+                  Just as -> return $ as {instanceEntity = ety, singletonStatus = SingletonReference}
                   Nothing -> do ascript <- mkAS SingletonBase global
                                 liftIO . stToIO $ HT.insert sbank sID ascript
                                 return $ ascript {instanceEntity = ety, singletonStatus = SingletonReference}

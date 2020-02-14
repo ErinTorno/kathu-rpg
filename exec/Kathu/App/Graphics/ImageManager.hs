@@ -105,7 +105,7 @@ mkImageManager renderer surfaces = do
             pure $ TextureSet texs (SVec.fromList nBasePalette) paletteVec
         basePalManagers = Map.singleton noPalette (staticManager 0)
 
-    pure . ImageManager 0 1 noPalette basePalManagers (SVec.singleton black) =<< mapM mkSet surfaces
+    ImageManager 0 1 noPalette basePalManagers (SVec.singleton black) <$> mapM mkSet surfaces
 
 runImageManager :: forall w m. (MonadIO m, ReadWriteEach w m '[ImageManager, PaletteManager, RenderTime])
                 => SystemT w m ()
@@ -131,7 +131,7 @@ setPaletteManager idt = do
     case manager^.paletteManagers.to (Map.lookup idt) of
         Nothing        -> pure False
         (Just newMngr) -> do
-            (initManager newMngr) setPaletteIdx newMngr
+            initManager newMngr setPaletteIdx newMngr
             Apecs.set global newMngr
             manager' <- Apecs.get global
             Apecs.set global (set currentManagerIdt idt manager')
@@ -196,7 +196,7 @@ loadPalettes newPalettes im = liftIO (mapM updateSet . view textureSets $ im)
           applyAnimPalette bkgs pal col | col == backgroundMask = bkgs
                                         | otherwise             = applyAnimatedPalette pal col
           writeAnimFrame :: Int -> MSVec.IOVector Color -> Int -> [Color] -> IO Int
-          writeAnimFrame count pals idx = foldM (\i col -> MSVec.unsafeWrite pals i col >> pure (i + count)) idx
+          writeAnimFrame count pals = foldM (\i col -> MSVec.unsafeWrite pals i col >> pure (i + count))
           writeFrame pals bkg shdr idx col = MSVec.unsafeWrite pals idx (getColor shdr bkg col) >> pure (idx + 1)
           -- if the base color matches our mask, we instead use the background color instead
           getColor f bkg col = if col == backgroundMask then bkg else f col
@@ -223,7 +223,7 @@ mkPalette sur = do
     
     format   <- rawSurfaceFormat sur
     (V2 w h) <- SDL.surfaceDimensions sur
-    when (SDLRaw.pixelFormatBytesPerPixel format /= 4) $ do
+    when (SDLRaw.pixelFormatBytesPerPixel format /= 4) $
         error "Attempted to find palette in a surface that doesn't support all color channels"
 
     pixels   <- castPtr <$> SDL.surfacePixels sur
@@ -231,7 +231,7 @@ mkPalette sur = do
         checkColor acc i
             | i >= len  = pure acc
             | otherwise = do
-                word <- (peekElemOff pixels i) :: IO Word32
+                word <- peekElemOff pixels i :: IO Word32
                 let col = word32ToColor format word
                 if col `elem` acc then
                     checkColor acc (i + 1)
@@ -269,7 +269,7 @@ copyColorMaskOverSurface col sur tar = do
     let len = fromIntegral $ w * h
         copyAt i | i >= len  = pure ()
                  | otherwise = do
-                     pixel <- (peekElemOff surPixels i) :: IO Word32
+                     pixel <- peekElemOff surPixels i :: IO Word32
                      if pixel == targetPixel then
                         pokeElemOff tarPixels i whitePixel
                      else
@@ -290,5 +290,5 @@ colorToWord32 format (Color (V4 r g b a)) = gp SDLRaw.pixelFormatRMask r .|. gp 
 
 word32ToColor :: SDLRaw.PixelFormat -> Word32 -> Color
 word32ToColor format word = mkColor (getComp SDLRaw.pixelFormatRMask) (getComp SDLRaw.pixelFormatGMask) (getComp SDLRaw.pixelFormatBMask) (getComp SDLRaw.pixelFormatAMask)
-    where getComp mask = let c = (mask format) .&. word -- we get just the component part
+    where getComp mask = let c = mask format .&. word -- we get just the component part
                          in fromIntegral $ (255 .&. c) .|. (255 .&. (c `shift` (-8))) .|. (255 .&. (c `shift` (-16))) .|. (255 .&. (c `shift` (-24))) -- fill up word with it, then cast to Word8 to drop out else

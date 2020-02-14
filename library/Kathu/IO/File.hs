@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MonoLocalBinds    #-}
@@ -40,7 +39,7 @@ loadWithHandlers onFail onSuccess filepath
     | typePrefix "~json" = handle eitherDecode
     | otherwise          = handle (Bi.first show . Y.decodeEither' . toStrict) -- we default to yaml when nothing matches
     where -- files types are put into the path, in the format of "filename~FORMAT.ext"
-          typePrefix c   = c `isPrefixOf` (takeBaseName filepath)
+          typePrefix c   = c `isPrefixOf` takeBaseName filepath
           handle decoder  = either onFail onSuccess . decoder <$> BL.readFile filepath
 
 loadFromFile :: FromJSON a => FilePath -> IO a
@@ -59,9 +58,9 @@ saveToFile FormatYAML fd config = B.writeFile fd (Y.encode config)
 
 -- for all files in directory and subdirectory with the given extension, we parse them and return it as a list
 parseAllWith :: (FilePath -> IO a) -> String -> FilePath -> IO [a]
-parseAllWith loader ext path = ((map (path </>)) <$> listDirectory path) >>= partitionM doesDirectoryExist >>= parseIn
+parseAllWith loader ext path = map (path </>) <$> listDirectory path >>= partitionM doesDirectoryExist >>= parseIn
     where -- parses each file, and appends to all parsed files from subdir
-          parseIn (dirs, files) = (liftM2 (++)) foldRes . mapM loader . filter (isExtensionOf ext) $ files
+          parseIn (dirs, files) = liftM2 (++) foldRes . mapM loader . filter (isExtensionOf ext) $ files
               where foldRes = concat <$> foldM (\acc d -> (:acc) <$> parseAllWith loader ext d) [] dirs
 
 parseAll :: FromJSON a => String -> FilePath -> IO [a]

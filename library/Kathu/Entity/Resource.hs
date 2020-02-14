@@ -6,10 +6,11 @@
 module Kathu.Entity.Resource where
 
 import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
+import Data.Aeson.Types   (typeMismatch)
 import Data.Serialize
-import Control.Lens hiding ((.=))
+import Control.Lens       hiding ((.=))
 import GHC.Generics
+
 import Kathu.Util.Numeric (clampBetween, fromScientific)
 
 -- | A resource that is not expected to change frequently

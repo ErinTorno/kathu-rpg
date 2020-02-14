@@ -1,9 +1,13 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 -- newFromSimplePrototype is generated on-the-fly through TH without an explicit type signature
 
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, MonoLocalBinds, TypeOperators, UndecidableInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE MonoLocalBinds       #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Kathu.Entity.Prototype (EntityPrototype(..), newFromSimplePrototype, getPrototypeID) where
 
@@ -15,10 +19,10 @@ import           Kathu.Scripting.Lua.Types          (Script)
 import           Kathu.Util.Collection              (fromJustElseError)
 import           Kathu.Util.Types                   (Identifier)
 
-defineData          "EntityPrototype"  "" ((SerializableComponent ''BodyConfig False []):(SerializableComponent ''Script True []):serializableComponentConfigs)
+defineData          "EntityPrototype" "" (SerializableComponent ''BodyConfig False [] : SerializableComponent ''Script True [] : serializableComponentConfigs)
 defineEntityCreator "newFromSimplePrototype" "" serializableComponentConfigs
 
 getPrototypeID :: EntityPrototype g -> Identifier
 getPrototypeID = identifier . fromJustElseError "Attempted to load entity without Identity" . identity
 
-defineEntityFromJSON 'getPrototypeID ''EntityPrototype "" ((SerializableComponent ''BodyConfig False []):(SerializableComponent ''Script True []):serializableComponentConfigs)
+defineEntityFromJSON 'getPrototypeID ''EntityPrototype "" (SerializableComponent ''BodyConfig False [] : SerializableComponent ''Script True [] : serializableComponentConfigs)

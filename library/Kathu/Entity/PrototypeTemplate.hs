@@ -31,13 +31,13 @@ fieldName prefix name = mkName . toCamelCase . filter (/='\'') $ prefix <> nameB
 
 -- MyType -> ["m", "a"] -> MyType m a
 applyParams :: Type -> [String] -> Type
-applyParams typ = ParensT . foldl (\acc cur -> AppT acc (VarT . mkName $ cur)) (typ)
+applyParams typ = ParensT . foldl (\acc cur -> AppT acc (VarT . mkName $ cur)) typ
 
 -- | Creates a record type for an entity prototype with the given components
 defineData :: String -> String -> [SerializableComponent] -> Q [Dec]
 defineData typename prefix components = pure . pure $ DataD [] (mkName typename) uniqueParams Nothing [construct] []
     where mkField comp  = let name = compName comp in (fieldName prefix name, defaultBang, AppT (ConT ''Maybe) . applyParams (ConT name) . params $ comp)
-          uniqueParams  = map PlainTV . map mkName . nub . concat . map params $ components
+          uniqueParams  = map (PlainTV . mkName) . nub . concatMap params $ components
           construct     = RecC (mkName typename) . map mkField $ components
 
 -- | Creates a function that will create a new entity in the world from the given record type
@@ -53,20 +53,22 @@ defineEntityCreator fnName prefix components = do
 
 -- | Defines FromJSON instances for a entity prototype
 defineEntityFromJSON :: Name -> Name -> String -> [SerializableComponent] -> Q [Dec]
-defineEntityFromJSON getID typename prefix components = pure . pure $ InstanceD Nothing contraints typeSigna [pJSON]
+defineEntityFromJSON getID typename prefix components = pure . pure $ InstanceD Nothing contraints typeSignature [pJSON]
     where stateVar     = VarT . mkName $ "s"
           monadVar     = VarT . mkName $ "m"
-          uniqueParams = nub . concat . map params $ components
+          uniqueParams = nub . concatMap params $ components
           typenameLit  = LitE . StringL . nameBase $ typename
           mkDependency = ParensT . AppT (AppT (AppT (ConT ''Dependency) stateVar) monadVar)
-          typeNameWithParams = (flip applyParams) uniqueParams . ConT $ typename
-          mkConstraints f    = foldl (\acc cur -> (AppT (ConT ''FromJSON) (f (applyParams (ConT . compName $ cur) (params cur)))) : acc) []
+
+          typeNameWithParams = flip applyParams uniqueParams . ConT $ typename
+          typeSignature      = AppT (ConT ''FromJSON) . ParensT . AppT (AppT (AppT (ConT ''Dependency) stateVar) monadVar) $ typeNameWithParams
+
+          mkConstraints f    = foldl (\acc cur -> AppT (ConT ''FromJSON) (f (applyParams (ConT . compName $ cur) (params cur))) : acc) []
           constraintsNoDep   = mkConstraints id           . filter (not . requiresDependencies) $ components
           constraintsDeps    = mkConstraints mkDependency . filter requiresDependencies         $ components
-          constraintMonad    = (AppT (ConT ''Monad) monadVar)
-          constraintStore    = (AppT (AppT (ConT ''CanStore) stateVar) (ParensT . AppT (ConT ''IDMap) $ typeNameWithParams))
+          constraintMonad    = AppT (ConT ''Monad) monadVar
+          constraintStore    = AppT (AppT (ConT ''CanStore) stateVar) (ParensT . AppT (ConT ''IDMap) $ typeNameWithParams)
           contraints         = constraintMonad : constraintStore : (constraintsNoDep ++ constraintsDeps)
-          typeSigna    = AppT (ConT ''FromJSON) . ParensT . AppT (AppT (AppT (ConT ''Dependency) stateVar) monadVar) $ typeNameWithParams
           -- now in pair, where if type requires FromJSON Dependency, then snd is True
           (first:rest) = (\c -> (compName c, requiresDependencies c)) <$> components
           varName      = mkName "v"
@@ -78,7 +80,7 @@ defineEntityFromJSON getID typename prefix components = pure . pure $ InstanceD 
           protoName    = mkName "inproto"
           succBody     = UInfixE (VarE 'getCompose) (VarE '($)) sucExpr
           -- after we have parsed the Parsing (Dependency s m EntityPrototype), we then pass it into this
-          applyBody    = UInfixE (VarE protoName) (VarE '(>>>=)) (AppE (VarE ('storeWithKeyFn)) (VarE getID))
+          applyBody    = UInfixE (VarE protoName) (VarE '(>>>=)) (AppE (VarE 'storeWithKeyFn) (VarE getID))
           body         = AppE (AppE (VarE 'withObject) typenameLit) $ LamE [VarP varName] (LetE [ValD (VarP protoName) (NormalB succBody) []] applyBody)
           parseSucc    = Clause [] (NormalB body) []
-          pJSON        = FunD ('parseJSON) [parseSucc]
+          pJSON        = FunD 'parseJSON [parseSucc]

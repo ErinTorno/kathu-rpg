@@ -1,11 +1,12 @@
-{-# LANGUAGE FlexibleContexts, TypeOperators #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeOperators    #-}
 
 module Kathu.Parsing.Counting where
 
-import Data.Map (Map)
-import qualified Data.Map as Map
-import Data.Text (Text)
-import Kathu.Util.Dependency
+import           Data.Map              (Map)
+import qualified Data.Map              as Map
+import           Data.Text             (Text)
+import           Kathu.Util.Dependency
 
 newtype CountingIDs = CountingIDs {unCounting :: Map Text (Map Text Int)}
 

@@ -1,28 +1,31 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, MonoLocalBinds, TypeOperators, UndecidableInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies  #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeFamilies         #-}
 
 module Kathu.Entity.ActorState where
 
 import qualified Apecs
-import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
-import Control.Lens
-import Data.Functor.Compose
-import qualified Data.HashMap.Strict as Hash
-import Data.Map (Map)
-import qualified Data.Map as Map
-import Data.Maybe (maybe)
-import GHC.Generics
+import           Data.Aeson
+import           Data.Aeson.Types      (typeMismatch)
+import           Control.Lens
+import           Data.Functor.Compose
+import qualified Data.HashMap.Strict   as Hash
+import           Data.Map              (Map)
+import qualified Data.Map              as Map
+import           Data.Maybe            (maybe)
+import           GHC.Generics
 
-import Kathu.Entity.Damage
-import Kathu.Entity.Resource
-import Kathu.Parsing.Aeson
-import Kathu.Util.Dependency
+import           Kathu.Entity.Damage
+import           Kathu.Entity.Resource
+import           Kathu.Parsing.Aeson
+import           Kathu.Util.Dependency
 
-newtype Team = Team (Int) deriving (Show, Eq, Generic)
+newtype Team = Team Int deriving (Show, Eq, Generic)
 
 instance ToJSON Team where
     toJSON = genericToJSON standardProjectOptions
@@ -61,11 +64,11 @@ instance (FromJSON (Dependency s m DamageID), Monad m) => FromJSON (Dependency s
 --------------------
 
 resistTo :: DamageProfile g -> ActorState -> Double
-resistTo prof actor = maybe (defaultResist prof) total . (Map.lookup (dmgID prof)) $ actor^.resists
+resistTo prof actor = maybe (defaultResist prof) total . Map.lookup (dmgID prof) $ actor^.resists
 
 applyDamagePacket :: DamagePacket g -> ActorState -> ActorState
 applyDamagePacket (DamagePacket prof res magn) =
-    let modAv av actor = over av (modDynCur $ (-1.0) * magn * (resistTo prof actor)) actor
+    let modAv av actor = over av (modDynCur $ (-1.0) * magn * resistTo prof actor) actor
     in case res of
         TgtHealth -> modAv health
         TgtMana   -> modAv mana

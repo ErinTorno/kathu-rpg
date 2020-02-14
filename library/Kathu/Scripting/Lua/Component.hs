@@ -1,7 +1,6 @@
-{-# LANGUAGE BangPatterns     #-}
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE ExplicitForAll   #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Kathu.Scripting.Lua.Component (registerComponentFunctions) where
@@ -43,39 +42,39 @@ getIdentifier !world !etyID = liftIO . Apecs.runWith world $ do
     idtc <- getIfExists (Entity etyID)
     pure $ case idtc of
         Just idt -> Optional $ Just (unID . identifier $ idt)
-        Nothing  -> Optional $ Nothing
+        Nothing  -> Optional Nothing
 
 getName :: forall w. (ReadWrite w IO Identity) => w -> Int -> Lua (Optional Text)
 getName !world !etyID = liftIO . Apecs.runWith world $ do
     idtc <- getIfExists (Entity etyID)
     pure $ case idtc of
         Just idt -> Optional $ Just (name idt)
-        Nothing  -> Optional $ Nothing
+        Nothing  -> Optional Nothing
 
 getDescription :: forall w. (ReadWrite w IO Identity) => w -> Int -> Lua (Optional Text)
 getDescription !world !etyID = liftIO . Apecs.runWith world $ do
     idtc <- getIfExists (Entity etyID)
     pure $ case idtc of
         Just idt -> Optional $ Just (description idt)
-        Nothing  -> Optional $ Nothing
+        Nothing  -> Optional Nothing
 
 getTags :: forall w. (ReadWrite w IO Tags) => w -> Int -> Lua (Optional [Text])
 getTags !world !etyID = liftIO . Apecs.runWith world $ do
     tags <- getIfExists (Entity etyID)
     pure $ case tags of
         Just (Tags t) -> Optional $ Just (Vec.toList t)
-        Nothing       -> Optional $ Nothing
+        Nothing       -> Optional Nothing
 
 getMovingSpeed :: forall w. (ReadWrite w IO MovingSpeed) => w -> Int -> Lua (Optional Double)
 getMovingSpeed !world !etyID = liftIO . Apecs.runWith world $ do
     mspeed <- getIfExists (Entity etyID)
     pure $ case mspeed of
         Just (MovingSpeed s) -> Optional $ Just s
-        Nothing              -> Optional $ Nothing
+        Nothing              -> Optional Nothing
 
 setMovingSpeed :: forall w. (ReadWrite w IO MovingSpeed) => w -> Int -> Double -> Lua ()
-setMovingSpeed !world !etyID s = liftIO . Apecs.runWith world $ do
-    (Entity etyID) $= MovingSpeed s
+setMovingSpeed !world !etyID s = liftIO . Apecs.runWith world $
+    Entity etyID $= MovingSpeed s
 
 --------------
 -- Graphics --
@@ -101,36 +100,36 @@ getVector2D mapper !world !etyID = liftIO . Apecs.runWith world $ do
     comp <- getIfExists (Entity etyID)
     pure $ case comp of
         Just vec  -> let (V2 x y) = mapper vec in Optional $ Just (x, y)
-        Nothing   -> Optional $ Nothing
+        Nothing   -> Optional Nothing
 
 getMass :: forall w. (ReadWrite w IO Mass) => w -> Int -> Lua (Optional Double)
 getMass !world !etyID = liftIO . Apecs.runWith world $ do
     mass <- getIfExists (Entity etyID)
     pure $ case mass of
         Just (Mass m) -> Optional $ Just m
-        Nothing       -> Optional $ Nothing
+        Nothing       -> Optional Nothing
 
 setMass :: forall w. (Has w IO Physics, ReadWrite w IO Position) => w -> Int -> Double-> Lua ()
-setMass !world !etyID m = liftIO . Apecs.runWith world $ do
-    (Entity etyID) $= Mass m
+setMass !world !etyID m = liftIO . Apecs.runWith world $
+    Entity etyID $= Mass m
 
 getPosition :: forall w. (ReadWrite w IO Position) => w -> Int -> Lua (Optional (Double, Double))
 getPosition = getVector2D $ \(Position v) -> v
 
 setPosition :: forall w. (ReadWrite w IO Position) => w -> Int -> (Double, Double) -> Lua ()
-setPosition !world !etyID (x, y) = liftIO . Apecs.runWith world $ do
-    (Entity etyID) $= Position (V2 x y)
+setPosition !world !etyID (x, y) = liftIO . Apecs.runWith world $
+    Entity etyID $= Position (V2 x y)
 
 getVelocity :: forall w. (ReadWrite w IO Velocity) => w -> Int -> Lua (Optional (Double, Double))
 getVelocity = getVector2D $ \(Velocity v) -> v
 
 setVelocity :: forall w. (ReadWrite w IO Velocity) => w -> Int -> (Double, Double) -> Lua ()
-setVelocity !world !etyID (x, y) = liftIO . Apecs.runWith world $ do
-    (Entity etyID) $= Velocity (V2 x y)
+setVelocity !world !etyID (x, y) = liftIO . Apecs.runWith world $
+    Entity etyID $= Velocity (V2 x y)
 
 getForce :: forall w. (ReadWrite w IO Force) => w -> Int -> Lua (Optional (Double, Double))
 getForce = getVector2D $ \(Force v) -> v
 
 setForce :: forall w. (ReadWrite w IO Force) => w -> Int -> (Double, Double) -> Lua ()
-setForce !world !etyID (x, y) = liftIO . Apecs.runWith world $ do
-    (Entity etyID) $= Force (V2 x y)
+setForce !world !etyID (x, y) = liftIO . Apecs.runWith world $
+    Entity etyID $= Force (V2 x y)

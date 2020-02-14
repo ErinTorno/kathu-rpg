@@ -1,5 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-
 module Kathu.Util.Timing where
 
 import Data.Word

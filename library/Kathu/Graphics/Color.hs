@@ -2,7 +2,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE TupleSections              #-}
 
 module Kathu.Graphics.Color
     ( Color(..)
@@ -67,26 +66,26 @@ newtype Color = Color {unColor :: V4 Word8} deriving (Eq, Generic, Storable)
 instance Show Color where
     show (Color (V4 r g b a)) = ('#':) . padShowHex 2 r . padShowHex 2 g . padShowHex 2 b . padShowHex 2 a $ ""
 instance Read Color where
-    readsPrec _ str = parseWithAlpha str
-        where pair a b = (\case {[] -> Nothing; ((x, _):_) -> Just x}) . readHex $ (a:b:[])
+    readsPrec _ = parseWithAlpha
+        where pair a b = (\case {[] -> Nothing; ((x, _):_) -> Just x}) . readHex $ [a, b]
               orNext f _ Nothing          = f
               orNext _ remainder (Just c) = [(c, remainder)]
               -- we try to parse including an alpha value, or else we'll try without
               parseWithAlpha s@('#':r1:r2:g1:g2:b1:b2:a1:a2:remainder) =
                   orNext (parseNoAlpha s) remainder
-                  $ mkColor <$> (pair r1 r2) <*> (pair g1 g2) <*> (pair b1 b2) <*> (pair a1 a2)
+                  $ mkColor <$> pair r1 r2 <*> pair g1 g2 <*> pair b1 b2 <*> pair a1 a2
               parseWithAlpha s = parseNoAlpha s
               -- we'll try without an alpha, otherwise we'll fail
               parseNoAlpha   ('#':r1:r2:g1:g2:b1:b2:remainder) =
                   orNext [] remainder
-                  $ mkColor <$> (pair r1 r2) <*> (pair g1 g2) <*> (pair b1 b2) <*> Just 255
+                  $ mkColor <$> pair r1 r2 <*> pair g1 g2 <*> pair b1 b2 <*> Just 255
               parseNoAlpha _   = []
 
 instance ToJSON Color where
     toJSON = toJSON . show
 instance FromJSON Color where
     parseJSON (String s) = readElseFail failMsg . T.unpack $ s
-        where failMsg = concat $ ["Couldn't parse String \"", show s, "\" into Color"]
+        where failMsg = concat ["Couldn't parse String \"", show s, "\" into Color"]
     parseJSON e          = typeMismatch "Color" e
 
 mkColor :: Word8 -> Word8 -> Word8 -> Word8 -> Color
@@ -130,7 +129,7 @@ nearestColor colors color = fst . foldl' minWeight (color, 1/0) . fmap (weigh co
     where minWeight (ac, aw) (cc, cw) = if aw < cw then (ac, aw) else (cc, cw)
           weigh :: Color -> Color -> (Color, Double)
           weigh (Color (V4 xr xb xg xa)) c@(Color (V4 yr yb yg ya)) = (c, weight)
-              where weight   = (2 + rAvg / 256) * (dsqr xr yr) + 4 * (dsqr xg yg) + (2 + (255 - rAvg) / 256) * (dsqr xb yb) + 6 * (dsqr xa ya)
+              where weight   = (2 + rAvg / 256) * dsqr xr yr + 4 * dsqr xg yg + (2 + (255 - rAvg) / 256) * dsqr xb yb + 6 * dsqr xa ya
                     rAvg     = (fromIntegral xr + fromIntegral yr) / 2
                     dsqr a b = (fromIntegral a - fromIntegral b) ** 2
 
@@ -236,10 +235,10 @@ fromHSV hsv =
         alph = fromFloat . hsvAlpha $ hsv
         hi   = ((`mod`6) . floor . (/60.0) . hue $ hsv) :: Int
         f    = (hue hsv / 60.0) - (fromInteger . floor) (hue hsv / 60.0)
-        v = fromFloat . (*(value hsv)) $ 1.0
-        p = fromFloat . (*(value hsv)) $ 1.0 - saturation hsv
-        q = fromFloat . (*(value hsv)) $ 1.0 - f * saturation hsv
-        t = fromFloat . (*(value hsv)) $ 1.0 - (1.0 - f) * saturation hsv
+        v = fromFloat . (* value hsv) $ 1.0
+        p = fromFloat . (* value hsv) $ 1.0 - saturation hsv
+        q = fromFloat . (* value hsv) $ 1.0 - f * saturation hsv
+        t = fromFloat . (* value hsv) $ 1.0 - (1.0 - f) * saturation hsv
     in case hi of
         0 -> mkColor v t p alph
         1 -> mkColor q v p alph

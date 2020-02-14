@@ -1,9 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- we also need orphan instances to set up the Apecs system
 
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE ExplicitForAll #-}
+{-# LANGUAGE BangPatterns      #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, TemplateHaskell, TypeApplications, TypeFamilies #-}
 

@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE ExplicitForAll        #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -99,7 +98,7 @@ initFloorProperty = ((FloorPropEntity <$> newExistingEntity (StaticBody, Positio
 
 assignWorldFloor :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, ReadWriteEach w m '[Existance, WorldFloor])
                  => FloorPropEntity -> (WorldFloor, Entity) -> SystemT w m WorldFloor
-assignWorldFloor (FloorPropEntity fety (FloorProperty fid _ force)) ((WorldFloor wid wety), ety) = do
+assignWorldFloor (FloorPropEntity fety (FloorProperty fid _ force)) (WorldFloor wid wety, ety) = do
     -- if wid isn't assignMe, then that means it has a valid constraint entity that needs to be removed first
     when (wid /= assignMeFloorID) $
         destroy wety (Proxy :: Proxy Constraint)

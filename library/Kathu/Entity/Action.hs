@@ -52,7 +52,7 @@ emptyActionPressed = ActionPressed noPress noPress noPress noPress noPress noPre
 
 -- (\n -> if n == Nothing then n else error . show $ n)
 getDirection :: ActionPressed -> Maybe Direction
-getDirection ap = indexToDirection $ (nsComp + ewComp :: Int) -- positive x is east, positive y is north
+getDirection ap = indexToDirection (nsComp + ewComp :: Int) -- positive x is east, positive y is north
     where nsComp = comp iNorth iSouth (ap ^. moveNorth) (ap ^. moveSouth)
           ewComp = comp iEast  iWest  (ap ^. moveEast)  (ap ^. moveWest)
           comp ia ib a b | a' && b'       = if a > b then ia else if b > a then ib else iNone
@@ -113,10 +113,10 @@ iNorth     = 1
 iNortheast = 5
 iEast      = 4
 iSoutheast = 3
-iSouth     = (-1)
-iSouthwest = (-5)
-iWest      = (-4)
-iNorthwest = (-3)
+iSouth     = -1
+iSouthwest = -5
+iWest      = -4
+iNorthwest = -3
 iNone      = 0
 
 indexToDirection :: (Eq a, Integral a) => a -> Maybe Direction

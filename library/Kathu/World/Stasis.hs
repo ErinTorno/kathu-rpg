@@ -1,5 +1,4 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TupleSections              #-}
 
 module Kathu.World.Stasis where
 
@@ -52,4 +51,4 @@ updateStasis idt (WorldStases w) f = WorldStases . Map.alter applyF idt $ w
           applyF (Just s) = Just $ f s
 
 getStasis :: Identifier -> WorldStases -> Maybe WorldStasis
-getStasis idt (WorldStases w) = Map.lookup idt $ w
+getStasis idt = Map.lookup idt . unStases

@@ -17,6 +17,10 @@ mapFst f (a, b) = (f a, b)
 mapSnd :: (b -> c) -> (a, b) -> (a, c)
 mapSnd f (a, b) = (a, f b)
 
+infixl 4 <$$>
+(<$$>) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
+fn <$$> f = fmap fn <$> f
+
 -- Monad
 
 infixl 1 >>>=

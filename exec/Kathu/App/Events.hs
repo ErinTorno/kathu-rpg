@@ -3,24 +3,24 @@
 
 module Kathu.App.Events where
 
-import Apecs hiding (set)
-import Apecs.Physics
-import Control.Lens hiding (Identity)
-import Control.Monad (void, when)
-import qualified Data.Text.IO as T
+import           Apecs                           hiding (set)
+import           Apecs.Physics
+import           Control.Lens                    hiding (Identity)
+import           Control.Monad                   (void, when)
+import qualified Data.Text.IO                    as T
 import qualified SDL
 
-import Kathu.App.Data.Settings
-import Kathu.App.Graphics.ImageManager (nextPaletteManager, setPaletteManager)
-import Kathu.App.System
-import Kathu.Entity.Action
-import Kathu.Entity.Components
-import Kathu.Entity.System
-import Kathu.Entity.Time
-import Kathu.Graphics.Camera
-import Kathu.Util.Flow (whileFstM)
-import Kathu.Util.Timing
-import Kathu.Util.Types (unID)
+import           Kathu.App.Data.Settings
+import           Kathu.App.Graphics.ImageManager (nextPaletteManager, setPaletteManager)
+import           Kathu.App.System
+import           Kathu.Entity.Action
+import           Kathu.Entity.Components
+import           Kathu.Entity.System
+import           Kathu.Entity.Time
+import           Kathu.Graphics.Camera
+import           Kathu.Util.Flow                 (whileFstM)
+import           Kathu.Util.Timing
+import           Kathu.Util.Types                (unID)
 
 handleControls :: System' ()
 handleControls = do

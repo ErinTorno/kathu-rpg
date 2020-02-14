@@ -1,23 +1,26 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, MonoLocalBinds, TypeOperators, UndecidableInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE MonoLocalBinds       #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Kathu.Entity.Damage where
 
 import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
-import Data.Functor.Compose (getCompose)
-import Data.Text (Text)
+import Data.Aeson.Types       (typeMismatch)
+import Data.Functor.Compose   (getCompose)
+import Data.Text              (Text)
 import Data.Word
 
 import GHC.Generics
-import Kathu.Graphics.Color (Color)
+import Kathu.Graphics.Color   (Color)
 import Kathu.Parsing.Aeson
 import Kathu.Parsing.Counting
 import Kathu.Util.Dependency
-import Kathu.Util.Flow ((>>>=))
-import Kathu.Util.Types (Identifier, IDMap)
+import Kathu.Util.Flow        ((>>>=))
+import Kathu.Util.Types       (Identifier, IDMap)
 
 --------------
 -- DamageID --

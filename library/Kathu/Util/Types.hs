@@ -1,7 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- We provide some instances for common typeclasses in here for other library types
 
-{-# LANGUAGE BangPatterns               #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE OverloadedStrings          #-}
@@ -112,7 +111,7 @@ putVector :: (Serialize a, GVec.Vector v a) => v a -> Put
 putVector v = put (fromIntegral (GVec.length v) :: Word32) >> GVec.mapM_ put v
 
 getVector :: (Serialize a, GVec.Vector v a) => Get (v a)
-getVector = GVec.fromList <$> ((flip replicateM) get =<< get)
+getVector = GVec.fromList <$> (flip replicateM get =<< get)
 
 instance Serialize a => Serialize (Vec.Vector a) where
     put = putVector

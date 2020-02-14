@@ -39,7 +39,7 @@ newtype TileID = TileID {unTileID :: Word32} deriving (Show, Eq, Ord)
 derivingUnbox "TileID"
     [t| TileID -> Word32 |]
     [| \(TileID i) -> i  |]
-    [| \(i) -> TileID i  |]
+    [| TileID            |]
 
 instance (s `CanStore` CountingIDs, Monad m) => FromJSON (Dependency s m TileID) where
     parseJSON (String s) = pure (TileID . fromIntegral <$> lookupOrAdd "TileID" s)
@@ -85,7 +85,7 @@ data Tile g = Tile
 makeLenses ''Tile
 
 instance ( s `CanStore` (IDMap (Tile g))
-         , FromJSON (Dependency s m (BreakBehavior))
+         , FromJSON (Dependency s m BreakBehavior)
          , FromJSON (Dependency s m (Render g))
          , FromJSON (Dependency s m TileID)
          , Monad m
@@ -117,7 +117,7 @@ mkTileState t = TileState (t^.tileID) 0
 
 -- | Uses randomIO to initialize metadata for tiles that make use of random properties through its metadata
 mkTileStateWithMetadata :: MonadIO m => Tile g -> m TileState
-mkTileStateWithMetadata t = (TileState (t^.tileID) . restrictRandomMeta) <$> (liftIO (R.randomIO :: IO Word32))
+mkTileStateWithMetadata t = TileState (t^.tileID) . restrictRandomMeta <$> liftIO (R.randomIO :: IO Word32)
     where restrictRandomMeta = (`mod`(t^.tileRender.to (fromIntegral . Vec.length . unRender)))
 
 -- Target Size: 8 bytes (for better alignment)
@@ -129,7 +129,7 @@ makeLenses ''TileState
 derivingUnbox "TileState"
     [t| TileState -> (TileID, Word32) |]
     [| \(TileState tl mt) -> (tl, mt) |]
-    [| \(tl, mt) -> TileState tl mt   |]
+    [| uncurry TileState              |]
 
 getTileRenderSprites :: TileState -> Tile g -> Vec.Vector (RenderSprite g)
 getTileRenderSprites !tileState !tileInst

@@ -1,6 +1,5 @@
 {-# LANGUAGE BangPatterns         #-}
 {-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE ExplicitForAll       #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE MonoLocalBinds       #-}
@@ -94,16 +93,16 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
     global $= ws
     tiles :: Tiles g <- get global
 
-    cmap $ \(Local _)   -> (Position . loadPoint $ ws)
+    cmap $ \(Local _)   -> Position . loadPoint $ ws
     -- we place all items in the world as entities
-    mapM_ (\(pos, ety)  -> mkEntity ety >>= (flip ($=)) (Position pos)) (worldEntities ws)
+    mapM_ (\(pos, ety)  -> mkEntity ety >>= flip ($=) (Position pos)) (worldEntities ws)
     mapM_ (\(pos, item) -> newEntityFromItem item pos) (worldItems ws)
     
     let addWorldCollision polygons
             | Vec.null polygons = pure ()
             | otherwise         = do
                 ety <- newExistingEntity (StaticBody, Position (V2 0 0))
-                ety $= (Shape ety $ Convex (Vec.head polygons) 0)
+                ety $= Shape ety (Convex (Vec.head polygons) 0)
                 
                 mapM_ (\p -> newExistingEntity (Shape ety $ Convex p 0)) . Vec.tail $ polygons
     colPolys <- mkCollisionPolygons tiles . worldFields $ ws
@@ -156,34 +155,45 @@ instance ( s `CanProvide` (IDMap (EntityPrototype g))
     parseJSON (Object v) = do
         worldId   <- v .: "world-id"
         wName     <- v .: "name"
-        wScript :: Dependency s m (Maybe Lua.Script) <- flattenDependency <$> v .:? "script"
         initPal   <- v .: "initial-palette"
         palettes  <- v .:? "palettes" .!= Map.empty
         loadPnt   <- (*unitsPerTile) <$> v .: "load-point"
-        shouldSerializePosition <- v .:? "should-save-exact-position" .!= False
         variables <- v .:? "global-variables" .!= Map.empty
-        foregroundT :: [[Char]] <- v .: "tiles"
-        legend      :: Dependency s m (Map Char (Tile g)) <- do
-            (keys, vals) :: ([Text], [Identifier]) <- ((unzip . Map.toList) <$> v .: "legend")
-            let dLookup = dependencyMapLookupElseError :: String -> Identifier -> Dependency s m (Tile g)
-             in pure . fmap (Map.fromList . zip (T.head <$> keys)) . flattenDependency . fmap (dLookup "Tile") $ vals
 
-        let parsePlacement fn (Array vec) = foldM (parseIndivPlace fn) (pure []) vec
+        shouldSerializePosition      <- v .:? "should-save-exact-position" .!= False
+        foregroundT :: Vector [Char] <- v .: "tiles"
+        
+        wScript :: Dependency s m (Maybe Lua.Script) <- flattenDependency <$> v .:? "script"
+
+        legend :: Dependency s m (Map Char (Tile g)) <- do
+            (keys, vals) :: ([Text], [Identifier]) <- unzip . Map.toList <$> v .: "legend"
+
+            return . fmap (Map.fromList . zip (T.head <$> keys))
+                   . flattenDependency
+                   . fmap (dependencyMapLookupElseError "Tile")
+                   $ vals
+
+        let parsePlacement fn (Array vec) = foldM (parseIndivPlace fn) (return []) vec
             parsePlacement _ e            = typeMismatch "Placement" e
+
             parseIndivPlace fn acc val@(Object obj) = do
                 pos   <- (*unitsPerTile) <$> obj .: "position"
                 stack <- fn val
-                pure $ acc >>= \ls -> ((:ls) . (pos,)) <$> stack
+                return $ acc >>= \ls -> (:ls) . (pos,) <$> stack
             parseIndivPlace _ _ e                 = typeMismatch "Placement" e
-            parseEty = withObject "EntityPlacement" $ \obj -> (obj .: "entity" :: Parser Identifier) >>= pure . dependencyMapLookupElseError "Entity" 
 
-        items    <- v .: "items" >>= parsePlacement parseJSON >>>= pure . Vec.fromList
-        entities <- v .: "entities" >>= parsePlacement parseEty >>>= pure . Vec.fromList
+            parseEty = withObject "EntityPlacement" $ \obj ->
+                dependencyMapLookupElseError "Entity" <$> (obj .: "entity" :: Parser Identifier)
+
+        items    <- v .: "items"    >>= parsePlacement parseJSON >>>= return . Vec.fromList
+        entities <- v .: "entities" >>= parsePlacement parseEty  >>>= return . Vec.fromList
 
         let failIfNothing = error "Attempted to tile without a listing in the WorldSpace's legend"
-            applyLegend tileList2D = (\lgnd -> Vec.fromList . fmap Vec.fromList . fmap (fmap (fromMaybe failIfNothing . (flip Map.lookup) lgnd)) $ tileList2D) <$> legend
-            newFieldSet :: Dependency s m (FieldSet)
-            newFieldSet = applyLegend foregroundT >>= liftDependency . fromTileVector2D
 
-        pure $ WorldSpace worldId wName initPal palettes loadPnt shouldSerializePosition variables <$> wScript <*> entities <*> items <*> newFieldSet
+            mkForegroundTiles lgnd = Vec.fromList . fmap (fromMaybe failIfNothing . flip Map.lookup lgnd) <$> foregroundT
+
+            newFieldSet :: Dependency s m FieldSet
+            newFieldSet = (mkForegroundTiles <$> legend) >>= liftDependency . fromTileVector2D
+
+        return $ WorldSpace worldId wName initPal palettes loadPnt shouldSerializePosition variables <$> wScript <*> entities <*> items <*> newFieldSet
     parseJSON e          = typeMismatch "WorldSpace" e

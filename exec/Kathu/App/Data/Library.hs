@@ -15,7 +15,7 @@ import Control.Lens
 import Data.Aeson
 import qualified Data.Map as Map
 import Data.Vector (Vector)
-import qualified SDL as SDL
+import qualified SDL
 
 import Kathu.Language
 import Kathu.App.Data.KathuStore
@@ -56,13 +56,13 @@ addAll setter getKey elems = set setter map'
     where map' = Map.fromList . fmap (\e -> (getKey e, e)) $ elems
 
 addUnique :: Setter Library Library a a -> [a] -> Library -> Library
-addUnique setter (x:[]) lib = set setter x lib
+addUnique setter [x] lib = set setter x lib
 addUnique _ _ _ = error "Attempted to add more than one items that are marked as unique"
 
 -- Surfaces are not stored in the library, as once ImageManager is done doing conversions we want to GC it
 loadLibrary :: Library -> FilePath -> IO (Library, Vector SDL.Surface)
 loadLibrary initialLibrary fldr = process
-    where parseDependency initState = (>>=(((flip runDependency) initState) . flattenDependency))
+    where parseDependency initState = (>>= flip runDependency initState . flattenDependency)
           -- parses all files of a type requiring Dependencies
           psDP :: FromJSON (Dependency KathuStore IO a) => (String, [a] -> Library -> Library) -> (Library, KathuStore) -> IO (Library, KathuStore) 
           psDP (ext, adder) (lib, plib) = (parseDependency plib . parseAllDP ext $ fldr) >>= \(nset, nplib) -> pure (adder nset lib, nplib)

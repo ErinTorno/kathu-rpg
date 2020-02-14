@@ -7,7 +7,7 @@
 
 module Kathu.Parsing.Aeson where
 
-import           Control.Monad         (foldM, liftM, liftM2)
+import           Control.Monad         (foldM, liftM2)
 import           Data.Aeson
 import           Data.Aeson.Types      (Parser, typeMismatch)
 import qualified Data.Bifunctor        as Bi
@@ -37,7 +37,7 @@ standardProjectOptions = defaultOptions {fieldLabelModifier = camelTo2 '-' . dro
 
 -- gets a normal type from Parser and raises it to a Compose
 (.:^) :: (Monad m, FromJSON a) => Object -> Text -> Compose Parser m a
-(.:^) v = Compose . liftM return . (.:) v
+(.:^) v = Compose . fmap return . (.:) v
 
 -- gets a type encased in a monad from a Parser and Composes it
 (.:~) :: (Monad m, FromJSON (m a)) => Object -> Text -> Compose Parser m a
@@ -45,7 +45,7 @@ standardProjectOptions = defaultOptions {fieldLabelModifier = camelTo2 '-' . dro
 
 -- same as .:^, but returns a Maybe
 (.:^?) :: (Monad m, FromJSON a) => Object -> Text -> Compose Parser m (Maybe a)
-(.:^?) v = Compose . liftM return . (.:?) v
+(.:^?) v = Compose . fmap return . (.:?) v
 
 -- same as .:~, but returns a Maybe
 (.:~?) :: (Monad m, FromJSON (m a)) => Object -> Text -> Compose Parser m (Maybe a)
@@ -56,7 +56,7 @@ standardProjectOptions = defaultOptions {fieldLabelModifier = camelTo2 '-' . dro
 
 parseListDPWith :: Monad m => (Value -> Parser (Dependency s m a)) -> Value -> Parser (Dependency s m [a])
 parseListDPWith parser (Array a) = foldM append (pure []) a
-    where append acc cur         = (flip (liftM2 (:))) acc <$> parser cur
+    where append acc cur         = flip (liftM2 (:)) acc <$> parser cur
 parseListDPWith _ v              = typeMismatch "[Dependency s m a]" v
 
 parseListDP :: (FromJSON (Dependency s m a), Monad m) => Value -> Parser (Dependency s m [a])
@@ -66,7 +66,7 @@ parseMapDPWith :: (Monad m, Ord k) => (Value -> Parser (Dependency s m k)) -> (V
 parseMapDPWith keyParser parser (Object v) = resultList v >>>= pure . Map.fromList
     where resultList            = foldM append (pure []) . map (Bi.first String) . Hash.toList
         
-          append acc (key, val) = (flip (liftM2 (:))) acc <$> makeTuple key val
+          append acc (key, val) = flip (liftM2 (:)) acc <$> makeTuple key val
           makeTuple key val     = (liftM2 . liftM2) (,) (keyParser key) (parser val)
 parseMapDPWith _ _ v            = typeMismatch "Map k (Dependency s m a)" v
 
@@ -78,7 +78,7 @@ parseMapDP = parseMapDPWith (fmap pure . parseJSON) parseJSON
 --------------------
 
 instance ToJSON CInt where
-    toJSON i = toJSON $ (fromIntegral i :: Int)
+    toJSON i = toJSON (fromIntegral i :: Int)
 instance FromJSON CInt where
     parseJSON a = fromIntegral <$> (parseJSON a :: Parser Int)
 

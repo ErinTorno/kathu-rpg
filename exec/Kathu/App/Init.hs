@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Kathu.App.Init (entityWorld, system) where
+module Kathu.App.Init
+    ( entityWorld
+    , system
+    ) where
 
 import           Apecs                           hiding (get)
 import           Apecs.Physics
@@ -8,7 +11,7 @@ import           Control.Lens                    hiding (Identity)
 import qualified Data.Map                        as Map
 import qualified Data.Text                       as T
 import           Linear.V2                       (V2(..))
-import qualified SDL                             as SDL
+import qualified SDL
 import qualified SDL.Video                       as SDLV
 import qualified System.Random                   as R
 
@@ -45,15 +48,15 @@ initLanguage window renderer settings library = do
     let maybeLang        = library^.languages.to (Map.lookup $ language settings)
         missingLangMsg   = "Language \"" `T.append` (unID . language $ settings) `T.append` "\" could not be found. Have the files been moved?"
 
-        promptAndDefault = case (library^.languages.to (Map.lookup "english")) of
-            (Just e) -> do
+        promptAndDefault = case library^.languages.to (Map.lookup "english") of
+            Just e -> do
                 let msg = missingLangMsg `T.append` " Defaulting to English."
 
                 SDLV.showSimpleMessageBox (Just window) SDLV.Warning "Missing Language" msg
 
                 liftIO $ saveSettings (settings {language = "english"})
                 pure e
-            Nothing  -> do
+            Nothing -> do
                 let msg = missingLangMsg `T.append` " Default is missing too, unable to run."
 
                 SDLV.showSimpleMessageBox (Just window) SDLV.Error "Missing Language" msg
@@ -88,7 +91,7 @@ system window renderer settings = do
     floorPropEtys <- mapM initFloorProperty . view floorProperties $ library
     global  $= FloorProperties (floorPropEtys Map.! "default") floorPropEtys
 
-    let getLib g t = (view g library) Map.! t
+    let getLib g t = (library^.g) Map.! t
     
     playerEty <- newFromPrototype $ getLib prototypes "player"
     initLocalPlayer playerEty

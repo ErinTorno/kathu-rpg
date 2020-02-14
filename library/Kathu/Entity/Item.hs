@@ -1,20 +1,25 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, MonoLocalBinds, TypeOperators, UndecidableInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE MonoLocalBinds       #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Kathu.Entity.Item where
 
 import Data.Aeson
-import Data.Aeson.Types (typeMismatch, Parser)
+import Data.Aeson.Types        (typeMismatch, Parser)
 import Data.Functor.Compose
-import Data.Text (Text)
+import Data.Maybe              (fromMaybe)
+import Data.Text               (Text)
 import GHC.Generics
 
 import Kathu.Graphics.Drawable (Render)
 import Kathu.Parsing.Aeson
 import Kathu.Util.Dependency
-import Kathu.Util.Flow ((>>>=))
-import Kathu.Util.Types (Identifier, IDMap, Range)
+import Kathu.Util.Flow         ((>>>=))
+import Kathu.Util.Types        (Identifier, IDMap, Range)
 
 data Slot = UseItem | Weapon | Head | Torso | Legs | Accessory | NoSlot deriving (Show, Eq, Generic)
 
@@ -126,7 +131,7 @@ instance (s `CanStore` IDMap (Item g), FromJSON (Dependency s m (Render g)), Mon
 
 instance (s `CanProvide` IDMap (Item g), Monad m) => FromJSON (Dependency s m (ItemStack g)) where
     parseJSON (Object v) = getCompose $ ItemStack <$> item <*> v .:^? "count" .!=~ 1
-        where item    = (Compose (fmap (maybe failMsg id) . dependencyMapLookup <$> (v .: "item" :: Parser Identifier))) 
+        where item    = Compose (fmap (fromMaybe failMsg) . dependencyMapLookup <$> (v .: "item" :: Parser Identifier))
               failMsg = error "Couldn't find item referenced by ItemStack"
     parseJSON v          = typeMismatch "ItemStack" v
 
@@ -147,7 +152,7 @@ instance (FromJSON (Dependency s m (ContainerSlot g)), Monad m) => FromJSON (Dep
               miscSlots  = v .: "misc-slots"  >>= concatSlots
               concatSlots ara@(Array _) = getCompose $ concat <$> (Compose $ parseListDPWith parseSlots ara)
               concatSlots _             = error "Container slots are not in the form of an array" 
-              parseSlots obj@(Object innerV) = (\i csl -> csl >>= pure . replicate i) <$> innerV .: "count" <*> parseJSON obj
+              parseSlots obj@(Object innerV) = fmap . replicate <$> innerV .: "count" <*> parseJSON obj
               parseSlots _                   = error "Container slot is not in the form of an object"
     parseJSON v          = typeMismatch "Container" v
 
@@ -155,7 +160,7 @@ instance (FromJSON (Dependency s m (ContainerSlot g)), Monad m) => FromJSON (Dep
 
 instance (s `CanProvide` IDMap (Item g), Monad m) => FromJSON (Dependency s m (DeathDrop g)) where
     parseJSON (Object v) = getCompose $ DeathDrop <$> v .:^ "chance" <*> v .:^ "count" <*> item
-        where item    = (Compose (fmap (maybe failMsg id) . dependencyMapLookup <$> (v .: "item" :: Parser Identifier))) 
+        where item    = Compose (fmap (fromMaybe failMsg) . dependencyMapLookup <$> (v .: "item" :: Parser Identifier))
               failMsg = error "Couldn't find item referenced by DeathDrop"
     parseJSON v          = typeMismatch "DeathDrop" v
 

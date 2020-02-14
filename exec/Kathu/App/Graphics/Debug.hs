@@ -26,7 +26,7 @@ primaryCollisionBoxColor :: Color
 primaryCollisionBoxColor = mkColor 250 50 90 225
 
 attachedCollisionBoxColor :: Color
-attachedCollisionBoxColor = mkColor 45 170 225 225 -- mkColor 100 214 110 225
+attachedCollisionBoxColor = mkColor 45 170 225 225
 
 renderDebug :: SDL.Renderer -> (V2 Double -> V2 Double -> V2 Double) -> SystemT' IO ()
 renderDebug renderer logicToRenderPos = do
@@ -35,10 +35,10 @@ renderDebug renderer logicToRenderPos = do
             SDL.rendererDrawColor renderer $= unColor col
             let points = SVec.fromList (fmap floor . logicToRenderPos pos <$> snoc vecs v)
             -- we render in groups of 4 pixels to have thicker lines
-            SDL.drawLines renderer $ SVec.map (SDL.P . (+(V2 0 0))) points
-            SDL.drawLines renderer $ SVec.map (SDL.P . (+(V2 0 1))) points
-            SDL.drawLines renderer $ SVec.map (SDL.P . (+(V2 1 0))) points
-            SDL.drawLines renderer $ SVec.map (SDL.P . (+(V2 1 1))) points
+            SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 0 0)) points
+            SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 0 1)) points
+            SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 1 0)) points
+            SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 1 1)) points
 
     -- attached boxes don't have an identity or a position, as they exist on a separate entity with just a shape
     cmapM_ $ \(Shape parentEty (Convex vecs _), _ :: Not Identity)   -> do
@@ -52,9 +52,9 @@ renderDebugText :: SDL.Renderer -> SystemT' IO ()
 renderDebugText renderer = do
     world :: WorldSpace ImageID <- get global
     manager <- get global
-    ((V2 camX camY), cZoom) <- cfold (\_ (Position pos, Camera z) -> (pos, z)) ((V2 0 0), 1)
+    (V2 camX camY, cZoom) <- cfold (\_ (Position pos, Camera z) -> (pos, z)) (V2 0 0, 1)
 
-    let displayText = T.concat $
+    let displayText = T.concat
             [ "palette: ",  T.pack . show . currentPalette $ manager
             , " zoom: ",    T.pack . show $ 1 / cZoom
             , " | world: ", unID . worldID $ world

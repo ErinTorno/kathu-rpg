@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Kathu.World.Time where
@@ -15,8 +15,6 @@ timeScale :: Num a => a
 timeScale = 30
 
 newtype WorldTime = WorldTime Word64 deriving (Show, Eq, Generic)
-
-
 
 data TimeOfDay = Dawn | Afternoon | Dusk | Night
 

@@ -31,7 +31,7 @@ type FieldSet = Map (V2 Int) Field
 
 newtype Field = Field {unField :: MVector RealWorld TileState}
 
-mkField :: MonadIO m => m (Field)
+mkField :: MonadIO m => m Field
 mkField = liftIO $ Field <$> UMVec.replicate size emptyTS
     where size    = fieldDim * fieldDim
           emptyTS = mkTileState emptyTile
@@ -52,7 +52,7 @@ fieldContainingCoord :: RealFrac a => a -> a -> (# Int, Int #)
 fieldContainingCoord !x !y = (# getCoord x, getCoord y #)
     where getCoord = floor . (/(unitsPerTile * fieldDim))
 
-fetchTileState :: MonadIO m => Int -> Int -> Field -> m (TileState)
+fetchTileState :: MonadIO m => Int -> Int -> Field -> m TileState
 fetchTileState !x !y (Field fgTiles) = liftIO $ UMVec.read fgTiles (indexFromCoord x y)
 
 setTileState :: MonadIO m => Int -> Int -> TileState -> Field -> m ()
@@ -70,7 +70,7 @@ fieldContainingCoordV2 :: RealFrac a => V2 a -> (# Int, Int #)
 fieldContainingCoordV2 (V2 !x !y) = (# getCoord x, getCoord y #)
     where getCoord = floor . (/(unitsPerTile * fieldDim))
 
-fetchTileStateV2 :: MonadIO m => V2 Int -> Field -> m (TileState)
+fetchTileStateV2 :: MonadIO m => V2 Int -> Field -> m TileState
 fetchTileStateV2 (V2 !x !y) (Field fgTiles) = liftIO $ UMVec.read fgTiles (indexFromCoord x y)
 
 setTileStateV2 :: MonadIO m => V2 Int -> TileState -> Field -> m ()
@@ -144,7 +144,7 @@ fromTileVector2D fgTiles = if yLayers == 0 || xLayers == 0 then empty else build
                     runForTile t a | t^.tileID == emptyTileID = pure m -- do nothing if wanting to write empty tile, since Fields are initialized with all emptyTile
                                    | otherwise                = case Map.lookup (V2 fx fy) m of
                                        Just f  -> a t f >> pure m
-                                       Nothing -> ((flip (Map.insert (V2 fx fy))) m) <$> (a t =<< mkField)
+                                       Nothing -> flip (Map.insert (V2 fx fy)) m <$> (a t =<< mkField)
                     writeTile :: Tile g -> Field -> IO Field
                     writeTile t field = do
                         newTileState <- mkTileStateWithMetadata t
@@ -162,8 +162,8 @@ mkCollisionPolygons tiles = fmap (Vec.concat . fmap mkTriangles) . mapM isSolidV
           isSolidVec (pos, f) = fmap ((pos,) . UVec.fromList . reverse) . fieldFoldWithEmptyM (\acc _ ts -> (:acc) <$> isSolidTS ts) [] $ f
           
           mkTriangles :: (V2 Int, UVec.Vector Bool) -> Vec.Vector [V2 Double]
-          mkTriangles ((V2 wx wy), v) = uncurry (Vec.++)
-                                      . mapFst  (Vec.map polyBorder)
-                                      . mapSnd  (Vec.concat . Vec.toList . Vec.map (Vec.fromList . triangulate))
-                                      . mapPair (Vec.map (mapPolyVertices ((+(V2 (-0.5) (-1))) . fmap fromIntegral . (+(V2 (wx * fieldDim) (wy * fieldDim))))))
-                                      $ convexAndConcaveFromBinaryGrid v fieldDim fieldDim
+          mkTriangles (V2 wx wy, v) = uncurry (Vec.++)
+                                    . mapFst  (Vec.map polyBorder)
+                                    . mapSnd  (Vec.concat . Vec.toList . Vec.map (Vec.fromList . triangulate))
+                                    . mapPair (Vec.map (mapPolyVertices ((+ V2 (-0.5) (-1)) . fmap fromIntegral . (+ V2 (wx * fieldDim) (wy * fieldDim)))))
+                                    $ convexAndConcaveFromBinaryGrid v fieldDim fieldDim

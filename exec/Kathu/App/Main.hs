@@ -36,7 +36,7 @@ run renDelay renderer renBuf !prevPhysTime !prevRendTime = do
     -- physics steps as a constant rate as given by the update delay
     replicateM_ (fromIntegral n) $ handleControls
                                 >> runGame destroyEntity updateDelay
-                                >> stepPhysics ((fromIntegral  updateDelay) / 1000)
+                                >> stepPhysics (fromIntegral  updateDelay / 1000)
     shouldContinue <- runEvents
 
     renderStartTime <- SDL.ticks

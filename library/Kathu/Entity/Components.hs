@@ -12,13 +12,13 @@ module Kathu.Entity.Components where
 import Apecs
 import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
-import Data.Text (Text)
-import Data.Vector (Vector)
+import Data.Aeson.Types       (typeMismatch)
+import Data.Text              (Text)
+import Data.Vector            (Vector)
 import GHC.Generics
 
 import Kathu.Entity.Action
-import Kathu.Util.Types (Identifier, mkIdentifier)
+import Kathu.Util.Types       (Identifier, mkIdentifier)
 
 type CacheSize = 4096
 
@@ -26,6 +26,7 @@ type CacheSize = 4096
 
 -- | A component that we enforce all created entities can hold without any differences
 data Existance = Existance
+
 instance Component Existance where type Storage Existance = Cache CacheSize (Map Existance)
 
 -- | If all entities are created through this, then we can use it to get all entities
@@ -37,6 +38,7 @@ data Identity = Identity
     , name        :: Text
     , description :: Text
     } deriving (Show, Eq, Generic, ToJSON)
+
 instance Component Identity where type Storage Identity = Cache CacheSize (Map Identity)
 
 instance FromJSON Identity where
@@ -45,12 +47,15 @@ instance FromJSON Identity where
     parseJSON e          = typeMismatch "Identity" e
 
 newtype MovingSpeed = MovingSpeed Double deriving (Show, Eq, Generic, ToJSON, FromJSON)
+
 instance Component MovingSpeed where type Storage MovingSpeed = Map MovingSpeed
 
 newtype Tags = Tags (Vector Text) deriving (Show, Eq, Generic, ToJSON, FromJSON)
+
 instance Component Tags where type Storage Tags = Map Tags
 
 -- Uniques
 
 newtype Local = Local {actionPressed :: ActionPressed}
+
 instance Component Local where type Storage Local = Unique Local

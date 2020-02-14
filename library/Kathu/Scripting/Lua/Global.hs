@@ -1,8 +1,6 @@
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE ExplicitForAll      #-}
 {-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Kathu.Scripting.Lua.Global (registerGlobalFunctions) where
@@ -58,17 +56,16 @@ registerGlobalFunctions world extFuns = do
 
 setPaletteLua :: ExternalFunctions w g -> w -> Text -> Lua Bool
 setPaletteLua extFuns !world !idt = liftIO . Apecs.runWith world $ runW
-    where runW = (setPalette extFuns) . mkIdentifier $ idt
+    where runW = setPalette extFuns . mkIdentifier $ idt
 
 newFromPrototypeLua :: ExternalFunctions w g -> w -> Text -> Lua (Optional Int)
 newFromPrototypeLua extFuns !world !protoID = liftIO . Apecs.runWith world $ mkEntity
-    where mkEntity = (getEntityPrototype extFuns) (mkIdentifier protoID) >>= mkIfPres
+    where mkEntity = getEntityPrototype extFuns (mkIdentifier protoID) >>= mkIfPres
           mkIfPres Nothing   = return $ Optional Nothing
-          mkIfPres (Just pr) = newFromPrototype extFuns pr
-                         >>= return . Optional . Just . unEntity
+          mkIfPres (Just pr) = Optional . Just . unEntity <$> newFromPrototype extFuns pr
     
 destroyEntityLua :: ExternalFunctions w g -> w -> Int -> Lua ()
-destroyEntityLua extFuns !world !ety = liftIO . Apecs.runWith world $ (destroyEntity extFuns) (Entity ety)
+destroyEntityLua extFuns !world !ety = liftIO . Apecs.runWith world $ destroyEntity extFuns (Entity ety)
 
 -----------------------
 -- Unique Components --
@@ -94,7 +91,7 @@ setCameraEntity !world !etyID = liftIO . Apecs.runWith world $ do
     let deleteCam :: Camera -> Maybe Camera
         deleteCam _ = Nothing
     cmap deleteCam
-    (Entity etyID) $= cam
+    Entity etyID $= cam
 
 -----------------------
 -- Global Components --
@@ -108,7 +105,7 @@ isDebug !world = liftIO . Apecs.runWith world $ (unDebug <$> get global)
 
 getRandomInt :: forall w. (ReadWrite w IO Random) => w -> Int -> Int -> Lua Int
 getRandomInt !world !minV !maxV = liftIO . Apecs.runWith world $ do
-    (Random r) <- get global
+    Random r <- get global
     let (res, r') = R.random r
     global $= Random r'
     pure (res `mod` (maxV + 1 - minV) + minV)
@@ -165,14 +162,14 @@ setVariableLua getIsValid setter mkVar !world !idtTxt !newVal = liftIO . Apecs.r
     let idt  = mkIdentifier idtTxt
     isValid <- getIsValid idt variables
 
-    when isValid $ do
+    when isValid $
         liftIO $ setter idt (mkVar newVal) variables
 
 setWorldBool :: forall w. (ReadWrite w IO Variables) => w -> Text -> Bool -> Lua ()
-setWorldBool = setVariableLua (\i v -> isJust <$> getWorldVariable i v) setWorldVariable $ WorldBool
+setWorldBool = setVariableLua (\i v -> isJust <$> getWorldVariable i v) setWorldVariable WorldBool
 
 setWorldDouble :: forall w. (ReadWrite w IO Variables) => w -> Text -> Double -> Lua ()
-setWorldDouble = setVariableLua (\i v -> isJust <$> getWorldVariable i v) setWorldVariable $ WorldDouble
+setWorldDouble = setVariableLua (\i v -> isJust <$> getWorldVariable i v) setWorldVariable WorldDouble
 
 setWorldInt :: forall w. (ReadWrite w IO Variables) => w -> Text -> Int -> Lua ()
 setWorldInt = setVariableLua (\i v -> isJust <$> getWorldVariable i v) setWorldVariable (WorldInt . fromIntegral)

@@ -2,7 +2,6 @@
 -- we need orphan instances to set up the Apecs system
 
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -52,7 +51,7 @@ instance Semigroup PaletteManager where (<>) = mappend
 instance Monoid PaletteManager where mempty  = staticManager 0
 instance Component PaletteManager where type Storage PaletteManager = Global PaletteManager
 
-newtype  Random = Random (R.StdGen)
+newtype  Random = Random R.StdGen
 instance Semigroup Random where (<>) = mappend
 instance Monoid Random where mempty  = Random $ R.mkStdGen 0 -- the IO portion of this is expected to initialize it with a seed
 instance Component Random where type Storage Random = Global Random
@@ -110,6 +109,6 @@ fromTiles (Tiles vec) (TileState (TileID tid) _) = MVec.read vec . fromIntegral 
 makeTiles :: Map k (Tile g) -> IO (Tiles g)
 makeTiles elemMap = MVec.unsafeNew (Map.size elemMap) >>= \vec -> foldM (setElem vec) 0 allElems $> Tiles vec
     where allElems = sortBy (\x y -> (x^.tileID) `compare` (y^.tileID)) . Map.elems $ elemMap
-          setElem !vec !idx !e = if (e^.tileID.to (fromIntegral . unTileID) /= idx)
+          setElem !vec !idx !e = if e^.tileID.to (fromIntegral . unTileID) /= idx
                                  then error . concat $ ["Tile ", e^.tileTextID.to show, " had tile id ", e^.tileID.to show, " but was stored in index ", show idx, " in Kathu.Entity.System.makeTiles"]
                                  else MVec.unsafeWrite vec idx e $> (idx + 1)

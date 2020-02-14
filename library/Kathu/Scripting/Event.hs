@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Kathu.Scripting.Event
@@ -38,7 +39,7 @@ onInit    = ScriptEvent $ 2 ^ (1 :: Int)
 onDestroy = ScriptEvent $ 2 ^ (2 :: Int)
 
 instance FromJSON ScriptEvent where
-    parseJSON = withText "ScriptEvent" $ \txt -> case txt of
+    parseJSON = withText "ScriptEvent" $ \case
         "on-update"  -> pure onUpdate
         "on-init"    -> pure onInit
         "on-destroy" -> pure onDestroy

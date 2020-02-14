@@ -2,7 +2,6 @@
 {-# LANGUAGE DataKinds     #-}
 {-# LANGUAGE GADTs         #-}
 {-# LANGUAGE MultiWayIf    #-}
-{-# LANGUAGE TupleSections #-}
 
 module Kathu.Util.Polygon
     ( Polygon(..)
@@ -80,8 +79,8 @@ toAASegments (p:ps) = uncurry AASegments $ go p ps
           mkIncrSeg !o !a !b = if a < b then Segment o a b else Segment o b a
           go _ [] = ([], [])
           go (V2 x y) (next@(V2 x' y'):vs)
-              | x == x'   = Bi.first  ((mkIncrSeg x y y'):) $ go next vs
-              | y == y'   = Bi.second ((mkIncrSeg y x x'):) $ go next vs
+              | x == x'   = Bi.first  (mkIncrSeg x y y' :) $ go next vs
+              | y == y'   = Bi.second (mkIncrSeg y x x' :) $ go next vs
               | otherwise = error "Attempted to create Lines from non-axis-aligned vertices"
 
 isAAInside :: AASegments -> AASegments -> Bool
@@ -100,7 +99,7 @@ isAAInside (AASegments innerH innerV) (AASegments outerH outerV) = checkAll inne
               where corSide = if isPosDir then segI < orthoPos else segI > orthoPos
           -- counts the number of orthogonal segments a cast ray would intersect with
           interCount :: Bool -> Segment -> [Segment] -> Int
-          interCount !isPosDir seg orthoSegs = F.foldl' appendIf 0 orthoSegs
+          interCount !isPosDir seg = F.foldl' appendIf 0
               where appendIf !count ortho = count + (if rayCrosses isPosDir seg ortho then 1 else 0)
 
 -- | Transforms a list of VertexPaths into a list of Nodes containing detailed information about each path, organized into a tree based on what paths contain other paths
@@ -124,7 +123,7 @@ mkPolygons paths
                                           . Vec.map (\(p, idxs) -> (p, Set.delete idx idxs))
                                           $ curInteriors
 
-          (exteriors, interiors) = Vec.partition isExterior $ paths
+          (exteriors, interiors) = Vec.partition isExterior paths
           exteriorsV             = pathVertices <$> exteriors
           interiorsV             = pathVertices <$> interiors
           exteriorsAA            = toAASegments . pathVertices <$> exteriors
@@ -145,14 +144,14 @@ isPolygonInside inner outer = isAAInside (toAASegments inner) (toAASegments oute
 triangulate :: (Fractional a, Ord a, Show a) => Polygon a -> [[V2 a]]
 triangulate (Polygon outer inner)
     | null inner = fmap toV2 <$> (points . simplePoly $ outer)
-    | otherwise  = filterHoles (fmap toV2 <$> (points $ Poly.MultiPolygon (CSeq.fromList . map toPoint $ outer) (simplePoly <$> inner)))
+    | otherwise  = filterHoles (fmap toV2 <$> points (Poly.MultiPolygon (CSeq.fromList . map toPoint $ outer) (simplePoly <$> inner)))
     where toPoint (V2 x y)              = ext $ Point2 x y
           toV2 (Point (VF.Vector2 x y)) = V2 x y
 
           -- sometimes (always?) triangulate includes all of the holes in the new triangulation too, so we have to remove
           filterHoles = let holeSet = Set.fromList (Set.fromList <$> inner) in filter ((`Set.notMember`holeSet) . Set.fromList) 
 
-          simplePoly v = Poly.fromPoints . fmap toPoint $ v
+          simplePoly = Poly.fromPoints . fmap toPoint
 
           facePolys  :: (Ord a, Fractional a) => Poly.Polygon t p a -> [Poly.Polygon 'Poly.Simple p a]
           facePolys   = mapMaybe (^?_2.core._Left) . F.toList . rawFacePolygons . PolyTri.triangulate (Identity PX)
@@ -174,20 +173,20 @@ polygonsFromBinaryGrid v !w !h
           mkEdges rp (isInverse, V2 x y) = (verts, Set.union rp clearAcc)
               where (clearAcc, verts) = edges isInverse x y Set.empty [] East x y
 
-          errMsg = concat $ ["polygonsFromBinaryGrid was given ", show w, "x", show h, " as dims, but the Vector had ", show $ UVec.length v, " elements in it"]
+          errMsg = concat ["polygonsFromBinaryGrid was given ", show w, "x", show h, " as dims, but the Vector had ", show $ UVec.length v, " elements in it"]
 
           xyToInd !x !y = x + w * y
           indToXY !i    = let (y, x) = i `quotRem` w in V2 x y
 
           check !x !y | x < 0 || y < 0 || x >= w || y >= h = False
-                      | otherwise                          = v UVec.! (xyToInd x y)
+                      | otherwise                          = v UVec.! xyToInd x y
           findNext :: Set (V2 Int) -> Int -> Maybe (Bool, V2 Int)
           findNext rp i | i >= w * h             = Nothing
                         | canStart && notAlready = Just (isInverse, indToXY i)
                         | otherwise              = findNext rp (i + 1)
                         where canStart   = v UVec.! i && (i `mod` w == 0 || not (v UVec.! (i - 1))) -- tile to its left must be empty, and at right must be present
                               notAlready = Set.notMember (indToXY i) rp
-                              isInverse  = if i < w then False else v UVec.! (i - w) -- if above is solid and this hasn't been marked, it is a hole in another shape
+                              isInverse  = (i >= w) && (v UVec.! (i - w)) -- if above is solid and this hasn't been marked, it is a hole in another shape
 
           -- for each we check point in middle of four-tile region; x-1, y is bottom left, x-1, y-1 is top left, etc.
           -- cacc: clear-accumulator; once we're done, we mark all indices in here as non-solid and try again

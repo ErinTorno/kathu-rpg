@@ -1,16 +1,17 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MonoLocalBinds, TypeOperators #-}
+{-# LANGUAGE MonoLocalBinds             #-}
+{-# LANGUAGE TypeOperators              #-}
 
 module Kathu.IO.Directory where
 
 import Data.Aeson
 import GHC.Generics
-import Data.List (isPrefixOf)
-import Data.String (IsString)
-import System.FilePath (FilePath)
+import Data.List             (isPrefixOf)
+import Data.String           (IsString)
+import System.FilePath       (FilePath)
 
 import Kathu.Util.Dependency
 
@@ -37,4 +38,4 @@ resolveAssetPath p ending
     | otherwise                = concat [assetPath, "/", p, "/", sanitizeRelativePath ending]
 
 resolveAssetPathDP :: (s `CanProvide` WorkingDirectory, Monad m) => FilePath -> Dependency s m FilePath
-resolveAssetPathDP path = ((flip resolveAssetPath) path . unWorkingDir) <$> provide
+resolveAssetPathDP path = flip resolveAssetPath path . unWorkingDir <$> provide

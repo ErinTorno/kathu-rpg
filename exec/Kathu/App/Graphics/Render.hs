@@ -4,36 +4,36 @@
 
 module Kathu.App.Graphics.Render where
 
-import Apecs hiding (($=))
-import Apecs.Physics hiding (($=))
-import Control.Lens hiding (Identity)
-import Control.Monad (foldM, when)
-import Data.Vector (Vector)
-import qualified Data.Vector as Vec
-import qualified Data.Vector.Mutable as MVec
-import Data.Word
-import Linear.V2 (V2(..), _y)
-import SDL (($=))
+import           Apecs                           hiding (($=))
+import           Apecs.Physics                   hiding (($=))
+import           Control.Lens                    hiding (Identity)
+import           Control.Monad                   (foldM, when)
+import           Data.Vector                     (Vector)
+import qualified Data.Vector                     as Vec
+import qualified Data.Vector.Mutable             as MVec
+import           Data.Word
+import           Linear.V2                       (V2(..), _y)
+import           SDL                             (($=))
 import qualified SDL
 
-import Kathu.App.Data.Settings
-import Kathu.App.Graphics.Debug (renderDebug)
-import Kathu.App.Graphics.Drawing
-import Kathu.App.Graphics.Image (ImageID)
-import Kathu.App.Graphics.ImageManager
-import Kathu.App.Graphics.RenderBuffer
-import Kathu.App.Graphics.UI
-import Kathu.App.System (SystemT')
-import Kathu.Entity.Action
-import Kathu.Entity.System
-import Kathu.Graphics.Camera
-import Kathu.Graphics.Color (unColor)
-import Kathu.Graphics.Drawable
-import Kathu.World.Field
-import Kathu.World.Tile hiding (Vector, MVector)
-import Kathu.World.WorldSpace
-import Kathu.Util.Collection (growMVecIfNeeded, mapMVec)
-import Kathu.Util.Numeric (clampBetween)
+import           Kathu.App.Data.Settings
+import           Kathu.App.Graphics.Debug        (renderDebug)
+import           Kathu.App.Graphics.Drawing
+import           Kathu.App.Graphics.Image        (ImageID)
+import           Kathu.App.Graphics.ImageManager
+import           Kathu.App.Graphics.RenderBuffer
+import           Kathu.App.Graphics.UI
+import           Kathu.App.System                (SystemT')
+import           Kathu.Entity.Action
+import           Kathu.Entity.System
+import           Kathu.Graphics.Camera
+import           Kathu.Graphics.Color (unColor)
+import           Kathu.Graphics.Drawable
+import           Kathu.World.Field
+import           Kathu.World.Tile                hiding (Vector, MVector)
+import           Kathu.World.WorldSpace
+import           Kathu.Util.Collection           (growMVecIfNeeded, mapMVec)
+import           Kathu.Util.Numeric              (clampBetween)
 
 -- the height of the screen in units; depending on screen size, more or less is included
 
@@ -77,7 +77,7 @@ updateAnimations dT = do
         updateWithoutController (Render sprites, _) = Render $ updateFramesIfAnim <$> sprites
         -- since this has actions, we also need to check and see if it should change animation states
         updateAnimated :: (Render ImageID, ActionSet) -> Render ImageID
-        updateAnimated ((Render sprites), ActionSet {_moving = m, _facingDirection = fac}) = Render $ updateEach <$> sprites
+        updateAnimated (Render sprites, ActionSet {_moving = m, _facingDirection = fac}) = Render $ updateEach <$> sprites
             where updateEach (RSAnimated anim)  = RSAnimated $ update m anim
                   updateEach static             = static
                   update Nothing anim = anim {activeAnim = dirToAnimIndex fac, currentFrame = 0, animTime = timeBeforeFrameChange anim} -- we ensure that this is paused and waiting on first frame
@@ -92,7 +92,7 @@ updateAnimations dT = do
     cmap updateAnimated
 
     -- since tile graphics information isn't stored as entities, we instead just grab all tiles and update their animations
-    (Tiles tileVector) <- get global :: SystemT' IO (Tiles ImageID)
+    Tiles tileVector <- get global :: SystemT' IO (Tiles ImageID)
     lift . mapMVec tileVector $ (over tileRender $ Render . fmap updateFramesIfAnim . unRender)
 
 ----------------------
@@ -101,14 +101,14 @@ updateAnimations dT = do
 
 runRender :: SDL.Renderer -> RenderBuffer -> Word32 -> SystemT' IO RenderBuffer
 runRender !renderer !renderBuffer !dT = do
-    do stepRenderTime dT
+    stepRenderTime dT
     updateAnimations dT
 
     runImageManager
     imageManager   <- get global
     settings       <- get global
-    (Debug isDebug)    <- get global
-    (Tiles tileVector) <- get global
+    Debug isDebug    <- get global
+    Tiles tileVector <- get global
     let getTile :: TileState -> SystemT' IO (Tile ImageID)
         getTile = lift . MVec.read tileVector . fromIntegral .  unTileID . view tile
 
@@ -119,10 +119,10 @@ runRender !renderer !renderBuffer !dT = do
     SDL.rendererDrawColor renderer $= (unColor . backgroundColor $ imageManager)
     SDL.clear renderer
 
-    let scale      = (fromIntegral . view _y . resolution $ settings) / (zoomScale * unitsPerHeight * pixelsPerUnit)
-        logicScale = scale * pixelsPerUnit -- we mult by this again to convert the 1-per-tile view of the entity-world into a N-pixels-per-tile view
-        (V2 _ resY) = resolution settings
-        resToCenter = ((*) 0.5 . fromIntegral) <$> resolution settings
+    let scale       = (fromIntegral . view _y . resolution $ settings) / (zoomScale * unitsPerHeight * pixelsPerUnit)
+        logicScale  = scale * pixelsPerUnit -- we mult by this again to convert the 1-per-tile view of the entity-world into a N-pixels-per-tile view
+        V2 _ resY   = resolution settings
+        resToCenter = (*0.5) . fromIntegral <$> resolution settings
         unitsPerHeight = minUnitsPerHeight + (maxUnitsPerHeight - minUnitsPerHeight) * pixMult
             where pixMult = fromIntegral (clampBetween pixelsForMinUnits pixelsForMaxUnits resY) / fromIntegral (pixelsForMaxUnits :: Int)
         unitsPerWidth = unitsPerHeight * aspectRatio resToCenter
@@ -141,7 +141,7 @@ runRender !renderer !renderBuffer !dT = do
         -- adds to RenderBuffer and increments if judged to be drawable; expands the buffer if needed
         addToBuffer :: (Int, RenderBuffer) -> Vector (RenderSprite ImageID) -> V2 Double -> SystemT' IO (Int, RenderBuffer)
         addToBuffer (!idx, !renBuf) render pos = if isOffScreen pos then pure (idx, renBuf) else do
-            let renderPos = (*(logicScale)) <$> (pos - shiftedCamera)
+            let renderPos = (*logicScale) <$> (pos - shiftedCamera)
             renBuf' <- lift $ growMVecIfNeeded renBuf bufferGrowIncr idx
             (lift . MVec.unsafeWrite renBuf' idx) (renderPos, render)
                 >> pure (idx + 1, renBuf')
@@ -181,7 +181,7 @@ runRender !renderer !renderBuffer !dT = do
     renderUI renderer scale playerAS
 
     when isDebug $
-        renderDebug renderer (\pos -> ((+)resToCenter) . fmap (*logicScale) . (+(pos - shiftedCamera)))
+        renderDebug renderer (\pos -> (+resToCenter) . fmap (*logicScale) . (+(pos - shiftedCamera)))
 
     SDL.present renderer
     pure renderBuffer
