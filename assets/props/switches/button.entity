@@ -1,0 +1,21 @@
+identity: button
+script:
+  file:   "button.lua"
+  is-singleton: true
+  events:
+  - on-sensor-collision-begin
+  - on-sensor-collision-end
+render:
+- atlas:  "button.png"
+  layer:  -1
+  bounds: [16, 18]
+  strips:
+  - {id: unpressed, frames: 1, row: 0, delay: 1000}
+  - {id: pressed,   frames: 1, row: 1, delay: 1000}
+body-config:
+  type:   static
+  shapes:
+  - category: movement-sensor
+    shape:    rectangle
+    bounds:   [0.85, 0.85]
+    origin:   [-0.425, -1]

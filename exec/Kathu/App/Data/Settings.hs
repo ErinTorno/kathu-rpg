@@ -102,7 +102,7 @@ defaultControls = Controls
     }
 
 settingsFileName :: String
-settingsFileName = "./settings.config"
+settingsFileName = "./settings.yaml"
 
 saveSettings :: Settings -> IO ()
 saveSettings = saveToFile FormatYAML settingsFileName

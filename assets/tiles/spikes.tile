@@ -1,7 +1,8 @@
 tile-id:  spikes
 name:     spikes
 render:
-- atlas: "spikes.png"
+- atlas:  "spikes.png"
+  layer:  -1
   bounds: [16, 16]
   strips: [{id: idle, frames: 2, row: 0, delay: 250}]
 is-solid: false

@@ -1,13 +1,9 @@
 {-# LANGUAGE BangPatterns               #-}
 {-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE ExplicitForAll             #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 
@@ -67,6 +63,7 @@ data ActiveScript = ActiveScript
     , eventFlags        :: !EventFlag
     , instanceEntity    :: !Entity
     , watchedVariables  :: !(Vector WatchedVariable)
+    , wireSignals       :: !(Vector Identifier)      -- this script can attempt to send signals to entities holding these wire identifiers
     , singletonStatus   :: !SingletonStatus
     }
 
@@ -94,7 +91,7 @@ handleLuaOp !lua = do
         Right _  -> pure ()
 
 execFor :: forall w. (ReadWriteEach w IO [RunningScriptEntity, ScriptEventBuffer]) => ActiveScript -> Lua () -> SystemT w IO ()
-execFor (ActiveScript {activeState = !stmvar, instanceEntity = ety}) fn = do
+execFor ActiveScript {activeState = stmvar, instanceEntity = ety} fn = do
     global $= RunningScriptEntity (Just ety)
 
     liftIO $ do
@@ -111,7 +108,7 @@ execFor (ActiveScript {activeState = !stmvar, instanceEntity = ety}) fn = do
     global $= RunningScriptEntity Nothing
 
 runFor :: forall w a. (ReadWriteEach w IO [RunningScriptEntity, ScriptEventBuffer]) => Lua.LuaCallFunc a => ActiveScript -> Lua a -> SystemT w IO (Maybe a)
-runFor (ActiveScript {activeState = !stmvar, instanceEntity = ety}) fn = do
+runFor ActiveScript {activeState = stmvar, instanceEntity = ety} fn = do
     global $= RunningScriptEntity (Just ety)
 
     a <- liftIO $ do

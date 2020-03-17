@@ -1,11 +1,11 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-orphans      #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds #-}
 -- we create some orphan instances for Apecs.Physics types so we can parse them from json files
 
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE ExplicitForAll      #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE TupleSections       #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE ExplicitForAll    #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Kathu.Entity.Physics.BodyConfig (BodyConfig, setBodyConfig) where
 
@@ -24,11 +24,15 @@ import Kathu.Entity.Physics.CollisionGroup
 import Kathu.Entity.Physics.Floor (assignMeWorldFloor, WorldFloor)
 import Kathu.Parsing.Aeson ()
 
+data BodyShape = BodyShape
+    { shapeConvex :: !Convex
+    , shapeFilter :: !CollisionFilter
+    , shapeSensor :: !Sensor
+    }
+
 data BodyConfig = BodyConfig
     { body             :: Body
-    , shapes           :: [Convex]
-    , sensor           :: Sensor
-    , collisionFilter  :: CollisionFilter
+    , shapes           :: [BodyShape]
     , hasFloorFriction :: Bool
     , density          :: Maybe Density
     , mass             :: Maybe Mass
@@ -40,22 +44,24 @@ setBodyConfig :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics,
               => Entity -> Maybe BodyConfig -> SystemT w m ()
 setBodyConfig ety Nothing     = ety $= StaticBody -- if no config given, we at least need to give it a StaticBody so it can have a position
 setBodyConfig ety (Just conf) = do
-    ety $= (body conf, sensor conf)
+    ety $= body conf
 
-    when False $ (set ety . collisionFilter) conf
+    let mkShape :: Maybe LifeTime -> BodyShape -> (Shape, CollisionFilter, Sensor, Maybe LifeTime)
+        mkShape lf (BodyShape conv fil sens) = (Shape ety conv, fil, sens, lf) -- if the parent has a lifetime, we should inherit that too
 
-    let setShape :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, Has w m Existance, Set w m Existance, Has w m LifeTime, Set w m LifeTime) => Maybe LifeTime -> [Convex] -> SystemT w m ()
-        setShape _ []      = pure ()
-        setShape lf (x:xs) = ety $= Shape ety x >> setShapes lf xs -- if there is one shape, we can set it on our entity; otherwise, we can give the first shape to the main ety itself
-        setShapes Nothing mShapes   = forM_ mShapes (newExistingEntity . Shape ety)       -- otherwise, we create new entities for holding that shape information, linked back to ety
-        setShapes (Just lf) mShapes = forM_ mShapes (newExistingEntity . (,lf) . Shape ety) -- if the parent has a lifetime, we should inherit that too
+        setShapes _ []      = pure ()
+        setShapes lf (x:xs) = do
+            -- if there is one shape, we can set it on our entity; otherwise, we can give the first shape to the main ety itself
+            ety $= mkShape lf x
+            -- for the rest, we create new entities for holding that shape information, linked back to ety
+            forM_ xs $ newExistingEntity . mkShape lf
     
     hasLifeTime <- exists ety (Proxy :: Proxy LifeTime)
     if hasLifeTime then do
         lifetime <- get ety
-        setShape (Just lifetime) . shapes $ conf
+        setShapes (Just lifetime) . shapes $ conf
     else
-        setShape Nothing . shapes $ conf
+        setShapes Nothing . shapes $ conf
 
     when (body conf == DynamicBody) $ do
         -- if we want floor friction, we assign it a world floor that requests for the world on its next update to give us an appropriate floor type
@@ -66,14 +72,18 @@ setBodyConfig ety (Just conf) = do
         maybe (pure ()) (set ety) . elasticity $ conf
         set ety          $ Moment (1 / 0)
 
-instance FromJSON Convex where
-    parseJSON (Object v) = v .: "shape" >>= mkShape
-        where mkShape :: Text -> Parser Convex
-              mkShape "custom"    = Convex <$> v .: "vertices" <*> v .: "radius"
-              mkShape "circle"    = v .: "radius" >>= \r -> (maybe (oCircle (V2 (-r / 2) (-r))) oCircle <$> v .:? "origin") <*> pure r
-              mkShape "rectangle" = v .: "bounds"
-                                >>= \bounds@(V2 w h) -> (maybe (oRectangle (V2 (-w / 2) (-h))) oRectangle <$> v .:? "origin") <*> pure bounds
-              mkShape e           = fail $ "Convex failed to parse unknown shape of " ++ show e
+instance FromJSON BodyShape where
+    parseJSON (Object v) = do
+        let mkConvex :: Text -> Parser Convex
+            mkConvex "custom"    = Convex <$> v .: "vertices" <*> v .: "radius"
+            mkConvex "circle"    = v .: "radius" >>= \r -> (maybe (oCircle (V2 (-r / 2) (-r))) oCircle <$> v .:? "origin") <*> pure r
+            mkConvex "rectangle" = v .: "bounds"
+                               >>= \bounds@(V2 w h) -> (maybe (oRectangle (V2 (-w / 2) (-h))) oRectangle <$> v .:? "origin") <*> pure bounds
+            mkConvex e           = fail $ "Convex failed to parse unknown shape of " ++ show e
+        category   <- v .: "category"
+        convexType <- v .: "shape"
+        convex     <- mkConvex convexType
+        pure $ BodyShape convex (groupCollisionFilter category) (mkGroupSensor category)
     parseJSON e          = typeMismatch "Convex" e
 
 instance FromJSON Body where
@@ -91,8 +101,6 @@ instance FromJSON BodyConfig where
     parseJSON (Object v) = check =<< BodyConfig
             <$> v .: "type"
             <*> v .: "shapes"
-            <*> (mkGroupSensor <$> v .: "group")
-            <*> (groupCollisionFilter <$> v .: "group")
             <*> v .:? "has-floor-friction" .!= True
             <*> v .:? "density"
             <*> v .:? "mass"

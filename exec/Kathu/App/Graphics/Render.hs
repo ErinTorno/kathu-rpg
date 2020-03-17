@@ -1,6 +1,5 @@
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UnboxedTuples       #-}
 
 module Kathu.App.Graphics.Render where
 
@@ -32,7 +31,7 @@ import           Kathu.Graphics.Drawable
 import           Kathu.World.Field
 import           Kathu.World.Tile                hiding (Vector, MVector)
 import           Kathu.World.WorldSpace
-import           Kathu.Util.Collection           (growMVecIfNeeded, mapMVec)
+import           Kathu.Util.Collection           (mapMVec)
 import           Kathu.Util.Numeric              (clampBetween)
 
 -- the height of the screen in units; depending on screen size, more or less is included
@@ -79,7 +78,7 @@ updateAnimations dT = do
         updateAnimated :: (Render ImageID, ActionSet) -> Render ImageID
         updateAnimated (Render sprites, ActionSet {_moving = m, _facingDirection = fac}) = Render $ updateEach <$> sprites
             where updateEach (RSAnimated anim)  = RSAnimated $ update m anim
-                  updateEach static             = static
+                  updateEach s                  = s
                   update Nothing anim = anim {activeAnim = dirToAnimIndex fac, currentFrame = 0, animTime = timeBeforeFrameChange anim} -- we ensure that this is paused and waiting on first frame
                   update (Just d) anim
                       | dir == act = updateFrames dT anim -- if same direction, we just update its frames
@@ -93,13 +92,13 @@ updateAnimations dT = do
 
     -- since tile graphics information isn't stored as entities, we instead just grab all tiles and update their animations
     Tiles tileVector <- get global :: SystemT' IO (Tiles ImageID)
-    lift . mapMVec tileVector $ (over tileRender $ Render . fmap updateFramesIfAnim . unRender)
+    lift . mapMVec tileVector $ over tileRender (\(Render frames) -> Render (updateFramesIfAnim <$> frames))
 
 ----------------------
 -- main render loop --
 ----------------------
 
-runRender :: SDL.Renderer -> RenderBuffer -> Word32 -> SystemT' IO RenderBuffer
+runRender :: SDL.Renderer -> RenderBuffer -> Word32 -> SystemT' IO ()
 runRender !renderer !renderBuffer !dT = do
     stepRenderTime dT
     updateAnimations dT
@@ -139,43 +138,48 @@ runRender !renderer !renderBuffer !dT = do
         maxX = camX' + (0.5    * zoomScale * unitsPerWidth  + renderBorderUnits)
 
         -- adds to RenderBuffer and increments if judged to be drawable; expands the buffer if needed
-        addToBuffer :: (Int, RenderBuffer) -> Vector (RenderSprite ImageID) -> V2 Double -> SystemT' IO (Int, RenderBuffer)
-        addToBuffer (!idx, !renBuf) render pos = if isOffScreen pos then pure (idx, renBuf) else do
-            let renderPos = (*logicScale) <$> (pos - shiftedCamera)
-            renBuf' <- lift $ growMVecIfNeeded renBuf bufferGrowIncr idx
-            (lift . MVec.unsafeWrite renBuf' idx) (renderPos, render)
-                >> pure (idx + 1, renBuf')
+        addToBuffer :: Int -> Vector (RenderSprite ImageID) -> V2 Double -> SystemT' IO Int
+        addToBuffer !idx render !pos
+            | isOffScreen pos = pure idx
+            | otherwise       = lift $ do
+                let renderPos = (*logicScale) <$> (pos - shiftedCamera)
+                Vec.ifoldM'_ (\_ i spr -> writeToBuffer (idx + i) (renderPos, spr) renderBuffer) () render
+                pure $ idx + Vec.length render
 
         -- this call to fieldFoldM is (as of when this is written) the most time intensive process in the program
         -- if we start to have too many problems, we should like into implementing caching each individual sprite into larger ones
         -- although to preserve z-depth we might want to split each field into "strips" of tiles with same y and z positions
         -- close to this was "surfaceBlitScaled", which would dramatically have its number of calls cut down by this too
-        foldFnField :: (Int, RenderBuffer) -> (V2 Int, Field) -> SystemT' IO (Int, RenderBuffer)
-        foldFnField pair (!pos, !field) = fieldFoldM (addTile pos) pair field
-        addTile :: V2 Int -> (Int, RenderBuffer) -> V2 Int -> TileState -> SystemT' IO (Int, RenderBuffer)
-        addTile fpos pair pos !t = getTile t >>= \tileInst ->
+        foldFnField :: Int -> (V2 Int, Field) -> SystemT' IO Int
+        foldFnField !idx (!pos, !field) = fieldFoldM (addTile pos) idx field
+        addTile :: V2 Int -> Int -> V2 Int -> TileState -> SystemT' IO Int
+        addTile fpos i pos !t = getTile t >>= \tileInst ->
             -- foldFnField filters out empty tiles, so we know they are safe here; if it didn't, attempting to render an empty would error
-            addToBuffer pair (getTileRenderSprites t tileInst) (worldCoordFromTileCoord fpos pos)
+            let (Render layers) = getTileRender t tileInst
+             in addToBuffer i layers (worldCoordFromTileCoord fpos pos)
 
-        gatherEntityRender :: (Int, RenderBuffer) -> (Render ImageID, Position) -> SystemT' IO (Int, RenderBuffer)
-        gatherEntityRender pair (Render render, Position pos) = addToBuffer pair render pos
+        gatherEntityRender :: Int -> (Render ImageID, Position) -> SystemT' IO Int
+        gatherEntityRender i (Render render, Position pos) = addToBuffer i render pos
 
-        gatherTileRender :: (Int, RenderBuffer) -> SystemT' IO (Int, RenderBuffer)
-        gatherTileRender pair = foldM foldFnField pair . fieldsSurrounding camPos $ world 
+        gatherTileRender :: Int -> SystemT' IO Int
+        gatherTileRender i = foldM foldFnField i . fieldsSurrounding camPos $ world 
 
         -- this collects all renders into our buffer with their positions
-        gatherRender :: (Int, RenderBuffer) -> SystemT' IO (Int, RenderBuffer)
-        gatherRender pair = cfoldM gatherEntityRender pair >>= gatherTileRender
+        gatherRender :: SystemT' IO Int
+        gatherRender = cfoldM gatherEntityRender 0 >>= gatherTileRender
         
-        renderEvery :: Int -> Int -> RenderBuffer -> IO ()
-        renderEvery !i !len !buf | i == len    = pure ()
-                                 | otherwise   = MVec.unsafeRead buf i >>= drawRender >> renderEvery (i + 1) len buf
-            where drawRender (V2 !x !y, !sprs) = Vec.forM_ sprs (drawEach $ V2 x y)
-                  drawEach !pos !ren           = blitRenderSprite renderer imageManager (mkRenderRect edgeBleedScaling resToCenter scale pos) ren
+        renderEvery :: Int -> Int -> IO ()
+        renderEvery !i !len
+            | i == len    = pure ()
+            | otherwise   = do
+                let drawEach !pos !ren = blitRenderSprite renderer imageManager (mkRenderRect edgeBleedScaling resToCenter scale pos) ren
+                (pos, !spr) <- readFromBuffer i renderBuffer
+                drawEach pos spr
+                renderEvery (i + 1) len
 
-    (sprCount, renBuf') <- gatherRender (0, renderBuffer)
+    sprCount <- gatherRender
     when (sprCount > 0) $
-        lift (sortRenderBuffer 0 sprCount renBuf' >> renderEvery 0 sprCount renBuf')
+        lift (sortRenderBuffer 0 sprCount renderBuffer >> renderEvery 0 sprCount)
 
     playerAS <- cfold (\_ (as, Camera _) -> Just as) Nothing
     renderUI renderer scale playerAS
@@ -184,4 +188,3 @@ runRender !renderer !renderBuffer !dT = do
         renderDebug renderer (\pos -> (+resToCenter) . fmap (*logicScale) . (+(pos - shiftedCamera)))
 
     SDL.present renderer
-    pure renderBuffer

@@ -75,8 +75,11 @@ printPhysics = do
     (Iterations i) <- get global
     liftIO . putStrLn . concat $ ["global (gravity ", show g, "; iterations ", show i, ")"]
 
+    let showColFilter Nothing  = "Nothing"
+        showColFilter (Just (CollisionFilter group catMask filMask)) = concat ["(group ", show group, "; category ", show catMask, "; filter ", show filMask, ")"]
+
     -- Torque and force are ignored, as those are set to zero every update, and so this would always print 0's for them
-    cmapM_ $ \(Identity idt _ _, (Position p, Velocity v, BodyMass mass), (Angle a, AngularVelocity a', CenterOfGravity cog), Entity etyID :: Entity) -> liftIO $ do
+    cmapM_ $ \(Identity idt _ _, (Position p, Velocity v, BodyMass mass), (Angle a, AngularVelocity a', CenterOfGravity cog), Entity etyID :: Entity, col :: Maybe CollisionFilter) -> liftIO $ do
         putStr . show $ etyID
         putStr " ("
         T.putStr . unID $ idt -- this is separate to prevent unicode encoding issues with show
@@ -88,6 +91,7 @@ printPhysics = do
             , "; angle ", show a
             , "; angle-v ", show a'
             , "; center-of-g ", show cog
+            , "; col-filter ", showColFilter col
             , ")"
             ]
     liftIO . putStrLn $ "### End of Print Physics ###"

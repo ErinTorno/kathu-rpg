@@ -105,7 +105,7 @@ entities:
   position: [2.5, 0]
 - entity:   door-brick-wide-unlocked
   position: [1.5, 15]
-- entity:   door-brick-wide
+- entity:   door-stairs-down
   position: [5.5, 19]
 - entity:   block
   position: [15, 12]
@@ -119,6 +119,12 @@ entities:
   position: [29, 11]
 - entity:   pot-small
   position: [32, 5]
+- entity:   button
+  position: [26, 14]
+  emitting-signal: my-button1
+- entity:   powered-brick-door
+  position: [27.5, 9]
+  receiving-signal: my-button1
 items:
 - item:     apple
   position: [19, 2.5]

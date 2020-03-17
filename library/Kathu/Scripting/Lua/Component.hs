@@ -7,6 +7,7 @@ module Kathu.Scripting.Lua.Component (registerComponentFunctions) where
 
 import           Apecs
 import           Apecs.Physics
+import           Control.Monad                     (forM_)
 import           Data.Text                         (Text)
 import qualified Data.Vector                       as Vec
 import           Foreign.Lua
@@ -15,27 +16,31 @@ import           Linear.V2                         (V2(..))
 import           Kathu.Entity.Components
 import           Kathu.Graphics.Drawable           (Render(..), RenderSprite(..), switchAnimationByID)
 import           Kathu.Scripting.ExternalFunctions
+import           Kathu.Scripting.Lua.Types
+import           Kathu.Scripting.Wire
 import           Kathu.Util.Apecs
 import           Kathu.Util.Types                  (mkIdentifier, unID)
 
 -- ExternalFunctions is unused in this, but is included here since it might be in the future, mirrors the Global's function signature, and acts as a Proxy for g
-registerComponentFunctions :: forall w g. (Has w IO Physics, Members w IO (Render g), ReadWriteEach w IO '[Force, Identity, Mass, MovingSpeed, Position, Render g, Tags, Velocity]) => w -> ExternalFunctions w g -> Lua ()
+registerComponentFunctions :: forall w g. (Has w IO Physics, Members w IO (Render g), ReadWriteEach w IO '[ActiveScript, Force, Identity, Mass, MovingSpeed, Position, Render g, RunningScriptEntity, ScriptEventBuffer, Tags, Velocity, WireReceivers])
+                           => w -> ExternalFunctions w g -> Lua ()
 registerComponentFunctions world _ = do
-    registerHaskellFunction "getIdentifier"  (getIdentifier world)
-    registerHaskellFunction "getName"        (getName world)
-    registerHaskellFunction "getDescription" (getDescription world)
-    registerHaskellFunction "getTags"        (getTags world)
-    registerHaskellFunction "getMovingSpeed" (getMovingSpeed world)
-    registerHaskellFunction "setMovingSpeed" (setMovingSpeed world)
-    registerHaskellFunction "setAnimation"   (setAnimation (Proxy :: Proxy g) world)
-    registerHaskellFunction "getMass"        (getMass world)
-    registerHaskellFunction "setMass"        (setMass world)
-    registerHaskellFunction "getPosition"    (getPosition world)
-    registerHaskellFunction "setPosition"    (setPosition world)
-    registerHaskellFunction "getVelocity"    (getVelocity world)
-    registerHaskellFunction "setVelocity"    (setVelocity world)
-    registerHaskellFunction "getForce"       (getForce world)
-    registerHaskellFunction "setForce"       (setForce world)
+    registerHaskellFunction "getIdentifier"   $ getIdentifier world
+    registerHaskellFunction "getName"         $ getName world
+    registerHaskellFunction "getDescription"  $ getDescription world
+    registerHaskellFunction "getTags"         $ getTags world
+    registerHaskellFunction "getMovingSpeed"  $ getMovingSpeed world
+    registerHaskellFunction "setMovingSpeed"  $ setMovingSpeed world
+    registerHaskellFunction "setAnimation"    $ setAnimation (Proxy :: Proxy g) world
+    registerHaskellFunction "getMass"         $ getMass world
+    registerHaskellFunction "setMass"         $ setMass world
+    registerHaskellFunction "getPosition"     $ getPosition world
+    registerHaskellFunction "setPosition"     $ setPosition world
+    registerHaskellFunction "getVelocity"     $ getVelocity world
+    registerHaskellFunction "setVelocity"     $ setVelocity world
+    registerHaskellFunction "getForce"        $ getForce world
+    registerHaskellFunction "setForce"        $ setForce world
+    registerHaskellFunction "modifyWirePower" $ modifyWirePower world
 
 getIdentifier :: forall w. (ReadWrite w IO Identity) => w -> Int -> Lua (Optional Text)
 getIdentifier !world !etyID = liftIO . Apecs.runWith world $ do
@@ -89,7 +94,7 @@ setAnimation _ !world !etyID !animID = liftIO . Apecs.runWith world $ do
     mrender :: Maybe (Render g) <- getIfExists ety
     case mrender of
         Nothing     -> return ()
-        Just render -> ety $= Render (changeAnim <$> unRender render)
+        Just (Render layers) -> ety $= Render (changeAnim <$> layers)
 
 -------------
 -- Physics --
@@ -133,3 +138,13 @@ getForce = getVector2D $ \(Force v) -> v
 setForce :: forall w. (ReadWrite w IO Force) => w -> Int -> (Double, Double) -> Lua ()
 setForce !world !etyID (x, y) = liftIO . Apecs.runWith world $
     Entity etyID $= Force (V2 x y)
+
+-- Wires --
+
+modifyWirePower :: forall w. (ReadWriteEach w IO [ActiveScript, RunningScriptEntity, ScriptEventBuffer, WireReceivers]) => w -> Int -> Int -> Lua ()
+modifyWirePower !world !etyID !dPower = liftIO . Apecs.runWith world $ do
+    receivers <- get global
+    maybeScript :: Maybe ActiveScript <- get (Entity etyID)
+
+    forM_ maybeScript $ \script -> Vec.forM_ (wireSignals script) $ \signalID ->
+        mutateWirePower signalID (+dPower) receivers

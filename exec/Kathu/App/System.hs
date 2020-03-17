@@ -35,6 +35,7 @@ import           Kathu.Graphics.Palette          (PaletteManager)
 import qualified Kathu.Scripting.Lua             as Lua
 import           Kathu.Scripting.Lua.Types       (ActiveScript, RunningScriptEntity(..), ScriptBank, ScriptEventBuffer(..))
 import           Kathu.Scripting.Variables       (Variables)
+import           Kathu.Scripting.Wire
 import           Kathu.Util.Apecs
 import           Kathu.World.Stasis              (WorldStases)
 import           Kathu.World.Time                (WorldTime)
@@ -100,13 +101,17 @@ instance Semigroup ScriptEventBuffer where (<>) = mappend
 instance Monoid ScriptEventBuffer where mempty = ScriptEventBuffer []
 instance Component ScriptEventBuffer where type Storage ScriptEventBuffer = Global ScriptEventBuffer
 
+instance Semigroup WireReceivers where (<>) = mappend
+instance Monoid WireReceivers where mempty = error "Attempted to use WireReceivers before it has been loaded"
+instance Component WireReceivers where type Storage WireReceivers = Global WireReceivers
+
 -- World
 
 makeWorld "EntityWorld"
     $ [''Physics]
    ++ [''Existance, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
    ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Counter]
-   ++ [''Settings, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer]
+   ++ [''Settings, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a

@@ -14,7 +14,7 @@ module Kathu.World.WorldSpace where
 
 import           Apecs                     hiding (Map)
 import           Apecs.Physics             hiding (Map)
-import           Control.Monad             (foldM, when)
+import           Control.Monad             (foldM, forM_, when)
 import           Control.Monad.IO.Class    (MonadIO)
 import           Data.Aeson
 import           Data.Aeson.Types          (Parser, typeMismatch)
@@ -30,13 +30,16 @@ import           Linear.V2                 (V2(..))
 import           Kathu.Entity.Components
 import           Kathu.Entity.Item
 import           Kathu.Entity.LifeTime
+import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Prototype    (EntityPrototype)
 import           Kathu.Entity.System       (Tiles)
 import           Kathu.Graphics.Drawable   (Render)
 import           Kathu.Graphics.Palette
 import           Kathu.IO.Directory        (WorkingDirectory)
+import           Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua       as Lua
 import           Kathu.Scripting.Variables
+import           Kathu.Scripting.Wire
 import           Kathu.Util.Apecs
 import           Kathu.Util.Dependency
 import           Kathu.Util.Flow           ((>>>=))
@@ -44,6 +47,13 @@ import           Kathu.Util.Types          (Identifier, IDMap)
 import           Kathu.World.Field
 import           Kathu.World.Stasis
 import           Kathu.World.Tile          (Tile)
+
+data InstancedPrototype g = InstancedPrototype
+    { basePrototype      :: EntityPrototype g
+    , spawnLocation      :: V2 Double
+    , wireSignalEmitter  :: !(Maybe Identifier)
+    , wireSignalReceiver :: !(Maybe Identifier)
+    }
 
 data WorldSpace g = WorldSpace
     { worldID            :: !Identifier
@@ -54,7 +64,7 @@ data WorldSpace g = WorldSpace
     , shouldSavePosition :: !Bool -- when serialized, should we remember where the player was?
     , worldVariables     :: IDMap WorldVariable
     , worldScript        :: !(Maybe Lua.Script)
-    , worldEntities      :: Vector (V2 Double, EntityPrototype g)
+    , worldEntities      :: Vector (InstancedPrototype g)
     , worldItems         :: Vector (V2 Double, ItemStack g)
     , worldFields        :: !FieldSet
     }
@@ -76,12 +86,12 @@ fieldsSurrounding v ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
 -- System Related --
 --------------------
 
-initWorldSpace :: forall w m g. (MonadIO m, Get w m EntityCounter, Get w m (Tiles g), Has w m Physics, ReadWriteEach w m '[Existance, Local, LifeTime, Lua.ActiveScript, Render g, Variables, WorldSpace g, WorldStases])
-               => (Entity -> SystemT w m ())
-               -> (EntityPrototype g -> SystemT w m Entity)
-               -> (Entity -> Lua.Script -> SystemT w m Lua.ActiveScript)
+initWorldSpace :: forall w g. (Get w IO EntityCounter, Get w IO (Tiles g), Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[Existance, Local, LifeTime, Render g, Variables, WireReceivers, WorldSpace g, WorldStases])
+               => (Entity -> SystemT w IO ())
+               -> (EntityPrototype g -> SystemT w IO Entity)
+               -> (Entity -> Lua.Script -> SystemT w IO Lua.ActiveScript)
                -> WorldSpace g
-               -> SystemT w m ()
+               -> SystemT w IO ()
 initWorldSpace destroyEty mkEntity loadScript ws = do
     -- we clean up all previous entities without lifetimes
     cmapM_ $ \(Existance, _ :: Not LifeTime, ety) -> destroyEty ety
@@ -95,14 +105,24 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
 
     cmap $ \(Local _)   -> Position . loadPoint $ ws
     -- we place all items in the world as entities
-    mapM_ (\(pos, ety)  -> mkEntity ety >>= flip ($=) (Position pos)) (worldEntities ws)
-    mapM_ (\(pos, item) -> newEntityFromItem item pos) (worldItems ws)
+    forM_ (worldItems ws) $ \(pos, item) -> newEntityFromItem item pos
+    forM_ (worldEntities ws) $ \(InstancedPrototype proto pos sigOut sigIn) -> do
+        ety <- mkEntity proto
+        ety $= Position pos
+        forM_ sigOut $ \sig -> modify ety (Lua.addWireController sig)
+
+        forM_ sigIn $ \sig -> do
+            maybeScript <- getIfExists ety
+            case maybeScript of
+                Nothing     -> return ()
+                Just script -> when (Lua.shouldScriptRun onSignalChange script) $ Lua.addWireReceiver sig script
     
-    let addWorldCollision polygons
+    let worldCollisionFilter = groupCollisionFilter Movement
+        addWorldCollision polygons
             | Vec.null polygons = pure ()
             | otherwise         = do
                 ety <- newExistingEntity (StaticBody, Position (V2 0 0))
-                ety $= Shape ety (Convex (Vec.head polygons) 0)
+                ety $= (Shape ety (Convex (Vec.head polygons) 0), worldCollisionFilter)
                 
                 mapM_ (\p -> newExistingEntity (Shape ety $ Convex p 0)) . Vec.tail $ polygons
     colPolys <- mkCollisionPolygons tiles . worldFields $ ws
@@ -173,8 +193,16 @@ instance ( s `CanProvide` (IDMap (EntityPrototype g))
                    . fmap (dependencyMapLookupElseError "Tile")
                    $ vals
 
-        let parsePlacement fn (Array vec) = foldM (parseIndivPlace fn) (return []) vec
-            parsePlacement _ e            = typeMismatch "Placement" e
+        let parsePlacement pidiv fn (Array vec) = foldM (pidiv fn) (return []) vec
+            parsePlacement _ _ e            = typeMismatch "Placement" e
+
+            parseIndivEntityPlace fn acc val@(Object obj) = do
+                pos     <- (*unitsPerTile) <$> obj .: "position"
+                sigEmit <- obj .:? "emitting-signal"
+                sigRece <- obj .:? "receiving-signal"
+                stack   <- fn val
+                return $ acc >>= \ls -> (:ls) . (\e -> InstancedPrototype e pos sigEmit sigRece) <$> stack
+            parseIndivEntityPlace _ _ e                 = typeMismatch "Placement" e
 
             parseIndivPlace fn acc val@(Object obj) = do
                 pos   <- (*unitsPerTile) <$> obj .: "position"
@@ -185,8 +213,8 @@ instance ( s `CanProvide` (IDMap (EntityPrototype g))
             parseEty = withObject "EntityPlacement" $ \obj ->
                 dependencyMapLookupElseError "Entity" <$> (obj .: "entity" :: Parser Identifier)
 
-        items    <- v .: "items"    >>= parsePlacement parseJSON >>>= return . Vec.fromList
-        entities <- v .: "entities" >>= parsePlacement parseEty  >>>= return . Vec.fromList
+        items    <- v .: "items"    >>= parsePlacement parseIndivPlace parseJSON       >>>= return . Vec.fromList
+        entities <- v .: "entities" >>= parsePlacement parseIndivEntityPlace parseEty  >>>= return . Vec.fromList
 
         let failIfNothing = error "Attempted to tile without a listing in the WorldSpace's legend"
 

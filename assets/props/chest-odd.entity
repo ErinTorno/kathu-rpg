@@ -10,5 +10,7 @@ inventory:
   misc-slots: [{count: 10}]
 body-config:
   type:   static
-  group:  movement
-  shapes: [{shape: rectangle, bounds: [1.25, 1.05]}]
+  shapes:
+  - category: movement
+    shape:    rectangle
+    bounds:   [1.25, 1.05]

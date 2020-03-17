@@ -3,10 +3,12 @@
 module Kathu.Util.Collection where
 
 import           Control.Monad.Primitive (PrimMonad, PrimState)
-import           Data.Char (toLower, toUpper)
-import           Data.Vector.Mutable (MVector)
-import qualified Data.Vector.Mutable as MVec
-import           Numeric (showHex)
+import           Data.Char               (toLower, toUpper)
+import           Data.Map                (Map)
+import qualified Data.Map                as Map
+import           Data.Vector.Mutable     (MVector)
+import qualified Data.Vector.Mutable     as MVec
+import           Numeric                 (showHex)
 
 -- Maybe functions
 
@@ -30,6 +32,13 @@ splitAtFirst e l  = go [] l
           go acc (x:xs) | x == e    = (acc, xs)
                         | otherwise = go (x:acc) xs
 
+-- Map functions
+
+findByElem :: (a -> Bool) -> Map k a -> Maybe (k, a)
+findByElem cond = Map.foldlWithKey' isNext Nothing
+    where isNext Nothing k a  = if cond a then Just (k, a) else Nothing
+          isNext (Just p) _ _ = Just p
+
 -- Vector functions
 
 iterMVec :: PrimMonad m => MVector (PrimState m) a -> (a -> m b) -> m ()
@@ -46,11 +55,6 @@ mapMMVec :: PrimMonad m => MVector (PrimState m) a -> (a -> m a) -> m ()
 mapMMVec !vec !f = go 0
     where go !i | i == MVec.length vec = pure ()
                 | otherwise            = MVec.unsafeRead vec i >>= f >>= MVec.unsafeWrite vec i >> go (i + 1)
-
-growMVecIfNeeded :: PrimMonad m => MVector (PrimState m) a -> Int -> Int -> m (MVector (PrimState m) a)
-growMVecIfNeeded !vec !sizeIncrease !i
-    | i < MVec.length vec = pure vec
-    | otherwise           = MVec.unsafeGrow vec sizeIncrease
 
 -- Specialized List functions
 

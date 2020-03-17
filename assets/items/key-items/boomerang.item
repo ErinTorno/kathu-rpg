@@ -1,0 +1,8 @@
+item-id:        boomerang
+name:           boomerang
+description:    it always returns :3
+slot:           misc
+icon:           "boomerang.png"
+max-stack-size: 1
+price:          -1
+special-category: key-item

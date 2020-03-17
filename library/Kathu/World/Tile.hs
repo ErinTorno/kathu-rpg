@@ -24,7 +24,7 @@ import           Data.Word
 import qualified System.Random                as R
 
 import           Kathu.Entity.Resource
-import           Kathu.Graphics.Drawable      (Render(..), RenderSprite)
+import           Kathu.Graphics.Drawable      (Render(..))
 import           Kathu.Parsing.Aeson
 import           Kathu.Parsing.Counting
 import           Kathu.Util.Dependency
@@ -131,7 +131,8 @@ derivingUnbox "TileState"
     [| \(TileState tl mt) -> (tl, mt) |]
     [| uncurry TileState              |]
 
-getTileRenderSprites :: TileState -> Tile g -> Vec.Vector (RenderSprite g)
-getTileRenderSprites !tileState !tileInst
-    | tileInst^.isRenderRandom = Vec.singleton $ (tileInst^.tileRender.to unRender) Vec.! (tileState^.metadata.to fromIntegral)
-    | otherwise                = tileInst^.tileRender.to unRender
+getTileRender :: TileState -> Tile g -> Render g
+getTileRender !tileState !tileInst
+    | tileInst^.isRenderRandom = let chooseFrame (Render layers) = Render (Vec.singleton $ layers Vec.! (tileState^.metadata.to fromIntegral))
+                                  in chooseFrame (tileInst^.tileRender)
+    | otherwise                = tileInst^.tileRender

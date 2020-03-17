@@ -14,7 +14,7 @@ import qualified Kathu.App.SDLCommon as SDLC
 import Kathu.Graphics.Drawable
 
 getImageID :: RenderSprite ImageID -> ImageID
-getImageID (RSStatic (StaticSprite !img _)) = img
+getImageID (RSStatic (StaticSprite !img _ _)) = img
 getImageID (RSAnimated !anim) = animAtlas . animation $ anim
 
 mkRenderRect :: (Floating a, RealFrac a) => a -> V2 a -> a -> V2 a -> SDL.Rectangle CInt -> SDL.Rectangle CInt
@@ -30,7 +30,7 @@ mkRenderRectNoCenter !bleed (V2 !shiftX !shiftY) !scale (V2 !x !y) (SDL.Rectangl
 blitRenderSprite :: MonadIO m => SDL.Renderer -> ImageManager -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite ImageID -> m ()
 blitRenderSprite !renderer !im !mkRect !ren = blit ren
     where draw !srcBnd !destBnd tex = SDL.copy renderer tex srcBnd (Just . mkRect $ destBnd)
-          blit (RSStatic (StaticSprite !iid !bnd)) = mapM_ (draw Nothing (SDL.Rectangle (SDL.P (V2 0 0)) bnd)) $ fetchTextures iid im
-          blit dyn@(RSAnimated (AnimatedSprite {animation = !anim})) = mapM_ (draw (Just bounds) bounds) $ fetchTextures (animAtlas anim) im
+          blit (RSStatic (StaticSprite !iid !bnd _)) = mapM_ (draw Nothing (SDL.Rectangle (SDL.P (V2 0 0)) bnd)) $ fetchTextures iid im
+          blit dyn@(RSAnimated AnimatedSprite {animation = anim}) = mapM_ (draw (Just bounds) bounds) $ fetchTextures (animAtlas anim) im
               where bounds = SDL.Rectangle (SDL.P boundsPos) boundsDim
                     (# boundsPos, boundsDim #) = currentBounds dyn

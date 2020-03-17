@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns     #-}
+{-# LANGUAGE ConstraintKinds  #-}
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE ExplicitForAll   #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -8,11 +9,14 @@
 module Kathu.Scripting.Lua
     ( module Kathu.Scripting.ExternalFunctions
     , module Kathu.Scripting.Lua.Types
+    , HasScripting
     , call
     , loadScript
     , shouldScriptRun
+    , addWireController
+    , addWireReceiver
     , releaseActiveScript
-    , mkScriptBank
+    , initScripting
     ) where
 
 import           Apecs
@@ -38,7 +42,11 @@ import           Kathu.Scripting.Lua.Component
 import           Kathu.Scripting.Lua.Global
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
+import           Kathu.Scripting.Wire
 import           Kathu.Util.Apecs
+import           Kathu.Util.Types
+
+type HasScripting w m = ReadWriteEach w m [ActiveScript, RunningScriptEntity, ScriptBank, ScriptEventBuffer, WireReceivers]
 
 -- in future an actual log file should be used and acessed through the world
 logLua :: String -> Lua ()
@@ -50,20 +58,39 @@ call = callFunc
 shouldScriptRun :: ScriptEvent -> ActiveScript -> Bool
 shouldScriptRun e = isEventSet e . eventFlags
 
+addWireController :: Identifier -> ActiveScript -> ActiveScript
+addWireController sigName as = as { wireSignals = Vec.cons sigName (wireSignals as) }
+
+addWireReceiver :: forall w. (ReadWriteEach w IO [RunningScriptEntity, ScriptEventBuffer, WireReceivers])
+                => Identifier -> ActiveScript -> SystemT w IO ()
+addWireReceiver sigName as@ActiveScript {instanceEntity = ety} = do
+    world     <- ask
+    receivers <- get global
+
+    let onChange     = execFor as . call "onSignalChange" (unEntity ety)
+        onChangeIO i = Apecs.runWith world $ do
+            ScriptEventBuffer buffer <- get global
+            global $= ScriptEventBuffer (Apecs.runWith world (onChange i) : buffer)
+            
+    liftIO $ addWireListener sigName (unEntity ety) onChangeIO receivers
+
 mkActiveScript :: forall w. (ReadWrite w IO ScriptBank) => Entity -> SingletonStatus -> Lua () -> Script -> SystemT w IO ActiveScript
 mkActiveScript !ety !singStatus !initLua (Script _ mainScr flags _) = mkActive <$> liftIO stateMVar
-    where mkActive st = ActiveScript st flags ety Vec.empty singStatus
+    where mkActive st = ActiveScript st flags ety Vec.empty Vec.empty singStatus
           !stateMVar = do
               st  <- Lua.newstate
               -- for some reason Lua exception logging doesn't actually get caught here, unlike in execFor...
               st' <- Lua.runWith st (initLua >> handleLuaOp (Lua.dostring mainScr) >> Lua.state)
               newMVar st'
 
-releaseActiveScript :: forall w. (ReadWriteEach w IO [RunningScriptEntity, ScriptEventBuffer, Variables]) => ActiveScript -> SystemT w IO ()
-releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched singStatus) = do
+releaseActiveScript :: forall w. (ReadWriteEach w IO [RunningScriptEntity, ScriptEventBuffer, Variables, WireReceivers]) => ActiveScript -> SystemT w IO ()
+releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched signals singStatus) = do
     let ety = unEntity scriptEntity
     when (scriptEntity /= global && shouldScriptRun onDestroy as) $
         execFor as (call "onDestroy" ety)
+
+    receivers <- get global
+    Vec.forM_ signals $ deleteWireListener ety receivers
 
     -- don't want to fully release an singleton instance at this time if we aren't clearing the master, non-shared script state
     when (singStatus /= SingletonReference) $ do
@@ -76,7 +103,7 @@ releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched singStatus) =
             Lua.close lstate
             putMVar stmvar $ error "Attempted to use a release ActiveScript"
 
-loadScript :: forall w g. (Has w IO Physics, Members w IO (Render g), ReadWriteEach w IO [ActiveScript, Camera, Debug, Force, Identity, Local, LogicTime, Mass, MovingSpeed, Position, Random, Render g, RenderTime, RunningScriptEntity, ScriptBank, ScriptEventBuffer, Tags, Variables, Velocity])
+loadScript :: forall w g. (Has w IO Physics, Members w IO (Render g), ReadWriteEach w IO [ActiveScript, Camera, Debug, Force, Identity, Local, LogicTime, Mass, MovingSpeed, Position, Random, Render g, RenderTime, RunningScriptEntity, ScriptBank, ScriptEventBuffer, Tags, Variables, Velocity, WireReceivers])
            => ExternalFunctions w g -> Entity -> Script -> SystemT w IO ActiveScript
 loadScript extFuns ety script
     | isSingleton script = runIfOnInit =<< fromBank
@@ -103,5 +130,9 @@ loadScript extFuns ety script
                                 liftIO . stToIO $ HT.insert sbank sID ascript
                                 return $ ascript {instanceEntity = ety, singletonStatus = SingletonReference}
 
-mkScriptBank :: IO ScriptBank
-mkScriptBank = ScriptBank <$> stToIO (HT.newSized 64)
+initScripting :: forall w. (ReadWriteEach w IO [ScriptBank, WireReceivers]) => SystemT w IO ()
+initScripting = do
+    scriptBank <- liftIO $ ScriptBank <$> stToIO (HT.newSized 64)
+    receivers  <- liftIO $ WireReceivers <$> stToIO (HT.newSized 64)
+    global $= scriptBank
+    global $= receivers

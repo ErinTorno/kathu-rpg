@@ -2,5 +2,7 @@ identity: pot-small
 render:   "pot-small.png"
 body-config:
   type:   static
-  group:  movement
-  shapes: [{shape: rectangle, bounds: [0.8, 0.3]}]
+  shapes:
+  - category: movement
+    shape:    rectangle
+    bounds:   [0.8, 0.3]

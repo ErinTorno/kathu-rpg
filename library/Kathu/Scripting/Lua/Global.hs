@@ -6,7 +6,7 @@
 module Kathu.Scripting.Lua.Global (registerGlobalFunctions) where
 
 import           Apecs
-import           Control.Monad             (when)
+import           Control.Monad             (forM_, when)
 import           Data.Maybe                (fromMaybe, isJust)
 import           Data.Text                 (Text)
 import           Foreign.Lua
@@ -134,9 +134,8 @@ registerListener addWatch !world !idt fnName = liftIO . Apecs.runWith world $ do
     currentEty   <- getRS <$> get global
     variables    <- get global
     activeScript <- getIfExists currentEty
-    case activeScript of
-        Nothing     -> return ()
-        Just script -> do
+
+    forM_ activeScript $ \script -> do
             let ety = unEntity currentEty
 
             -- we add this event into the buffer to run as soon as this script instance finishes
@@ -157,7 +156,7 @@ getVariable getGroup !world !idt = liftIO . Apecs.runWith world $ (getVar =<< ge
 
 setVariableLua :: forall w a. (Peekable a, ReadWrite w IO Variables) => (Identifier -> Variables -> SystemT w IO Bool) -> (Identifier -> WorldVariable -> Variables -> IO ()) -> (a -> WorldVariable) -> w -> Text -> a -> Lua ()
 setVariableLua getIsValid setter mkVar !world !idtTxt !newVal = liftIO . Apecs.runWith world $ do
-    variables <- liftIO . Apecs.runWith world $ get global
+    variables <- get global
 
     let idt  = mkIdentifier idtTxt
     isValid <- getIsValid idt variables

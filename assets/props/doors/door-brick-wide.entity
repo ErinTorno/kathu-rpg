@@ -6,5 +6,7 @@ tags: [door]
 render: ["door-brick-wide-locked.png"]
 body-config:
   type:   static
-  group:  movement
-  shapes: [{shape: rectangle, bounds: [2.0, 1.0]}]
+  shapes:
+  - category: movement
+    shape:    rectangle
+    bounds:   [2.0, 1.0]

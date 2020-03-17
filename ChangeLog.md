@@ -20,6 +20,12 @@
 * Fixed issue where singleton scripts would get closed prematurely
 * More tiles and decorations were added
 
+### 0.1.10.3 -- 2020-03-16
+* Each sprite in an object's render can have a layer given to allow for background/foreground sprites
+* Entity instances in the world can have signal emitters/receivers to call script events
+* Collision groups now work, and movement-sensor was added that detects movement, but doesn't block anything
+* Added on-signal-chance, on-sensor-collision-begin, and on-sensor-collision-end script events
+
 ## 0.1.9.0 -- 2019-12-15
 
 * SDL rendering is done through textures instead of surfaces, significantly reducing CPU at the cost of GPU

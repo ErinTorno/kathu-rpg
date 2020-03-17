@@ -27,9 +27,10 @@ import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.Floor
 import           Kathu.Entity.System
 import           Kathu.IO.Directory              (assetPath)
+import           Kathu.Game                      (initPhysics)
 import           Kathu.Graphics.Camera
 import           Kathu.Language
-import           Kathu.Scripting.Lua             (mkScriptBank)
+import           Kathu.Scripting.Lua             (initScripting)
 import           Kathu.Scripting.Variables       (initVariables)
 import           Kathu.Util.Types                (unID)
 
@@ -72,9 +73,8 @@ system window renderer settings = do
     seed       <- lift . maybe (R.randomIO :: IO Int) pure . randomSeed $ settings
     manager    <- lift . mkImageManager renderer $ surfaces
     tilesV     <- lift . makeTiles . view tiles $ library
-    scriptbank <- lift mkScriptBank
     variables  <- initVariables
-    global  $= scriptbank
+    initScripting
     global  $= variables
     global  $= library
     global  $= manager
@@ -98,5 +98,7 @@ system window renderer settings = do
 
     let worldspace = getLib worldSpaces . initialWorld $ settings
     loadWorldSpace worldspace
+
+    initPhysics
     
     pure ()

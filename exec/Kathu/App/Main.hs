@@ -44,13 +44,13 @@ run renDelay renderer renBuf !prevPhysTime !prevRendTime = do
     -- we delay unless physics took enough time that we should draw it again
     unless (renderDiffer >= renDelay) $ SDL.delay (renDelay - renderDiffer)
     -- render steps in variable time, so we must reflect that
-    newRenBuf <- runRender renderer renBuf renderDiffer
+    runRender renderer renBuf renderDiffer
     
     -- Physics steps back to ensure next update is on time; render goes whenever it can
     if not shouldContinue then
         pure ()
     else
-        run renDelay renderer newRenBuf (startTime - remainder) renderStartTime
+        run renDelay renderer renBuf (startTime - remainder) renderStartTime
 
 start :: IO ()
 start = startWith $ \settings -> let config = SDL.defaultWindow { SDL.windowInitialSize = fromIntegral <$> resolution settings }
