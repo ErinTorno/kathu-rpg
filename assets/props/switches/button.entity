@@ -1,7 +1,6 @@
 identity: button
 script:
   file:   "button.lua"
-  is-singleton: true
   events:
   - on-sensor-collision-begin
   - on-sensor-collision-end

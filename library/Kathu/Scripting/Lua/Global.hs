@@ -13,6 +13,7 @@ import           Foreign.Lua
 import qualified System.Random             as R
 
 import           Kathu.Entity.Components
+import           Kathu.Entity.Logger
 import           Kathu.Entity.System
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
@@ -23,8 +24,9 @@ import           Kathu.Util.Apecs
 import           Kathu.Util.Collection     (fromJustElseError)
 import           Kathu.Util.Types
 
-registerGlobalFunctions :: forall w g. (ReadWriteEach w IO [ActiveScript, Camera, Debug, Local, LogicTime, Random, RenderTime, RunningScriptEntity, ScriptEventBuffer, Variables]) => w -> ExternalFunctions w g -> Lua ()
+registerGlobalFunctions :: forall w g. (ReadWriteEach w IO [ActiveScript, Camera, Debug, Local, Logger, LogicTime, Random, RenderTime, RunningScriptEntity, ScriptEventBuffer, Variables]) => w -> ExternalFunctions w g -> Lua ()
 registerGlobalFunctions world extFuns = do
+    registerHaskellFunction "log"             (logLua world)
     registerHaskellFunction "getPlayerEntity" (getPlayerEntity world)
     registerHaskellFunction "getCameraEntity" (getCameraEntity world)
     registerHaskellFunction "setCameraEntity" (setCameraEntity world)
@@ -53,6 +55,10 @@ registerGlobalFunctions world extFuns = do
 
     registerHaskellFunction "registerGlobalVarListener" (registerListener addGlobalListener world)
     registerHaskellFunction "registerWorldVarListener"  (registerListener addWorldListener world)
+
+
+logLua :: forall w. (Get w IO Logger, Has w IO Logger) => w -> Text -> Lua ()
+logLua !world t = liftIO . Apecs.runWith world $ logLine Info t
 
 setPaletteLua :: ExternalFunctions w g -> w -> Text -> Lua Bool
 setPaletteLua extFuns !world !idt = liftIO . Apecs.runWith world $ runW

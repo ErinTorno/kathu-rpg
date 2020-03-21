@@ -1,7 +1,9 @@
 identity: pot-small
 render:   "pot-small.png"
 body-config:
-  type:   static
+  type:   dynamic
+  mass:   50
+  friction: 100
   shapes:
   - category: movement
     shape:    rectangle

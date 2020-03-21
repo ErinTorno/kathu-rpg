@@ -1,3 +1,7 @@
+{-# OPTIONS_GHC -fno-warn-orphans       #-}
+-- We add Lua Peekable and Pushable instances here for commonly used types to make them easier to use
+-- Wrapping them in a newtype would defeat this purpose
+
 {-# LANGUAGE BangPatterns               #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE ExplicitForAll             #-}
@@ -25,11 +29,12 @@ import           Foreign.Lua                 (Lua)
 import qualified Foreign.Lua                 as Lua
 import qualified Foreign.Lua.FunctionCalling as Lua
 import           Data.Vector                 (Vector)
+import           Linear.V2                   (V2(..))
 
 import           Kathu.IO.Directory
 import           Kathu.Parsing.Aeson
 import           Kathu.Scripting.Event
-import           Kathu.Scripting.Variables   (WatchedVariable)
+import           Kathu.Scripting.Variables   (WatchedVariable, WorldVariable)
 import           Kathu.Util.Apecs
 import           Kathu.Util.Dependency
 import           Kathu.Util.Types
@@ -65,6 +70,7 @@ data ActiveScript = ActiveScript
     , watchedVariables  :: !(Vector WatchedVariable)
     , wireSignals       :: !(Vector Identifier)      -- this script can attempt to send signals to entities holding these wire identifiers
     , singletonStatus   :: !SingletonStatus
+    , instanceConfig    :: !(IDMap WorldVariable)
     }
 
 instance Component ActiveScript where type Storage ActiveScript = Map ActiveScript
@@ -125,3 +131,23 @@ runFor ActiveScript {activeState = stmvar, instanceEntity = ety} fn = do
 
     global $= RunningScriptEntity Nothing
     return a
+
+-- Peekable/Pushable instances
+
+instance Lua.Peekable Identifier where
+    peek idx = mkIdentifier <$> Lua.peek idx
+
+instance Lua.Pushable Identifier where
+    push (Identifier idt _) = Lua.push idt
+
+instance Lua.Peekable Entity where
+    peek idx = Entity <$> Lua.peek idx
+
+instance Lua.Pushable Entity where
+    push (Entity ety) = Lua.push ety
+
+instance Lua.Peekable a => Lua.Peekable (V2 a) where
+    peek idx = uncurry V2 <$> Lua.peek idx
+
+instance Lua.Pushable a => Lua.Pushable (V2 a) where
+    push (V2 x y) = Lua.push (x, y)

@@ -122,9 +122,22 @@ entities:
 - entity:   button
   position: [26, 14]
   emitting-signal: my-button1
-- entity:   powered-brick-door
+  config:
+    mass-threshold: {type: double, value: 5}
+- entity:   powered-brick-door-cold
   position: [27.5, 9]
   receiving-signal: my-button1
+  
+- entity:   block
+  position: [22, 22]
+- entity:   button-huge
+  position: [26, 22]
+  emitting-signal: button-huge1
+  config:
+    mass-threshold: {type: double, value: 80}
+- entity:   powered-brick-door
+  position: [27.5, 25]
+  receiving-signal: button-huge1
 items:
 - item:     apple
   position: [19, 2.5]

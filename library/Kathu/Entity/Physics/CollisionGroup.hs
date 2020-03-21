@@ -2,6 +2,7 @@
 
 module Kathu.Entity.Physics.CollisionGroup
     ( CollisionGroup(..)
+    , collisionGroupFromString
     , mkGroupSensor
     , groupCollisionFilter
     , movementFilter
@@ -14,7 +15,7 @@ module Kathu.Entity.Physics.CollisionGroup
 
 import           Apecs.Physics    (maskList, CollisionFilter(..), Sensor(..))
 import           Data.Aeson
-import           Data.Aeson.Types (typeMismatch)
+import           Data.Text        (Text)
 import           Data.Vector      (Vector)
 import qualified Data.Vector      as Vec
 
@@ -26,17 +27,24 @@ data CollisionGroup
     | Interact
     | Hitbox
     | Attack
+    | Intangible
     deriving (Show, Eq, Enum)
 
+collisionGroupFromString :: Text -> Maybe CollisionGroup
+collisionGroupFromString s = case s of
+    "movement"        -> Just Movement
+    "movement-sensor" -> Just MovementSensor
+    "floor-effect"    -> Just FloorEffect
+    "interact"        -> Just Interact
+    "hitbox"          -> Just Hitbox
+    "attack"          -> Just Attack
+    "intangible"      -> Just Intangible
+    _                 -> Nothing
+
 instance FromJSON CollisionGroup where
-    parseJSON (String "movement")        = pure Movement
-    parseJSON (String "movement-sensor") = pure MovementSensor
-    parseJSON (String "floor-effect")    = pure FloorEffect
-    parseJSON (String "interact")        = pure Interact
-    parseJSON (String "hitbox")          = pure Hitbox
-    parseJSON (String "attack")          = pure Attack
-    parseJSON (String s)                 = fail $ "Unknown CollisionGroup " ++ show s
-    parseJSON e                          = typeMismatch "CollisionGroup" e
+    parseJSON = withText "CollisionGroup" $ \s -> case collisionGroupFromString s of
+        Just g  -> pure g
+        Nothing -> fail $ "Unknown CollisionGroup " ++ show s
 
 mkGroupSensor :: CollisionGroup -> Sensor
 mkGroupSensor Movement = Sensor False -- only Movement blocks; everything else is just used to mark hitting, etc.
@@ -50,6 +58,7 @@ collisionGroups = Vec.fromList
     , mkFilter Interact       [Movement]
     , mkFilter Hitbox         [Attack]
     , mkFilter Attack         [Hitbox]
+    , mkFilter Intangible     ([] :: [CollisionGroup])
     ]
     where mkFilter g = CollisionFilter (fromIntegral . fromEnum $ g) (maskList [fromEnum g]) . maskList . map fromEnum
 

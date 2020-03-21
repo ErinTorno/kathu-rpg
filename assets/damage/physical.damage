@@ -1,0 +1,5 @@
+damage-id: physical
+name:      physical
+icon:      "empty.png"
+color:     "#d24040"
+defense:   armor

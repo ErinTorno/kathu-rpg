@@ -1,9 +1,9 @@
 identity:
-  id: chest-locked
-  name: locked chest
-  description: a locked box
+  id: chest-odd
+  name: odd chest
+  description: a strange, large locked box
 tags: [container]
-render: ["chest-locked.png"]
+render: ["chest-odd.png"]
 inventory:
   type: container
   equip-slots: []
@@ -13,4 +13,4 @@ body-config:
   shapes:
   - category: movement
     shape:    rectangle
-    bounds:   [1.05, 1.05]
+    bounds:   [1.25, 0.275]

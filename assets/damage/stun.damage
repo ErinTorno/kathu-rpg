@@ -1,7 +1,7 @@
 damage-id: stun
-name:      Stun
+name:      stun
 icon:      "empty.png"
-color:     "#f1ed79"
+color:     "#fac800"
 defense:   armor
 
 # immune by default, as most of the time we only care about the stunning effect

@@ -24,6 +24,7 @@ import           Kathu.Entity.ActorState
 import           Kathu.Entity.Components
 import           Kathu.Entity.Item               (Inventory)
 import           Kathu.Entity.LifeTime
+import           Kathu.Entity.Logger
 import           Kathu.Entity.Physics.BodyConfig (setBodyConfig)
 import           Kathu.Entity.Physics.Floor      (WorldFloor)
 import           Kathu.Entity.Prototype
@@ -110,7 +111,7 @@ instance Component WireReceivers where type Storage WireReceivers = Global WireR
 makeWorld "EntityWorld"
     $ [''Physics]
    ++ [''Existance, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
-   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Counter]
+   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Counter, ''Logger]
    ++ [''Settings, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
 
 type System' a = System EntityWorld a
@@ -132,13 +133,16 @@ destroyEntity ety = do
     
     destroy ety (Proxy @AllComponents)
 
-newFromPrototype :: EntityPrototype ImageID -> SystemT' IO Entity
-newFromPrototype proto = do
+newFromPrototypeWithScriptMapping :: (ActiveScript -> ActiveScript) -> EntityPrototype ImageID -> SystemT' IO Entity
+newFromPrototypeWithScriptMapping f proto = do
     ety <- newFromSimplePrototype proto
 
     setBodyConfig ety . bodyConfig $ proto
     case script proto of
         Nothing    -> pure ()
-        (Just scr) -> void $ Lua.loadScript externalFunctions ety scr
+        (Just scr) -> void $ Lua.loadScript f externalFunctions ety scr
 
     return ety
+
+newFromPrototype :: EntityPrototype ImageID -> SystemT' IO Entity
+newFromPrototype = newFromPrototypeWithScriptMapping id

@@ -26,6 +26,11 @@
 * Collision groups now work, and movement-sensor was added that detects movement, but doesn't block anything
 * Added on-signal-chance, on-sensor-collision-begin, and on-sensor-collision-end script events
 
+### 0.1.10.4 -- 2020-03-21
+* Entity instances can have custom config variables that can be read by scripts
+* Scripts can now set collision filters for an entity's shapes and can filter out certain shapes based on tag
+* Opened doors no longer block collision, and buttons have their mass threshold set at the instance itself
+
 ## 0.1.9.0 -- 2019-12-15
 
 * SDL rendering is done through textures instead of surfaces, significantly reducing CPU at the cost of GPU

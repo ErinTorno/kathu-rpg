@@ -29,6 +29,20 @@ render:
   - {id: walk-southwest, frames: 4, row: 5, delay: 250}
   - {id: walk-west,      frames: 4, row: 6, delay: 250}
   - {id: walk-northwest, frames: 4, row: 7, delay: 250}
+# this overlay looks nice for walking behind walls, but is odd when standing behind small objects
+# need to find a better way to toggle it
+# - atlas: "player-overlay.png"
+#   layer:  1
+#   bounds: [23, 32]
+#   strips:
+#   - {id: walk-north,     frames: 4, row: 0, delay: 250}
+#   - {id: walk-northeast, frames: 4, row: 1, delay: 250}
+#   - {id: walk-east,      frames: 4, row: 2, delay: 250}
+#   - {id: walk-southeast, frames: 4, row: 3, delay: 250}
+#   - {id: walk-south,     frames: 4, row: 4, delay: 250}
+#   - {id: walk-southwest, frames: 4, row: 5, delay: 250}
+#   - {id: walk-west,      frames: 4, row: 6, delay: 250}
+#   - {id: walk-northwest, frames: 4, row: 7, delay: 250}
 actor-state:
   team: ally
   health: 60.0 # 3 hearts at start

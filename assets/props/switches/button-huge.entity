@@ -1,0 +1,21 @@
+identity: button-huge
+script:
+  file:   "button-partial-press.lua"
+  events:
+  - on-sensor-collision-begin
+  - on-sensor-collision-end
+render:
+- atlas:  "button-huge.png"
+  layer:  -1
+  bounds: [32, 34]
+  strips:
+  - {id: unpressed, frames: 1, row: 0, delay: 1000}
+  - {id: partial,   frames: 1, row: 1, delay: 1000}
+  - {id: pressed,   frames: 1, row: 2, delay: 1000}
+body-config:
+  type:   static
+  shapes:
+  - category: movement-sensor
+    shape:    rectangle
+    bounds:   [1.6, 1.6]
+    origin:   [-0.8, -2]

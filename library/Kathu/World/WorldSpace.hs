@@ -53,6 +53,7 @@ data InstancedPrototype g = InstancedPrototype
     , spawnLocation      :: V2 Double
     , wireSignalEmitter  :: !(Maybe Identifier)
     , wireSignalReceiver :: !(Maybe Identifier)
+    , instanceConfig     :: !(IDMap WorldVariable)
     }
 
 data WorldSpace g = WorldSpace
@@ -88,7 +89,7 @@ fieldsSurrounding v ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
 
 initWorldSpace :: forall w g. (Get w IO EntityCounter, Get w IO (Tiles g), Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[Existance, Local, LifeTime, Render g, Variables, WireReceivers, WorldSpace g, WorldStases])
                => (Entity -> SystemT w IO ())
-               -> (EntityPrototype g -> SystemT w IO Entity)
+               -> ((Lua.ActiveScript -> Lua.ActiveScript) -> EntityPrototype g -> SystemT w IO Entity)
                -> (Entity -> Lua.Script -> SystemT w IO Lua.ActiveScript)
                -> WorldSpace g
                -> SystemT w IO ()
@@ -106,16 +107,20 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
     cmap $ \(Local _)   -> Position . loadPoint $ ws
     -- we place all items in the world as entities
     forM_ (worldItems ws) $ \(pos, item) -> newEntityFromItem item pos
-    forM_ (worldEntities ws) $ \(InstancedPrototype proto pos sigOut sigIn) -> do
-        ety <- mkEntity proto
+    forM_ (worldEntities ws) $ \(InstancedPrototype proto pos sigOut sigIn config) -> do
+        ety <- mkEntity (\s -> s {Lua.instanceConfig = config}) proto
         ety $= Position pos
+
+        initialScript <- getIfExists ety
+        forM_ initialScript $
+            set ety . Lua.setInstanceConfig config 
+
         forM_ sigOut $ \sig -> modify ety (Lua.addWireController sig)
 
         forM_ sigIn $ \sig -> do
             maybeScript <- getIfExists ety
-            case maybeScript of
-                Nothing     -> return ()
-                Just script -> when (Lua.shouldScriptRun onSignalChange script) $ Lua.addWireReceiver sig script
+            forM_ maybeScript $ \script ->
+                 when (Lua.shouldScriptRun onSignalChange script) $ Lua.addWireReceiver sig script
     
     let worldCollisionFilter = groupCollisionFilter Movement
         addWorldCollision polygons
@@ -200,8 +205,9 @@ instance ( s `CanProvide` (IDMap (EntityPrototype g))
                 pos     <- (*unitsPerTile) <$> obj .: "position"
                 sigEmit <- obj .:? "emitting-signal"
                 sigRece <- obj .:? "receiving-signal"
+                config  <- obj .:? "config" .!= Map.empty
                 stack   <- fn val
-                return $ acc >>= \ls -> (:ls) . (\e -> InstancedPrototype e pos sigEmit sigRece) <$> stack
+                return $ acc >>= \ls -> (:ls) . (\e -> InstancedPrototype e pos sigEmit sigRece config) <$> stack
             parseIndivEntityPlace _ _ e                 = typeMismatch "Placement" e
 
             parseIndivPlace fn acc val@(Object obj) = do

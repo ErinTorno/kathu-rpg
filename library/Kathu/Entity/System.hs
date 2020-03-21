@@ -24,6 +24,7 @@ import           Data.Word
 import qualified System.Random as R
 
 import           Kathu.Entity.Physics.Floor (FloorPropEntity)
+import           Kathu.Entity.Logger
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Palette (PaletteManager, staticManager)
 import           Kathu.Scripting.Variables (Variables)
@@ -81,6 +82,10 @@ newtype  Counter = Counter {unCounter :: Int}
 instance Semigroup Counter where (<>) = mappend
 instance Monoid Counter where mempty  = Counter 0
 instance Component Counter where type Storage Counter = Global Counter
+
+instance Semigroup Logger where (<>) = mappend
+instance Monoid Logger where mempty = defaultLogger
+instance Component Logger where type Storage Logger = Global Logger
 
 -- Entity functions
 

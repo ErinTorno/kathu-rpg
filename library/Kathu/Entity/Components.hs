@@ -14,7 +14,7 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson
 import Data.Aeson.Types       (typeMismatch)
 import Data.Text              (Text)
-import Data.Vector            (Vector)
+import qualified Data.Set     as DSet
 import GHC.Generics
 
 import Kathu.Entity.Action
@@ -39,6 +39,9 @@ data Identity = Identity
     , description :: Text
     } deriving (Show, Eq, Generic, ToJSON)
 
+simpleIdentity :: Identifier -> Identity
+simpleIdentity idt = Identity idt "" ""
+
 instance Component Identity where type Storage Identity = Cache CacheSize (Map Identity)
 
 instance FromJSON Identity where
@@ -50,7 +53,7 @@ newtype MovingSpeed = MovingSpeed Double deriving (Show, Eq, Generic, ToJSON, Fr
 
 instance Component MovingSpeed where type Storage MovingSpeed = Map MovingSpeed
 
-newtype Tags = Tags (Vector Text) deriving (Show, Eq, Generic, ToJSON, FromJSON)
+newtype Tags = Tags (DSet.Set Text) deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 instance Component Tags where type Storage Tags = Map Tags
 

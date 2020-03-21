@@ -15,19 +15,22 @@ import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
-import Data.Maybe (maybe)
+import Data.Maybe (fromJust, isJust, maybe)
+import qualified Data.Set as DSet
 import Data.Text (Text)
 
-import Kathu.Entity.Components (Existance, newExistingEntity)
+import Kathu.Entity.Components (Existance, Tags(..), newExistingEntity)
 import Kathu.Entity.LifeTime
 import Kathu.Entity.Physics.CollisionGroup
 import Kathu.Entity.Physics.Floor (assignMeWorldFloor, WorldFloor)
 import Kathu.Parsing.Aeson ()
+import Kathu.Util.Apecs
 
 data BodyShape = BodyShape
     { shapeConvex :: !Convex
     , shapeFilter :: !CollisionFilter
     , shapeSensor :: !Sensor
+    , shapeTag    :: !(Maybe Text)
     }
 
 data BodyConfig = BodyConfig
@@ -40,17 +43,27 @@ data BodyConfig = BodyConfig
     , elasticity       :: Maybe Elasticity
     }
 
-setBodyConfig :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, Has w m Existance, Set w m Existance, Get w m LifeTime, Has w m LifeTime, Set w m LifeTime, Has w m WorldFloor, Set w m WorldFloor)
+setBodyConfig :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, ReadWriteEach w m [Existance, LifeTime, WorldFloor, Tags])
               => Entity -> Maybe BodyConfig -> SystemT w m ()
 setBodyConfig ety Nothing     = ety $= StaticBody -- if no config given, we at least need to give it a StaticBody so it can have a position
 setBodyConfig ety (Just conf) = do
     ety $= body conf
 
-    let mkShape :: Maybe LifeTime -> BodyShape -> (Shape, CollisionFilter, Sensor, Maybe LifeTime)
-        mkShape lf (BodyShape conv fil sens) = (Shape ety conv, fil, sens, lf) -- if the parent has a lifetime, we should inherit that too
+    let mkShape :: Maybe LifeTime -> BodyShape -> (Shape, CollisionFilter, Sensor, Maybe LifeTime, Maybe Tags)
+        mkShape lf (BodyShape conv fil sens tag) = (Shape ety conv, fil, sens, lf, Tags . DSet.singleton <$> tag) -- if the parent has a lifetime, we should inherit that too
 
         setShapes _ []      = pure ()
         setShapes lf (x:xs) = do
+            let tag = shapeTag x
+            maybeTags <- get ety
+
+            -- if both the shapes and the entity have tags, we need to append the tag instead
+            -- possible issue, if we check for a tag the first collision shapes tag would be included, and vice versa
+            -- unlikely to ever matter, and they are usually defined in example same place
+            when (isJust (shapeTag x) && isJust maybeTags) $ do 
+                let Tags tags = fromJust maybeTags
+                ety $= Tags (DSet.insert (fromJust tag) tags)
+                
             -- if there is one shape, we can set it on our entity; otherwise, we can give the first shape to the main ety itself
             ety $= mkShape lf x
             -- for the rest, we create new entities for holding that shape information, linked back to ety
@@ -82,8 +95,9 @@ instance FromJSON BodyShape where
             mkConvex e           = fail $ "Convex failed to parse unknown shape of " ++ show e
         category   <- v .: "category"
         convexType <- v .: "shape"
+        tag        <- v .:? "tag"
         convex     <- mkConvex convexType
-        pure $ BodyShape convex (groupCollisionFilter category) (mkGroupSensor category)
+        pure $ BodyShape convex (groupCollisionFilter category) (mkGroupSensor category) tag
     parseJSON e          = typeMismatch "Convex" e
 
 instance FromJSON Body where

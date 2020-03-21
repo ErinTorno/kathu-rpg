@@ -1,0 +1,5 @@
+damage-id: magical
+name:      magical
+icon:      "empty.png"
+color:     "#00a0c8"
+defense:   aura

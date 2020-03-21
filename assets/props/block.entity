@@ -6,9 +6,9 @@ render: "block.png"
 body-config:
   type:       dynamic
   mass:       90
-  friction:   1
+  friction:   100
   elasticity: 0
   shapes:
   - category: movement
     shape:    rectangle
-    bounds:   [1, 1]
+    bounds:   [1, 0.8]
