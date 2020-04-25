@@ -1,6 +1,6 @@
 cabal-version:       2.4
 name:                kathu
-version:             0.1.10.4
+version:             0.1.11.0
 -- synopsis:
 -- description:
 license:             GPL-3.0-only
@@ -13,69 +13,68 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 
 library
-  exposed-modules:  Kathu.Game,
-                    Kathu.Language,
+  exposed-modules:  Kathu.Game
+                    Kathu.Language
                     -- Entity
-                    Kathu.Entity.Action,
-                    Kathu.Entity.ActorState,
-                    Kathu.Entity.Components,
-                    Kathu.Entity.Damage,
-                    Kathu.Entity.Item,
-                    Kathu.Entity.LifeTime,
-                    Kathu.Entity.Logger,
-                    Kathu.Entity.Physics.BodyConfig,
-                    Kathu.Entity.Physics.CollisionGroup,
-                    Kathu.Entity.Physics.Floor,
-                    Kathu.Entity.Prototype,
-                    Kathu.Entity.PrototypeTemplate,
-                    Kathu.Entity.Resource,
-                    Kathu.Entity.SerializableComponent,
-                    Kathu.Entity.System,
-                    Kathu.Entity.Time,
+                    Kathu.Entity.Action
+                    Kathu.Entity.ActorState
+                    Kathu.Entity.Components
+                    Kathu.Entity.Damage
+                    Kathu.Entity.Item
+                    Kathu.Entity.LifeTime
+                    Kathu.Entity.Logger
+                    Kathu.Entity.Physics.BodyConfig
+                    Kathu.Entity.Physics.CollisionGroup
+                    Kathu.Entity.Physics.Floor
+                    Kathu.Entity.Prototype
+                    Kathu.Entity.PrototypeTemplate
+                    Kathu.Entity.Resource
+                    Kathu.Entity.SerializableComponent
+                    Kathu.Entity.System
+                    Kathu.Entity.Time
                     -- Graphics
-                    Kathu.Graphics.Camera,
-                    Kathu.Graphics.Color,
-                    Kathu.Graphics.Drawable,
-                    Kathu.Graphics.Palette,
-                    Kathu.Graphics.UI,
+                    Kathu.Graphics.Camera
+                    Kathu.Graphics.Color
+                    Kathu.Graphics.Drawable
+                    Kathu.Graphics.Palette
+                    Kathu.Graphics.UI
                     -- World
-                    Kathu.World.Field,
-                    Kathu.World.Stasis,
-                    Kathu.World.Tile,
-                    Kathu.World.Time,
+                    Kathu.World.Field
+                    Kathu.World.Stasis
+                    Kathu.World.Tile
+                    Kathu.World.Time
                     Kathu.World.WorldSpace
                     -- IO / File
-                    Kathu.IO.Directory,
-                    Kathu.IO.File,
+                    Kathu.IO.Directory
+                    Kathu.IO.File
                     -- Parsing
-                    Kathu.Parsing.Aeson,
-                    Kathu.Parsing.Counting,
+                    Kathu.Parsing.Aeson
+                    Kathu.Parsing.Counting
                     -- Scripting
-                    Kathu.Scripting.Event,
-                    Kathu.Scripting.ExternalFunctions,
-                    Kathu.Scripting.Lua,
-                    Kathu.Scripting.Lua.Component,
-                    Kathu.Scripting.Lua.Global,
-                    Kathu.Scripting.Lua.Types,
-                    Kathu.Scripting.Variables,
-                    Kathu.Scripting.Wire,
+                    Kathu.Scripting.Event
+                    Kathu.Scripting.ExternalFunctions
+                    Kathu.Scripting.Lua
+                    Kathu.Scripting.Lua.Component
+                    Kathu.Scripting.Lua.Global
+                    Kathu.Scripting.Lua.Types
+                    Kathu.Scripting.Variables
+                    Kathu.Scripting.Wire
                     -- Utility
-                    Kathu.Util.Apecs,
-                    Kathu.Util.Collection,
-                    Kathu.Util.Dependency,
-                    Kathu.Util.Flow,
-                    Kathu.Util.Numeric,
-                    Kathu.Util.Polygon,
-                    Kathu.Util.Timing,
+                    Kathu.Util.Apecs
+                    Kathu.Util.Collection
+                    Kathu.Util.Dependency
+                    Kathu.Util.Flow
+                    Kathu.Util.Numeric
+                    Kathu.Util.Polygon
+                    Kathu.Util.Timing
                     Kathu.Util.Types
---other-modules:    
   build-depends:    base                    >=4.12    && <4.13,
                     apecs                   >=0.8.2   && <0.9,
                     apecs-physics           >=0.4.3   && <0.5,
                     hgeometry               >=0.10    && <0.11,
                     hgeometry-combinatorial >=0.10    && <0.11,
                     hashable                >=1.3     && <1.4,
-                    hashtables              >=1.2.0 && <1.3.0,
+                    hashtables              >=1.2.0   && <1.3.0,
                     hslua                   >=1.0.0.0 && <1.1.0.0,
                     containers,
                     text, bytestring,
@@ -88,35 +87,54 @@ library
 
 executable kathu
   main-is:          Main.hs
-  other-modules:    Kathu.App.Events,
-                    Kathu.App.Init,
-                    Kathu.App.Main,
-                    Kathu.App.SDLCommon,
-                    Kathu.App.System,
-                    Kathu.App.World,
+  other-modules:    Kathu.App.Events
+                    Kathu.App.Init
+                    Kathu.App.Main
+                    Kathu.App.SDLCommon
+                    Kathu.App.System
+                    Kathu.App.World
                     -- Data
-                    Kathu.App.Data.KathuStore,
-                    Kathu.App.Data.Library,
-                    Kathu.App.Data.Settings,
+                    Kathu.App.Data.KathuStore
+                    Kathu.App.Data.Library
+                    Kathu.App.Data.Settings
                     -- Graphics
-                    Kathu.App.Graphics.Debug,
-                    Kathu.App.Graphics.Drawing,
-                    Kathu.App.Graphics.Font,
-                    Kathu.App.Graphics.Image,
-                    Kathu.App.Graphics.ImageManager,
-                    Kathu.App.Graphics.Render,
-                    Kathu.App.Graphics.RenderBuffer,
+                    Kathu.App.Graphics.Debug
+                    Kathu.App.Graphics.Drawing
+                    Kathu.App.Graphics.Font
+                    Kathu.App.Graphics.Image
+                    Kathu.App.Graphics.ImageManager
+                    Kathu.App.Graphics.Render
+                    Kathu.App.Graphics.RenderBuffer
                     Kathu.App.Graphics.UI
-  build-depends:    base             >=4.12  && <4.13,
-                    kathu,
+                    -- Tools
+                    Kathu.App.Tools.Commands
+                    Kathu.App.Tools.EventQueue
+                    Kathu.App.Tools.ToolMode
+                    -- Editor
+                    Kathu.Editor.Dialogs
+                    Kathu.Editor.File
+                    Kathu.Editor.GtkUtil
+                    Kathu.Editor.Main
+                    Kathu.Editor.Panels
+                    Kathu.Editor.Resources
+                    Kathu.Editor.Types
+  other-modules:    Paths_kathu
+  build-depends:    kathu,
+                    base             >=4.12  && <4.13,
                     aeson            >=1.4   && <1.5,
                     apecs            >=0.8.2 && <0.9,
                     apecs-physics    >=0.4.3 && <0.5,
                     hashtables       >=1.2.0 && <1.3.0,
                     mono-traversable >=1.0.9 && <1.1,
-                    containers, lens, linear, random, sdl2, sdl2-image, sdl2-ttf, text, vector, vector-algorithms
+                    gi-gdk           ^>=3.0.0,
+                    gi-gio           ^>=2.0.2,
+                    gi-glib          ^>=2.0.23,
+                    gi-gtk           ^>=3.0.0,
+                    haskell-gi       ^>=0.23.0,
+                    haskell-gi-base  ^>=0.23.0,
+                    containers, filepath, lens, linear, random, sdl2, sdl2-image, sdl2-ttf, text, vector, vector-algorithms
   hs-source-dirs:   exec
-  ghc-options:      -Wall -Werror -optl-mconsole
+  ghc-options:      -threaded -Wall -Werror -optl-mconsole
   default-language: Haskell2010
 
 test-suite kathu-test

@@ -1,0 +1,18 @@
+palette-id: default
+cycle-duration: 6000
+frames-per-second: 15
+cycle-end-behavior: restart
+interpolate-fn: angular
+keyframes:
+  0:
+    background: "#201017"
+    shader: {fn: shift-hue, angle: 45.0}
+  2000:
+    background: "#101820"
+    shader: {fn: shift-hue, angle: 165.0}
+  4000:
+    background: "#112010"
+    shader: {fn: shift-hue, angle: 285.0}
+  6000:
+    background: "#201017"
+    shader: {fn: shift-hue, angle: 45.0}

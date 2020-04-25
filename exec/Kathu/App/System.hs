@@ -19,6 +19,7 @@ import           Kathu.App.Graphics.Font
 import           Kathu.App.Graphics.Image        (ImageID)
 import           Kathu.App.Graphics.ImageManager
 import           Kathu.App.Graphics.UI
+import           Kathu.App.Tools.ToolMode
 import           Kathu.Entity.Action
 import           Kathu.Entity.ActorState
 import           Kathu.Entity.Components
@@ -111,7 +112,7 @@ instance Component WireReceivers where type Storage WireReceivers = Global WireR
 makeWorld "EntityWorld"
     $ [''Physics]
    ++ [''Existance, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
-   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Counter, ''Logger]
+   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Counter, ''Logger, ''ToolMode]
    ++ [''Settings, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
 
 type System' a = System EntityWorld a

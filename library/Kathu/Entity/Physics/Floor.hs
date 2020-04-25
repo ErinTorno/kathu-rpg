@@ -39,8 +39,7 @@ import           Kathu.Util.Types        (Identifier)
 newtype FloorID = FloorID {unFloorID :: Word32} deriving (Show, Eq, Ord)
 
 instance (s `CanStore` CountingIDs, Monad m) => FromJSON (Dependency s m FloorID) where
-    parseJSON (String s) = pure (FloorID . fromIntegral <$> lookupOrAdd "FloorID" s)
-    parseJSON v          = typeMismatch "FloorID" v
+    parseJSON = parseAndLookupOrAddIncrementalID FloorID "FloorID"
 
 -- | If an entity has this floor ID, it lets the game know that the entity associated with it is invalid, and to create a new one as soon as possible
 assignMeFloorID :: FloorID

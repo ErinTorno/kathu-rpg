@@ -1,5 +1,14 @@
 # Revision history for kathu
 
+## 0.1.11.0 -- 2020-04-24
+* Added map editor mode enabled by starting the program with either the --editor argument, or by passing in a .world file as an argument
+* Editor can load worlds into the game and play them; saving isn't supported yet
+* Editor has free camera mode, which pauses the game and can move/zoom using the middle mouse press or by scrolling
+* Added JSON instances for many worldspace related types
+* Palettes are now created by .palette files instead of being embedded in worldspaces
+* Added misc new sprites and updated game icon
+* Minor bug fixes and code cleanup
+
 ## 0.1.10.0 -- 2020-01-27
 * Lua scripts can now be loaded and ran from files
 * Scripts can be attached to entities and worldspaces

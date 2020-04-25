@@ -11,11 +11,14 @@ module Kathu.Util.Types
     , IDHashTable
     , Range(..)
     , mkIdentifier
+    , textIDLens
     ) where
 
+import           Control.Lens
 import           Control.Monad            (replicateM)
 import           Control.Monad.ST         (RealWorld)
 import           Data.Aeson
+import qualified Data.Aeson.Encoding      as AE
 import           Data.Aeson.Types         (typeMismatch)
 import qualified Data.ByteString          as B
 import           Data.Hashable
@@ -46,6 +49,9 @@ data Identifier = Identifier
     , unID   :: !Text
     } deriving (Eq, Generic, Ord)
 
+textIDLens :: Lens' Identifier Text
+textIDLens = lens unID (\atom newID -> atom {unID = newID})
+
 mkIdentifier :: Text -> Identifier
 mkIdentifier t = Identifier (hash t) t
 
@@ -55,6 +61,8 @@ instance Show Identifier where
 instance IsString Identifier where
     fromString = mkIdentifier . T.pack
 
+instance ToJSONKey Identifier where
+    toJSONKey = ToJSONKeyText unID (AE.text . unID)
 instance FromJSONKey Identifier where
     fromJSONKey = FromJSONKeyText mkIdentifier
 

@@ -29,8 +29,7 @@ import Kathu.Util.Types       (Identifier, IDMap)
 newtype DamageID = DamageID Word16 deriving (Show, Eq, Ord, Generic)
 
 instance (s `CanStore` CountingIDs, Monad m) => FromJSON (Dependency s m DamageID) where
-    parseJSON (String s) = pure (DamageID . fromIntegral <$> lookupOrAdd "DamageID" s)
-    parseJSON v          = typeMismatch "DamageID" v
+    parseJSON = parseAndLookupOrAddIncrementalID DamageID "DamageID"
 
 --------------------------------
 -- DamageProfile config types --

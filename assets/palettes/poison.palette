@@ -1,0 +1,10 @@
+palette-id: night
+cycle-duration: 1500
+frames-per-second: 10
+keyframes:
+  0:
+    background: "#1d0827"
+    shader: {fn: shift-hue-towards, angle: 280, percent: 0.35}
+  1500:
+    background: "#250f2ef0"
+    shader: {fn: shift-hue-towards, angle: 280, percent: 0.75}

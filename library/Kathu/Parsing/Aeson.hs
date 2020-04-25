@@ -17,6 +17,7 @@ import           Data.Map              (Map)
 import qualified Data.Map              as Map
 import           Data.Maybe            (fromMaybe, maybe)
 import           Data.Text             (Text)
+import           Data.Vector           (Vector)
 import qualified Data.Vector           as Vec
 import           Foreign.C.Types       (CInt)
 import           Linear.V2             (V2(..))
@@ -59,9 +60,6 @@ parseListDPWith parser (Array a) = foldM append (pure []) a
     where append acc cur         = flip (liftM2 (:)) acc <$> parser cur
 parseListDPWith _ v              = typeMismatch "[Dependency s m a]" v
 
-parseListDP :: (FromJSON (Dependency s m a), Monad m) => Value -> Parser (Dependency s m [a])
-parseListDP = parseListDPWith parseJSON
-
 parseMapDPWith :: (Monad m, Ord k) => (Value -> Parser (Dependency s m k)) -> (Value -> Parser (Dependency s m a)) -> Value -> Parser (Dependency s m (Map k a))
 parseMapDPWith keyParser parser (Object v) = resultList v >>>= pure . Map.fromList
     where resultList            = foldM append (pure []) . map (Bi.first String) . Hash.toList
@@ -76,6 +74,12 @@ parseMapDP = parseMapDPWith (fmap pure . parseJSON) parseJSON
 --------------------
 -- Misc Instances --
 --------------------
+
+instance (FromJSON (Dependency s m a), Monad m) => FromJSON (Dependency s m [a]) where
+    parseJSON = parseListDPWith parseJSON
+
+instance (FromJSON (Dependency s m a), Monad m) => FromJSON (Dependency s m (Vector a)) where
+    parseJSON v = getCompose $ Vec.fromList <$> Compose (parseListDPWith parseJSON v)
 
 instance ToJSON CInt where
     toJSON i = toJSON (fromIntegral i :: Int)

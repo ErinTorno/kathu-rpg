@@ -12,10 +12,13 @@ module Kathu.Util.Dependency where
 
 import           Control.Lens
 import           Control.Monad.State
+import qualified Data.Foldable       as F
 import           Data.Kind           (Constraint)
 import           Data.Map            (Map)
 import qualified Data.Map            as Map
 import           Data.Maybe
+import           Data.Vector         (Vector)
+import qualified Data.Vector         as Vec
 
 -- | A wrapper around a monad with a state that can be used to retrieve dependencies or store values
 newtype Dependency s m a = Dependency (StateT s m a)
@@ -71,10 +74,26 @@ liftDependency = Dependency . lift
 
 -- Map related functions; nice to have since we commonly work with Maps when storing data
 
-dependencyMapLookup :: (s `CanProvide` (Map k a), Monad m, Ord k) => k -> Dependency s m (Maybe a)
+dependencyMapLookupMap :: (s `CanProvide` Map k a, Monad m, Ord k, Traversable t) => t k -> Dependency s m (Map k a)
+dependencyMapLookupMap keys = do
+    dmap <- provide
+    let adder acc key = addMaybe $ Map.lookup key dmap
+            where addMaybe (Just e) = Map.insert key e acc
+                  addMaybe Nothing  = acc
+    pure $ F.foldl' adder Map.empty keys
+
+dependencyMapLookupVec :: (s `CanProvide` Map k a, Monad m, Ord k, Traversable t) => t k -> Dependency s m (Vector a)
+dependencyMapLookupVec keys = do
+    dmap <- provide
+    let adder acc key = addMaybe acc $ Map.lookup key dmap
+        addMaybe acc (Just e) = Vec.cons e acc
+        addMaybe acc Nothing  = acc
+    pure $ F.foldl' adder Vec.empty keys
+
+dependencyMapLookup :: (s `CanProvide` Map k a, Monad m, Ord k) => k -> Dependency s m (Maybe a)
 dependencyMapLookup key = Map.lookup key <$> provide
 
-dependencyMapLookupElseError :: (s `CanProvide` (Map k a), Monad m, Ord k, Show k) => String -> k -> Dependency s m a
+dependencyMapLookupElseError :: (s `CanProvide` Map k a, Monad m, Ord k, Show k) => String -> k -> Dependency s m a
 dependencyMapLookupElseError category key = fromMaybe failMsg <$> dependencyMapLookup key
     where failMsg = error . concat $ [ "Couldn't find element with key "
                                      , show key
@@ -83,11 +102,11 @@ dependencyMapLookupElseError category key = fromMaybe failMsg <$> dependencyMapL
                                      , " map in the stored dependencies"
                                      ]
 
-dependencyMapInsert :: (s `CanStore` (Map k a), Monad m, Ord k) => k -> a -> Dependency s m ()
+dependencyMapInsert :: (s `CanStore` Map k a, Monad m, Ord k) => k -> a -> Dependency s m ()
 dependencyMapInsert key value = (Map.insert key value <$> readStore)
                             >>= writeStore
 
 -- a bit specialized, but a very common scenario
-storeWithKeyFn :: (s `CanStore` (Map k a), Monad m, Ord k) => (a -> k) -> a -> Dependency s m a
+storeWithKeyFn :: (s `CanStore` Map k a, Monad m, Ord k) => (a -> k) -> a -> Dependency s m a
 storeWithKeyFn getID value = dependencyMapInsert (getID value) value
                           >> return value 

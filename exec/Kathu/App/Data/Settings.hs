@@ -34,7 +34,7 @@ data Settings = Settings
     , randomSeed     :: Maybe Int -- if found, will override the random seed generated on game start
     , misc           :: Map Text Text
     -- this is for testing purposes, and will be removed later
-    , initialWorld   :: Identifier
+    , initialWorld   :: Maybe Identifier
     } deriving (Generic)
 
 instance ToJSON Settings where
@@ -56,7 +56,7 @@ defaultSettings = Settings
     , controls       = defaultControls
     , randomSeed     = Nothing
     , misc           = Map.empty
-    , initialWorld   = "test-world"
+    , initialWorld   = Just "test-world"
     }
 
 data Controls = Controls

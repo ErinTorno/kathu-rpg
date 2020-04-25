@@ -1,11 +1,14 @@
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 -- The PaletteManager record has names for its components which arent supported, but clarify what they mean
 
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Kathu.Graphics.Palette
     ( AnimatedPalette(..)
@@ -36,7 +39,8 @@ import           Data.Word
 
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Color
-import           Kathu.Util.Types      (Identifier, mkIdentifier)
+import           Kathu.Util.Dependency
+import           Kathu.Util.Types
     
 data StaticPalette = StaticPalette
     { background :: Color
@@ -124,6 +128,13 @@ instance FromJSON Palette where
         (Just (_ :: Int)) -> APalette <$> parseJSON o -- if there is a duration, this must be animated, so we parse as such
         Nothing           -> SPalette <$> parseJSON o -- otherwise we parse as static
     parseJSON e            = typeMismatch "Palette" e
+
+instance (s `CanStore` IDMap Palette, Monad m) => FromJSON (Dependency s m Palette) where
+    parseJSON obj@(Object v) = do
+        paletteID :: Identifier <- v .: "palette-id"
+        palette                 <- parseJSON obj
+        pure $ storeWithKeyFn (const paletteID) palette
+    parseJSON e = typeMismatch "Palette" e
 
 instance FromJSON Shader where
     parseJSON (Array a)  = composeShaders <$> mapM parseJSON a

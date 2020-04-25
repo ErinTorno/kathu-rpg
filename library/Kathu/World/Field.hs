@@ -27,7 +27,10 @@ unitsPerTile = 1
 fieldDim :: Num a => a
 fieldDim = 32
 
-type FieldSet = Map (V2 Int) Field
+newtype FieldSet = FieldSet {unFieldSet :: Map (V2 Int) Field}
+
+emptyFieldSet :: FieldSet
+emptyFieldSet = FieldSet Map.empty
 
 newtype Field = Field {unField :: MVector RealWorld TileState}
 
@@ -127,7 +130,7 @@ fieldFoldWithEmptyM f !acc (Field fgTiles) = go fgTiles 0 0 acc
    
 -- | Creates a FieldSet from a given 2D Vector of Tiles 
 fromTileVector2D :: MonadIO m => Vec.Vector (Vec.Vector (Tile g)) -> m FieldSet
-fromTileVector2D fgTiles = if yLayers == 0 || xLayers == 0 then empty else buildNew
+fromTileVector2D fgTiles = FieldSet <$> (if yLayers == 0 || xLayers == 0 then empty else buildNew)
     where empty                       = Map.singleton (V2 0 0) <$> mkField
           minFields :: (Integral a) => Float -> a -> Int
           minFields s                 = ceiling . (/s) . fromIntegral
@@ -150,11 +153,10 @@ fromTileVector2D fgTiles = if yLayers == 0 || xLayers == 0 then empty else build
                         newTileState <- mkTileStateWithMetadata t
                         setTileState (x - fx * fieldDim) (y - fy * fieldDim) newTileState field
                         pure field
-          --debugPrint fs = (liftIO . putStrLn . concat $ ["x-len ", show xLen, "; y-len ", show yLen, "; x-layers ", show xLayers, "; y-layers ", show yLayers]) >> pure fs
 
 -- | Transforms a FieldSet into a list of V2 lists defining collision shapes
 mkCollisionPolygons :: MonadIO m => Tiles g -> FieldSet -> m (Vec.Vector [V2 Double])
-mkCollisionPolygons tiles = fmap (Vec.concat . fmap mkTriangles) . mapM isSolidVec . Map.assocs
+mkCollisionPolygons tiles = fmap (Vec.concat . fmap mkTriangles) . mapM isSolidVec . Map.assocs . unFieldSet
     where isSolidTS :: MonadIO m => TileState -> m Bool
           isSolidTS ts = view isSolid <$> (liftIO . fromTiles tiles $ ts)
           -- transforms field into a 1D vector of bools for if is solid; accessed at pos with indexFromCoord

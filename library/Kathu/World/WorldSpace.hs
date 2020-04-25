@@ -5,6 +5,7 @@
 {-# LANGUAGE MonoLocalBinds       #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE TupleSections        #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UnboxedTuples        #-}
@@ -14,7 +15,8 @@ module Kathu.World.WorldSpace where
 
 import           Apecs                     hiding (Map)
 import           Apecs.Physics             hiding (Map)
-import           Control.Monad             (foldM, forM_, when)
+import           Control.Lens              hiding ((.=), set)
+import           Control.Monad             (forM_, when)
 import           Control.Monad.IO.Class    (MonadIO)
 import           Data.Aeson
 import           Data.Aeson.Types          (Parser, typeMismatch)
@@ -31,7 +33,7 @@ import           Kathu.Entity.Components
 import           Kathu.Entity.Item
 import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.CollisionGroup
-import           Kathu.Entity.Prototype    (EntityPrototype)
+import           Kathu.Entity.Prototype    (EntityPrototype, getPrototypeID)
 import           Kathu.Entity.System       (Tiles)
 import           Kathu.Graphics.Drawable   (Render)
 import           Kathu.Graphics.Palette
@@ -42,41 +44,47 @@ import           Kathu.Scripting.Variables
 import           Kathu.Scripting.Wire
 import           Kathu.Util.Apecs
 import           Kathu.Util.Dependency
-import           Kathu.Util.Flow           ((>>>=))
 import           Kathu.Util.Types          (Identifier, IDMap)
 import           Kathu.World.Field
 import           Kathu.World.Stasis
-import           Kathu.World.Tile          (Tile)
+import           Kathu.World.Tile          (Tile, _tileTextID)
 
 data InstancedPrototype g = InstancedPrototype
     { basePrototype      :: EntityPrototype g
-    , spawnLocation      :: V2 Double
+    , spawnLocation      :: !(V2 Double)
     , wireSignalEmitter  :: !(Maybe Identifier)
     , wireSignalReceiver :: !(Maybe Identifier)
     , instanceConfig     :: !(IDMap WorldVariable)
     }
 
-data WorldSpace g = WorldSpace
-    { worldID            :: !Identifier
-    , worldName          :: !Text
-    , initialPalette     :: !Identifier
-    , worldPalettes      :: !(IDMap Palette)
-    , loadPoint          :: !(V2 Double)
-    , shouldSavePosition :: !Bool -- when serialized, should we remember where the player was?
-    , worldVariables     :: IDMap WorldVariable
-    , worldScript        :: !(Maybe Lua.Script)
-    , worldEntities      :: Vector (InstancedPrototype g)
-    , worldItems         :: Vector (V2 Double, ItemStack g)
-    , worldFields        :: !FieldSet
+data InstancedItem g = InstancedItem
+    { baseItem     :: ItemStack g
+    , itemPosition :: !(V2 Double)
     }
 
+data WorldSpace g = WorldSpace
+    { _worldID            :: !Identifier
+    , _worldName          :: !Text
+    , _initialPalette     :: !Identifier
+    , _worldPalettes      :: !(IDMap Palette)
+    , _loadPoint          :: !(V2 Double)
+    , _shouldSavePosition :: !Bool -- when serialized, should we remember where the player was?
+    , _worldVariables     :: IDMap WorldVariable
+    , _worldScript        :: !(Maybe Lua.Script)
+    , _worldEntities      :: Vector (InstancedPrototype g)
+    , _worldItems         :: Vector (InstancedItem g)
+    , _worldFields        :: !FieldSet
+    , _worldLegend        :: !(Map Char (Tile g))
+    }
+makeLenses ''WorldSpace
+
 emptyWorldSpace :: WorldSpace g
-emptyWorldSpace = WorldSpace "" "the void..." "" Map.empty (V2 0 0) False Map.empty Nothing Vec.empty Vec.empty Map.empty
+emptyWorldSpace = WorldSpace "" "the void..." "" Map.empty (V2 0 0) False Map.empty Nothing Vec.empty Vec.empty emptyFieldSet Map.empty
 
 -- right now we only consider horizontal fields; ones with different z depths are ignored
 fieldsSurrounding :: RealFrac a => V2 a -> WorldSpace g -> [(V2 Int, Field)]
 fieldsSurrounding v ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
-    where fields    = worldFields ws
+    where fields    = unFieldSet $ ws^.worldFields
           (# ox, oy #) = fieldContainingCoordV2 v
           readFields !acc !x !y | y > oy + 1 = acc
                                 | x > ox + 1 = readFields acc 0 (y + 1)
@@ -104,10 +112,10 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
     global $= ws
     tiles :: Tiles g <- get global
 
-    cmap $ \(Local _)   -> Position . loadPoint $ ws
+    cmap $ \(Local _)   -> ws^.loadPoint.to Position
     -- we place all items in the world as entities
-    forM_ (worldItems ws) $ \(pos, item) -> newEntityFromItem item pos
-    forM_ (worldEntities ws) $ \(InstancedPrototype proto pos sigOut sigIn config) -> do
+    forM_ (ws^.worldItems) $ \(InstancedItem item pos) -> newEntityFromItem item pos
+    forM_ (ws^.worldEntities) $ \(InstancedPrototype proto pos sigOut sigIn config) -> do
         ety <- mkEntity (\s -> s {Lua.instanceConfig = config}) proto
         ety $= Position pos
 
@@ -130,11 +138,11 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
                 ety $= (Shape ety (Convex (Vec.head polygons) 0), worldCollisionFilter)
                 
                 mapM_ (\p -> newExistingEntity (Shape ety $ Convex p 0)) . Vec.tail $ polygons
-    colPolys <- mkCollisionPolygons tiles . worldFields $ ws
+    colPolys <- mkCollisionPolygons tiles $ ws^.worldFields
 
     addWorldCollision colPolys
 
-    case worldScript ws of
+    case ws^.worldScript of
         Nothing    -> pure ()
         (Just scr) -> do
             ety    <- newExistingEntity ()
@@ -148,10 +156,10 @@ saveWorldVariables newWS = do
     variables <- get global
     stases    <- get global
 
-    let oldID = worldID oldWS
+    let oldID = oldWS^.worldID
 
     -- if we already have this world saved, we get its saved variables; otherwise we use the default ones
-    let newVars = maybe (worldVariables newWS) statisVariables . getStasis oldID $ stases
+    let newVars = maybe (newWS^.worldVariables) statisVariables . getStasis oldID $ stases
 
     prevWorldVars <- replaceWorldVariables variables newVars
 
@@ -168,22 +176,73 @@ newEntityFromItem stack v = newExistingEntity (StaticBody, Position v, itemIcon 
 -- Serialization --
 -------------------
 
--- Instances and functions related to serializing the WorldSpace
--- This is kept at the end due to the length and complexity of theses
+instance ToJSON (InstancedPrototype g) where
+    toJSON (InstancedPrototype ety pos sigEmit sigRece config) = object
+        [ "entity"           .= getPrototypeID ety
+        , "position"         .= (pos / unitsPerTile)
+        , "emitting-signal"  .= sigEmit
+        , "receiving-signal" .= sigRece
+        , "config"           .= (if Map.null config then Nothing else Just config)
+        ]
 
-instance ( s `CanProvide` (IDMap (EntityPrototype g))
-         , s `CanProvide` (IDMap (Tile g))
+instance (s `CanProvide` (IDMap (EntityPrototype g)), Monad m) => FromJSON (Dependency s m (InstancedPrototype g)) where
+    parseJSON (Object obj) = do
+        pos     <- (*unitsPerTile) <$> obj .: "position"
+        sigEmit <- obj .:? "emitting-signal"
+        sigRece <- obj .:? "receiving-signal"
+        config  <- obj .:? "config" .!= Map.empty
+        entity  <- dependencyMapLookupElseError "Entity" <$> (obj .: "entity" :: Parser Identifier)
+        pure $ (\e -> InstancedPrototype e pos sigEmit sigRece config) <$> entity
+    parseJSON e = typeMismatch "InstancedPrototype" e
+
+instance ToJSON (InstancedItem g) where
+    toJSON (InstancedItem (ItemStack item count) pos) = object
+        [ "item"     .= itemID item
+        , "count"    .= (if count == 1 then Nothing else Just count)
+        , "position" .= (pos / unitsPerTile)
+        ]
+
+instance (FromJSON (Dependency s m (ItemStack g)), Functor m) => FromJSON (Dependency s m (InstancedItem g)) where
+    parseJSON val@(Object obj) = do
+        pos     <- (*unitsPerTile) <$> obj .: "position"
+        stack   <- parseJSON val
+        pure $ flip InstancedItem pos <$> stack
+    parseJSON e = typeMismatch "InstancedItem" e
+
+----------------
+-- WorldSpace --
+----------------
+    
+instance ToJSON (WorldSpace g) where
+    toJSON (WorldSpace wid wname initPal palettes loadPos shouldSavePos vars script etys items _ legend) = object
+        [ "world-id"                   .= wid
+        , "name"                       .= wname
+        , "script"                     .= (Lua.scriptID <$> script)
+        , "initial-palette"            .= initPal
+        , "palettes"                   .= Map.keys palettes
+        , "load-point"                 .= (loadPos / unitsPerTile)
+        , "should-save-exact-position" .= shouldSavePos
+        , "legend"                     .= (_tileTextID <$> legend)
+        -- map
+        , "variables"                  .= vars
+        , "entities"                   .= etys
+        , "items"                      .= items
+        ]
+
+instance ( s `CanProvide` IDMap (EntityPrototype g)
+         , s `CanProvide` IDMap Palette
+         , s `CanProvide` IDMap (Tile g)
          , s `CanProvide` WorkingDirectory
          , FromJSON (Dependency s m (ItemStack g))
          , MonadIO m
          ) => FromJSON (Dependency s m (WorldSpace g)) where
     parseJSON (Object v) = do
-        worldId   <- v .: "world-id"
-        wName     <- v .: "name"
-        initPal   <- v .: "initial-palette"
-        palettes  <- v .:? "palettes" .!= Map.empty
-        loadPnt   <- (*unitsPerTile) <$> v .: "load-point"
-        variables <- v .:? "global-variables" .!= Map.empty
+        worldId    <- v .: "world-id"
+        wName      <- v .: "name"
+        initPal    <- v .: "initial-palette"
+        paletteIDs <- v .: "palettes"
+        loadPnt    <- (*unitsPerTile) <$> v .: "load-point"
+        variables  <- v .:? "global-variables" .!= Map.empty
 
         shouldSerializePosition      <- v .:? "should-save-exact-position" .!= False
         foregroundT :: Vector [Char] <- v .: "tiles"
@@ -193,41 +252,22 @@ instance ( s `CanProvide` (IDMap (EntityPrototype g))
         legend :: Dependency s m (Map Char (Tile g)) <- do
             (keys, vals) :: ([Text], [Identifier]) <- unzip . Map.toList <$> v .: "legend"
 
-            return . fmap (Map.fromList . zip (T.head <$> keys))
-                   . flattenDependency
-                   . fmap (dependencyMapLookupElseError "Tile")
-                   $ vals
+            pure . fmap (Map.fromList . zip (T.head <$> keys))
+                 . flattenDependency
+                 . fmap (dependencyMapLookupElseError "Tile")
+                 $ vals
 
-        let parsePlacement pidiv fn (Array vec) = foldM (pidiv fn) (return []) vec
-            parsePlacement _ _ e            = typeMismatch "Placement" e
+        items    <- v .: "items"
+        entities <- v .: "entities"
 
-            parseIndivEntityPlace fn acc val@(Object obj) = do
-                pos     <- (*unitsPerTile) <$> obj .: "position"
-                sigEmit <- obj .:? "emitting-signal"
-                sigRece <- obj .:? "receiving-signal"
-                config  <- obj .:? "config" .!= Map.empty
-                stack   <- fn val
-                return $ acc >>= \ls -> (:ls) . (\e -> InstancedPrototype e pos sigEmit sigRece config) <$> stack
-            parseIndivEntityPlace _ _ e                 = typeMismatch "Placement" e
-
-            parseIndivPlace fn acc val@(Object obj) = do
-                pos   <- (*unitsPerTile) <$> obj .: "position"
-                stack <- fn val
-                return $ acc >>= \ls -> (:ls) . (pos,) <$> stack
-            parseIndivPlace _ _ e                 = typeMismatch "Placement" e
-
-            parseEty = withObject "EntityPlacement" $ \obj ->
-                dependencyMapLookupElseError "Entity" <$> (obj .: "entity" :: Parser Identifier)
-
-        items    <- v .: "items"    >>= parsePlacement parseIndivPlace parseJSON       >>>= return . Vec.fromList
-        entities <- v .: "entities" >>= parsePlacement parseIndivEntityPlace parseEty  >>>= return . Vec.fromList
-
-        let failIfNothing = error "Attempted to tile without a listing in the WorldSpace's legend"
+        let palettes = dependencyMapLookupMap (paletteIDs :: Vector Identifier)
+            
+            failIfNothing = error "Attempted to tile without a listing in the WorldSpace's legend"
 
             mkForegroundTiles lgnd = Vec.fromList . fmap (fromMaybe failIfNothing . flip Map.lookup lgnd) <$> foregroundT
 
             newFieldSet :: Dependency s m FieldSet
             newFieldSet = (mkForegroundTiles <$> legend) >>= liftDependency . fromTileVector2D
 
-        return $ WorldSpace worldId wName initPal palettes loadPnt shouldSerializePosition variables <$> wScript <*> entities <*> items <*> newFieldSet
+        pure $ WorldSpace worldId wName initPal <$> palettes <*> pure loadPnt <*> pure shouldSerializePosition <*> pure variables <*> wScript <*> entities <*> items <*> newFieldSet <*> legend
     parseJSON e          = typeMismatch "WorldSpace" e

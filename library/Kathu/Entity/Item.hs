@@ -172,6 +172,6 @@ instance ( FromJSON (Dependency s m (Container g))
          ) => FromJSON (Dependency s m (Inventory g)) where
     parseJSON obj@(Object v) = getCompose . parseInv =<< (v .: "type" :: Parser Text)
         where parseInv "container"   = Compose $ (>>=(pure . InvContainer)) <$> parseJSON obj
-              parseInv "death-drops" = Compose $ (>>=(pure . InvDeathDrops)) <$> parseListDP obj
+              parseInv "death-drops" = Compose $ (>>=(pure . InvDeathDrops)) <$> parseJSON obj
               parseInv t             = error $ "Attempted to parse Inventory with unknown type: " ++ show t
     parseJSON v          = typeMismatch "Inventory" v

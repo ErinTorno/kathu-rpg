@@ -4,56 +4,7 @@ script:
   file:   "test.lua"
   events: [on-update]
 initial-palette: default
-palettes:
-  default:
-    background: "#101820"
-  night:
-    background: "#100d1b"
-    shader:
-      fn: shift-hue-towards
-      angle: 250
-      percent: 0.3
-  volcanic:
-    background: "#36171f"
-    shader:
-      - fn:           shift-hue-towards-abs
-        target-angle: 50
-        shift-angle:  -20
-      - fn:      desaturate-by
-        percent: 0.2
-  harvest-night:
-    background: "#1b1027"
-    shader:
-      fn:        match-nearest
-      color-set: ["#f2c792", "#ef9c66", "#d9454c", "#5b2933", "#352843"]
-  poisoned:
-    cycle-duration: 1500
-    frames-per-second: 15
-    keyframes:
-      0:
-        background: "#1d0827"
-        shader: {fn: shift-hue-towards, angle: 280, percent: 0.35}
-      1500:
-        background: "#250f2ef2"
-        shader: {fn: shift-hue-towards, angle: 280, percent: 0.75}
-  rainbow:
-    cycle-duration: 6000
-    frames-per-second: 15
-    cycle-end-behavior: restart
-    interpolate-fn: angular
-    keyframes:
-      0:
-        background: "#201017"
-        shader: {fn: shift-hue, angle: 45.0}
-      2000:
-        background: "#101820"
-        shader: {fn: shift-hue, angle: 165.0}
-      4000:
-        background: "#112010"
-        shader: {fn: shift-hue, angle: 285.0}
-      6000:
-        background: "#201017"
-        shader: {fn: shift-hue, angle: 45.0}
+palettes: [default, night, volcanic, poison, rainbow]
 load-point: [16, 4]
 legend:
   " ": empty

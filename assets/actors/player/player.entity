@@ -44,11 +44,11 @@ render:
 #   - {id: walk-west,      frames: 4, row: 6, delay: 250}
 #   - {id: walk-northwest, frames: 4, row: 7, delay: 250}
 actor-state:
-  team: ally
-  health: 60.0 # 3 hearts at start
-  mana: 60.0
-  armor: 0.0
-  aura: 0.0
+  team:    ally
+  health:  60.0 # 3 hearts at start
+  mana:    60.0
+  armor:   0.0
+  aura:    0.0
   resists: {}
 inventory:
   type: container

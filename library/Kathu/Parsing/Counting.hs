@@ -3,12 +3,21 @@
 
 module Kathu.Parsing.Counting where
 
+import           Data.Aeson
+import           Data.Aeson.Types      (Parser)
 import           Data.Map              (Map)
 import qualified Data.Map              as Map
 import           Data.Text             (Text)
+import qualified Data.Text             as T
 import           Kathu.Util.Dependency
 
 newtype CountingIDs = CountingIDs {unCounting :: Map Text (Map Text Int)}
+
+-- | Takes a type name and a constructor that takes an Integral, and returns a parser that will yield the ID
+-- | If the ID has already been read, that is returned; otherwise the ID is inserted into the map, and the new ID is returned
+parseAndLookupOrAddIncrementalID :: (Integral a, s `CanStore` CountingIDs, Monad m) => (a -> b) -> Text -> Value -> Parser (Dependency s m b)
+parseAndLookupOrAddIncrementalID constructor category = withText (T.unpack category) $ \s ->
+    pure (constructor . fromIntegral <$> lookupOrAdd category s)
 
 lookupOrAdd :: (s `CanStore` CountingIDs, Monad m) => Text -> Text -> Dependency s m Int
 lookupOrAdd = lookupOrExecAndVerify (pure Nothing)

@@ -33,6 +33,7 @@ import           Kathu.Language
 import           Kathu.Scripting.Lua             (initScripting)
 import           Kathu.Scripting.Variables       (initVariables)
 import           Kathu.Util.Types                (unID)
+import           Kathu.World.WorldSpace          (emptyWorldSpace)
 
 entityWorld :: IO EntityWorld
 entityWorld = initEntityWorld
@@ -96,8 +97,9 @@ system window renderer settings = do
     playerEty <- newFromPrototype $ getLib prototypes "player"
     initLocalPlayer playerEty
 
-    let worldspace = getLib worldSpaces . initialWorld $ settings
-    loadWorldSpace worldspace
+    loadWorldSpace $ case initialWorld settings of
+        Just ws -> getLib worldSpaces ws
+        Nothing -> emptyWorldSpace
 
     initPhysics
     

@@ -1,0 +1,8 @@
+palette-id: volcanic
+background: "#36171f"
+shader:
+  - fn:           shift-hue-towards-abs
+    target-angle: 50
+    shift-angle:  -20
+  - fn:      desaturate-by
+    percent: 0.1

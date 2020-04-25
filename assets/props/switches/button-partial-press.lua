@@ -13,11 +13,11 @@ function updatePressLevel(ety)
     pressLevel = 0
   end
   
-  if lastPressLevel ~= pressLevel then  
+  if lastPressLevel ~= pressLevel then
     if pressLevel == 2 then
       modifyWirePower(ety, 1)
     elseif lastPressLevel == 2 then
-      modifyWirePower(ety, 1)
+      modifyWirePower(ety, -1)
     end
     
     setAnimation(ety, (pressLevel == 2 and "pressed") or (pressLevel == 1 and "partial") or "unpressed")

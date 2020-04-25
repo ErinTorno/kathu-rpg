@@ -1,0 +1,15 @@
+identity: editor-tile-selector
+render:
+- atlas:  "tile-selector.png"
+  bounds: [16, 16]
+  strips:
+  - {id: active, frames: 2, row: 0, delay: 250}
+body-config:
+  type:       dynamic
+  mass:       0
+  friction:   0
+  elasticity: 0
+  shapes:
+  - category: intangible
+    shape:    rectangle
+    bounds:   [1, 1]

@@ -57,7 +57,7 @@ renderDebugText renderer = do
     let displayText = T.concat
             [ "palette: ",  T.pack . show . currentPalette $ manager
             , " zoom: ",    T.pack . show $ 1 / cZoom
-            , " | world: ", unID . worldID $ world
+            , " | world: ", world^.worldID.to unID
             , " x: ",       T.pack . show $ camX
             , " y: ",       T.pack . show $ camY
             ]

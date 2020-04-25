@@ -1,4 +1,4 @@
-game-icon: /temp-icon.png
+game-icon: "/icon-large.png"
 health-bar:
   starts-at:        [5, 10]
   points-per-part:  20

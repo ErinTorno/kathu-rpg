@@ -1,0 +1,6 @@
+palette-id: night
+background: "#100d1b"
+shader:
+  fn: shift-hue-towards
+  angle: 250
+  percent: 0.3

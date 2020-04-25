@@ -42,8 +42,7 @@ derivingUnbox "TileID"
     [| TileID            |]
 
 instance (s `CanStore` CountingIDs, Monad m) => FromJSON (Dependency s m TileID) where
-    parseJSON (String s) = pure (TileID . fromIntegral <$> lookupOrAdd "TileID" s)
-    parseJSON v          = typeMismatch "TileID" v
+    parseJSON = parseAndLookupOrAddIncrementalID TileID "TileID"
 
 emptyTileID :: TileID
 emptyTileID = TileID 0
@@ -55,8 +54,7 @@ reservedTileIDMap = ("TileID", Map.fromList [("empty", 0)])
 newtype ToolType = ToolType Int deriving (Show, Eq, Ord)
 
 instance (s `CanStore` CountingIDs, Monad m) => FromJSON (Dependency s m ToolType) where
-    parseJSON (String s) = pure (ToolType . fromIntegral <$> lookupOrAdd "ToolType" s)
-    parseJSON v          = typeMismatch "ToolType" v
+    parseJSON = parseAndLookupOrAddIncrementalID ToolType "ToolType"
 
 data BreakBehavior
     = Breakable {_toolType :: ToolType, _minimumPower :: Double, _durability :: Dynamic Double}
