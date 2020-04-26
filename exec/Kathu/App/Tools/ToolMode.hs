@@ -9,12 +9,13 @@ import Kathu.App.Graphics.Image (ImageID)
 import Kathu.World.Tile
 
 data TilePlacerState = TilePlacerState
-    { selectedTile :: !(Tile ImageID)
-    , lastPlacePos :: !(Maybe (V2 Int))
+    { selectedTile    :: !(Tile ImageID)
+    , lastPlacePos    :: !(Maybe (V2 Int))
+    , tileSelectorEty :: !(Maybe Entity)
     }
 
 mkTilePlacerState :: Tile ImageID -> TilePlacerState
-mkTilePlacerState t = TilePlacerState t Nothing
+mkTilePlacerState t = TilePlacerState t Nothing Nothing
 
 -- | A global component that determines whether normal camera rules are overriden and a mouse-based movie should be used
 data ToolMode
@@ -28,3 +29,7 @@ instance Component ToolMode where type Storage ToolMode = Global ToolMode
 usesFreeCam :: ToolMode -> Bool
 usesFreeCam NoTool = False
 usesFreeCam _      = True
+
+shouldShowGrid :: ToolMode -> Bool
+shouldShowGrid NoTool = False
+shouldShowGrid _      = True

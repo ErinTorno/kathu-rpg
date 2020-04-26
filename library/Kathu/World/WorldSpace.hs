@@ -50,17 +50,20 @@ import           Kathu.World.Stasis
 import           Kathu.World.Tile          (Tile, _tileTextID)
 
 data InstancedPrototype g = InstancedPrototype
-    { basePrototype      :: EntityPrototype g
-    , spawnLocation      :: !(V2 Double)
-    , wireSignalEmitter  :: !(Maybe Identifier)
-    , wireSignalReceiver :: !(Maybe Identifier)
-    , instanceConfig     :: !(IDMap WorldVariable)
+    { _instanceID         :: !Identifier
+    , _basePrototype      :: EntityPrototype g
+    , _spawnLocation      :: !(V2 Double)
+    , _wireSignalEmitter  :: !(Maybe Identifier)
+    , _wireSignalReceiver :: !(Maybe Identifier)
+    , _instanceConfig     :: !(IDMap WorldVariable)
     }
+makeLenses ''InstancedPrototype
 
 data InstancedItem g = InstancedItem
-    { baseItem     :: ItemStack g
-    , itemPosition :: !(V2 Double)
+    { _baseItem     :: ItemStack g
+    , _itemPosition :: !(V2 Double)
     }
+makeLenses ''InstancedItem
 
 data WorldSpace g = WorldSpace
     { _worldID            :: !Identifier
@@ -115,7 +118,7 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
     cmap $ \(Local _)   -> ws^.loadPoint.to Position
     -- we place all items in the world as entities
     forM_ (ws^.worldItems) $ \(InstancedItem item pos) -> newEntityFromItem item pos
-    forM_ (ws^.worldEntities) $ \(InstancedPrototype proto pos sigOut sigIn config) -> do
+    forM_ (ws^.worldEntities) $ \(InstancedPrototype _ proto pos sigOut sigIn config) -> do
         ety <- mkEntity (\s -> s {Lua.instanceConfig = config}) proto
         ety $= Position pos
 
@@ -177,8 +180,9 @@ newEntityFromItem stack v = newExistingEntity (StaticBody, Position v, itemIcon 
 -------------------
 
 instance ToJSON (InstancedPrototype g) where
-    toJSON (InstancedPrototype ety pos sigEmit sigRece config) = object
+    toJSON (InstancedPrototype idt ety pos sigEmit sigRece config) = object
         [ "entity"           .= getPrototypeID ety
+        , "instance-id"      .= (if idt == "" then Nothing else Just idt)
         , "position"         .= (pos / unitsPerTile)
         , "emitting-signal"  .= sigEmit
         , "receiving-signal" .= sigRece
@@ -187,12 +191,13 @@ instance ToJSON (InstancedPrototype g) where
 
 instance (s `CanProvide` (IDMap (EntityPrototype g)), Monad m) => FromJSON (Dependency s m (InstancedPrototype g)) where
     parseJSON (Object obj) = do
+        idt     <- obj .:? "instance-id" .!= ""
         pos     <- (*unitsPerTile) <$> obj .: "position"
         sigEmit <- obj .:? "emitting-signal"
         sigRece <- obj .:? "receiving-signal"
         config  <- obj .:? "config" .!= Map.empty
         entity  <- dependencyMapLookupElseError "Entity" <$> (obj .: "entity" :: Parser Identifier)
-        pure $ (\e -> InstancedPrototype e pos sigEmit sigRece config) <$> entity
+        pure $ (\e -> InstancedPrototype idt e pos sigEmit sigRece config) <$> entity
     parseJSON e = typeMismatch "InstancedPrototype" e
 
 instance ToJSON (InstancedItem g) where

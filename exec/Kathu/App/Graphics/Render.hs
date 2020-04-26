@@ -24,6 +24,7 @@ import           Kathu.App.Graphics.ImageManager
 import           Kathu.App.Graphics.RenderBuffer
 import           Kathu.App.Graphics.UI
 import           Kathu.App.System                (SystemT')
+import           Kathu.App.Tools.ToolSystem      (renderToolMode)
 import           Kathu.Entity.Action
 import           Kathu.Entity.System
 import           Kathu.Graphics.Camera
@@ -39,9 +40,6 @@ import           Kathu.Util.Collection           (forMVec)
 -- we don't draw anything above the top of the screen, however, since sprites draw out and upwards
 renderBorderUnits :: (Floating a, RealFrac a) => a
 renderBorderUnits = 3.0
-
-aspectRatio :: (Floating a, RealFrac a) => V2 a -> a
-aspectRatio (V2 x y) = x / y
 
 logicCoordToRender :: (Floating a, RealFrac a) => a -> V2 a -> V2 a -> V2 a
 logicCoordToRender scale (V2 topX topY) (V2 tarX tarY) = V2 ((tarX - topX) * scale) ((tarY - topY) * scale)
@@ -163,6 +161,8 @@ runRender !renderer !renderBuffer !dT = do
 
     playerAS <- cfold (\_ (as, Camera _) -> Just as) Nothing
     renderUI renderer scale playerAS
+
+    renderToolMode renderer worldToScreen
 
     when isDebug $
         renderDebug renderer worldToScreen

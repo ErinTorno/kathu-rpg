@@ -41,6 +41,7 @@ mkMenuBarDescription es@EditorState{editorApp = app, editorWindow = window, even
                 , ("_Save",   putStrLn "Save pressed")
                 , ("Save As", putStrLn "Save As pressed")
                 , ("_Quit",   void $ onApplicationClose app)])
+    , ("_Game", [ ("Toggle _Debug", pushAppEvent queue ToggleDebug)])
     , ("_Help", [ ("_About",  showAboutDialog)])]
 
 -- Later can include save unsaved work option
@@ -133,7 +134,8 @@ start args = do
                                ]
     on app #activate $ activateApp app queue args
 
-    let updateSettings s = s {initialWorld = Nothing}
+    -- don't load any world yet, and force debug to be usable
+    let updateSettings s = s {initialWorld = Nothing, canUseDebug = True}
 
     forkIO . Kathu.startWith updateSettings $ \(Kathu.RenderInfo _ renderer buffer settings) world -> do
         curTime <- SDL.ticks

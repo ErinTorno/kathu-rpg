@@ -13,13 +13,13 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 
 library
-  exposed-modules:  Kathu.Cursor
-                    Kathu.Game
+  exposed-modules:  Kathu.Game
                     Kathu.Language
                     -- Entity
                     Kathu.Entity.Action
                     Kathu.Entity.ActorState
                     Kathu.Entity.Components
+                    Kathu.Entity.Cursor
                     Kathu.Entity.Damage
                     Kathu.Entity.Item
                     Kathu.Entity.LifeTime
@@ -111,6 +111,7 @@ executable kathu
                     Kathu.App.Tools.Commands
                     Kathu.App.Tools.EventQueue
                     Kathu.App.Tools.ToolMode
+                    Kathu.App.Tools.ToolSystem
                     -- Editor
                     Kathu.Editor.Dialogs
                     Kathu.Editor.File

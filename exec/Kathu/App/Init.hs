@@ -33,6 +33,7 @@ import           Kathu.Graphics.Camera
 import           Kathu.Language
 import           Kathu.Scripting.Lua             (initScripting)
 import           Kathu.Scripting.Variables       (initVariables)
+import           Kathu.Util.Collection           (fromJustElseError)
 import           Kathu.Util.Types                (unID)
 import           Kathu.World.WorldSpace          (emptyWorldSpace)
 
@@ -94,15 +95,13 @@ system window renderer settings = do
 
     floorPropEtys <- mapM initFloorProperty . view floorProperties $ library
     global  $= FloorProperties (floorPropEtys Map.! "default") floorPropEtys
-
-    let getLib g t = (library^.g) Map.! t
     
-    playerEty <- newFromPrototype $ getLib prototypes "player"
+    playerEty <- newFromPrototype . fromJustElseError "No player entity config was loaded" $ lookupFromLibrary library prototypes "player"
     initLocalPlayer playerEty
 
     loadWorldSpace $ case initialWorld settings of
-        Just ws -> getLib worldSpaces ws
         Nothing -> emptyWorldSpace
+        Just ws -> fromJustElseError ("No worldspace config with ID " ++ show ws ++ " was loaded") $ lookupFromLibrary library worldSpaces ws
 
     initPhysics
     

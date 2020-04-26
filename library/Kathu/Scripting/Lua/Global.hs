@@ -13,8 +13,8 @@ import           Foreign.Lua
 import           Linear.V2                 (V2(..))
 import qualified System.Random             as R
 
-import           Kathu.Cursor
 import           Kathu.Entity.Components
+import           Kathu.Entity.Cursor
 import           Kathu.Entity.Logger
 import           Kathu.Entity.System
 import           Kathu.Entity.Time

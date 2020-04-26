@@ -9,6 +9,7 @@
 module Kathu.App.Data.Library
     ( Library(..), uiConfig, prototypes, items, languages, floorProperties, tiles, worldSpaces, kathuStore
     , emptyLibrary
+    , lookupFromLibrary
     , loadLibrary
     ) where
 
@@ -49,6 +50,9 @@ makeLenses ''Library
 
 emptyLibrary :: Library
 emptyLibrary = Library (error "Attempted to use UIConfig before it has been loaded") Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty emptyKathuStore
+
+lookupFromLibrary :: Library -> Lens' Library (IDMap a) -> Identifier -> Maybe a
+lookupFromLibrary library getMap key = Map.lookup key (library^.getMap)
 
 addEntities :: [EntityPrototype ImageID] -> Library -> Library
 addEntities ety = set prototypes (etyMap ety)

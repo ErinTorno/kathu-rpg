@@ -1,12 +1,13 @@
 identity: editor-tile-selector
 render:
 - atlas:  "tile-selector.png"
+  layer:  100
   bounds: [16, 16]
   strips:
-  - {id: active, frames: 2, row: 0, delay: 250}
+  - {id: active, frames: 3, row: 0, delay: 150}
 body-config:
   type:       dynamic
-  mass:       0
+  mass:       1000
   friction:   0
   elasticity: 0
   shapes:

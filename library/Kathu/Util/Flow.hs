@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Kathu.Util.Flow where
 
 import           Control.Monad.Fail  (MonadFail)
@@ -44,3 +46,8 @@ readElseFail :: (MonadFail m, Read a) => String -> String -> m a
 readElseFail failMsg = ensure . readMaybe
     where ensure Nothing  = Fail.fail failMsg
           ensure (Just x) = pure x
+
+ireplicateM_ :: Monad m => Int -> (Int -> m a) -> m ()
+ireplicateM_ nTimes action = go nTimes
+    where go 0  = pure ()
+          go !i = action i >> go (i - 1)

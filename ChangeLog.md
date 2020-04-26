@@ -15,6 +15,10 @@
 * Scripts can access the mouse's position in the world with getCursorPosition()
 * Additional toolmode changes and some render code cleanup
 
+### 0.1.11.2 -- Unreleased
+* The tile placer tool shows a grid for the tiles, and has a box highlighting the location where a tile would be placed
+* Entity instances in worldspaces can be given IDs
+
 ## 0.1.10.0 -- 2020-01-27
 * Lua scripts can now be loaded and ran from files
 * Scripts can be attached to entities and worldspaces

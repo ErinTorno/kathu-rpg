@@ -38,6 +38,9 @@ cameraShiftUp = 0.75
 edgeBleedScaling :: (Floating a, RealFrac a) => a
 edgeBleedScaling = 1.005
 
+aspectRatio :: (Floating a, RealFrac a) => V2 a -> a
+aspectRatio (V2 x y) = x / y
+
 getUnitsPerHeight :: (Integral i, Floating a, RealFrac a) => i -> a
 getUnitsPerHeight resY = minUnitsPerHeight + (maxUnitsPerHeight - minUnitsPerHeight) * pixMult
     where pixMult = fromIntegral (clampBetween pixelsForMinUnits pixelsForMaxUnits resY) / fromIntegral (pixelsForMaxUnits :: Int)

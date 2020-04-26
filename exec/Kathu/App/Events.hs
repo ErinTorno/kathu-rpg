@@ -16,10 +16,10 @@ import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Drawing
 import           Kathu.App.Graphics.ImageManager (nextPaletteManager, setPaletteManager)
 import           Kathu.App.System
-import           Kathu.App.Tools.ToolMode
-import           Kathu.Cursor
+import           Kathu.App.Tools.ToolSystem
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
+import           Kathu.Entity.Cursor
 import           Kathu.Entity.System
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
@@ -43,14 +43,17 @@ runEvents = do
         scale          = getScale (fromIntegral resY) unitsPerHeight zoomScale
         screenToWorld  = screenToWorldScale (fromIntegral <$> resolution settings) scale camX camY 
 
-    SDL.mapEvents (handleEvent controlSt scale screenToWorld)
+    SDL.mapEvents (handleEvent controlSt scale)
+    cursorMotion' <- get global
+    -- sets the cursor position to a world-adjusted coordinate from the current pixel it is at
+    global        $= cursorMotion' {cursorPosition = screenToWorld . fmap fromIntegral $ cursorScreenPosition cursorMotion'}
 
     updateControls
     updateDebugControls
     updateToolMode
 
-handleEvent :: ControlState -> Double -> (V2 Double -> V2 Double) -> SDL.Event -> SystemT' IO ()
-handleEvent controlSt scale screenToWorld event =
+handleEvent :: ControlState -> Double -> SDL.Event -> SystemT' IO ()
+handleEvent controlSt scale event =
     case SDL.eventPayload event of
         SDL.QuitEvent -> global $= ShouldQuit True
         -- marks key with its state
@@ -64,8 +67,8 @@ handleEvent controlSt scale screenToWorld event =
         -- we want to convert this from screen pixels to game world units
         SDL.MouseMotionEvent SDL.MouseMotionEventData{SDL.mouseMotionEventPos = SDL.P pos, SDL.mouseMotionEventRelMotion = relPos} -> do
             motionState <- get global
-            global      $= motionState { cursorPosition = screenToWorld . fmap fromIntegral $ pos
-                                       , cursorMovement = (/(scale * pixelsPerUnit)) . fromIntegral <$> relPos}
+            global      $= motionState { cursorScreenPosition = pos
+                                       , cursorMovement       = (/(scale * pixelsPerUnit)) . fromIntegral <$> relPos}
         -- sets mouse's scrolling amount
         SDL.MouseWheelEvent SDL.MouseWheelEventData{SDL.mouseWheelEventPos = V2 _ y, SDL.mouseWheelEventDirection = dir} -> do
             motionState <- get global
@@ -90,23 +93,6 @@ updateControls = do
                             >>= ukp (inputMoveSouth cs) moveSouth
                             >>= ukp (inputFocus cs) useFocus
     cmapM $ \(Local actions) -> Local <$> updateActions actions
-
-updateToolMode :: SystemT' IO ()
-updateToolMode = do
-    toolmode  <- get global
-    when (usesFreeCam toolmode) $ do
-        controlSt <- get global
-        cursorSt  <- get global
-
-        middleMouseSt <- getInputState controlSt (fromMouseButton SDL.ButtonMiddle)
-        when (isPressedOrHeld middleMouseSt) $
-            cmap $ \(_ :: Camera, Position pos) ->
-                Position $ pos - cursorMovement cursorSt
-
-        let scroll = cursorScrollWheel cursorSt
-        when (scroll /= 0) $
-            cmap $ \(Camera z) ->
-                Camera $ max 0 (z - 0.1 * scroll)
 
 ------------------
 -- Debug Events --

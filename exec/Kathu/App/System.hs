@@ -21,10 +21,10 @@ import           Kathu.App.Graphics.Image        (ImageID)
 import           Kathu.App.Graphics.ImageManager
 import           Kathu.App.Graphics.UI
 import           Kathu.App.Tools.ToolMode
-import           Kathu.Cursor
 import           Kathu.Entity.Action
 import           Kathu.Entity.ActorState
 import           Kathu.Entity.Components
+import           Kathu.Entity.Cursor
 import           Kathu.Entity.Item               (Inventory)
 import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Logger

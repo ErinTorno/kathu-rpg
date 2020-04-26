@@ -33,8 +33,8 @@ import           Foreign.Lua                       hiding (call, error, runWith)
 import qualified Foreign.Lua.Core                  as Lua
 import qualified Foreign.Lua.FunctionCalling       as Lua
 
-import           Kathu.Cursor
 import           Kathu.Entity.Components
+import           Kathu.Entity.Cursor
 import           Kathu.Entity.Logger
 import           Kathu.Entity.System
 import           Kathu.Entity.Time

@@ -28,6 +28,7 @@ data CollisionGroup
     | Hitbox
     | Attack
     | Intangible
+    | EditorInfo -- Used by external editor to keep track of places object boundaries, etc.
     deriving (Show, Eq, Enum)
 
 collisionGroupFromString :: Text -> Maybe CollisionGroup
@@ -59,6 +60,7 @@ collisionGroups = Vec.fromList
     , mkFilter Hitbox         [Attack]
     , mkFilter Attack         [Hitbox]
     , mkFilter Intangible     ([] :: [CollisionGroup])
+    , mkFilter EditorInfo     ([] :: [CollisionGroup])
     ]
     where mkFilter g = CollisionFilter (fromIntegral . fromEnum $ g) (maskList [fromEnum g]) . maskList . map fromEnum
 

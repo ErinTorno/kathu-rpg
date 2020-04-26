@@ -25,6 +25,13 @@ addPropertyRowText grid ref row name textLens = addPropertyRow grid ref row name
           onUpdateWidget textWidget a =
               Gtk.entrySetText textWidget (a^.textLens)
 
+addPropertyRowReadOnlyText :: Gtk.Grid -> IORef a -> Int32 -> Text -> (a -> Text) -> IO (EditableProperty a)
+addPropertyRowReadOnlyText grid ref row name getText = addPropertyRow grid ref row name #changed entry onEditWidget onUpdateWidget
+    where entry = new Gtk.Entry [#editable := False, #canFocus := False]
+          onEditWidget _ = pure
+          onUpdateWidget textWidget a =
+              Gtk.entrySetText textWidget (getText a)
+
 addPropertyRow :: Gtk.IsWidget w => Gtk.Grid -> IORef a -> Int32 -> Text -> SignalProxy w Gtk.EditableChangedSignalInfo -> IO w -> (w -> a -> IO a) -> (w -> a -> IO ()) -> IO (EditableProperty a)
 addPropertyRow grid ref row name signalProxy editWidget onEditWidgetChange updateWidget = do
     label   <- Gtk.labelNewWithMnemonic (Just name)
