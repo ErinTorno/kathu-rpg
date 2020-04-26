@@ -1,10 +1,9 @@
 module Kathu.Util.Flow where
 
-import Control.Monad.Fail (MonadFail)
-import Control.Monad.State
-import qualified Control.Monad.Fail as Fail
-import Data.Bool (bool)
-import Text.Read (readMaybe)
+import           Control.Monad.Fail  (MonadFail)
+import           Control.Monad.State
+import qualified Control.Monad.Fail  as Fail
+import           Text.Read           (readMaybe)
 
 -- Functor and similar
 
@@ -30,12 +29,6 @@ infixl 1 >>>=
 infixr 1 =<<<
 (=<<<) :: (Monad m, Monad n) => (a -> n b) -> m (n a) -> m (n b)
 (=<<<) f v = v >>= \v' -> pure (v' >>= f)
-
-whileM :: Monad m => m Bool -> m ()
-whileM b = b >>= bool (return ()) (whileM b)
-
-whileFstM :: Monad m => m (Bool, a) -> m a
-whileFstM f = f >>= \(b, c) -> bool (return c) (whileFstM f) b
 
 partitionM :: Monad m => (a -> m Bool) -> [a] -> m ([a], [a])
 partitionM _ []      = pure ([], [])

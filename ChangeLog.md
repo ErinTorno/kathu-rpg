@@ -9,6 +9,12 @@
 * Added misc new sprites and updated game icon
 * Minor bug fixes and code cleanup
 
+### 0.1.11.1 -- 2020-04-26
+* Overhauled control processing: now mouse buttons can be freely assigned as controls and mixed with keys
+* Mouse position and movement is kept as a global entity
+* Scripts can access the mouse's position in the world with getCursorPosition()
+* Additional toolmode changes and some render code cleanup
+
 ## 0.1.10.0 -- 2020-01-27
 * Lua scripts can now be loaded and ran from files
 * Scripts can be attached to entities and worldspaces

@@ -90,7 +90,7 @@ startWith updateSettings runner = do
 
 replicateRunGame :: Integral a => a -> SystemT' IO ()
 replicateRunGame n = replicateM_ (fromIntegral n) $ do
-    handleControls
+    runEvents
     runGame destroyEntity updateDelay
     stepPhysics (fromIntegral  updateDelay / 1000)
 
@@ -101,7 +101,6 @@ run renDelay renderer renBuf !prevPhysTime !prevRendTime = do
 
     -- physics steps as a constant rate as given by the update delay
     replicateRunGame n
-    shouldContinue <- runEvents
 
     renderStartTime <- SDL.ticks
     let renderDiffer = renderStartTime - prevRendTime
@@ -111,8 +110,9 @@ run renDelay renderer renBuf !prevPhysTime !prevRendTime = do
     -- render steps in variable time, so we must reflect that
     runRender renderer renBuf renderDiffer
     
+    ShouldQuit isQuitting <- get global
     -- Physics steps back to ensure next update is on time; render goes whenever it can
-    if not shouldContinue
+    if isQuitting
     then pure ()
     else run renDelay renderer renBuf (startTime - remainder) renderStartTime
 
@@ -128,7 +128,7 @@ runForEventQueue queue commandState renDelay renderer renBuf !prevPhysTime !prev
     let (n, remainder) = (startTime - prevPhysTime) `divMod` updateDelay
 
     when shouldRunGame $ runWith world (replicateRunGame n)
-    shouldContinue <- runWith world runEvents
+    runWith world runEvents
 
     renderStartTime <- SDL.ticks
     let renderDiffer = renderStartTime - prevRendTime
@@ -140,7 +140,8 @@ runForEventQueue queue commandState renDelay renderer renBuf !prevPhysTime !prev
     
     putEntityWorld world queue
     
+    ShouldQuit isQuitting <- runWith world $ get global
     -- we ignore close events; only the editor should be closed, and when it closes this should close too
-    unless shouldContinue $
+    when isQuitting $
         pushEditorEvent queue TryToCloseEditor
     runForEventQueue queue commandState renDelay renderer renBuf (startTime - remainder) renderStartTime

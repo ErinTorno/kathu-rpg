@@ -1,6 +1,6 @@
 cabal-version:       2.4
 name:                kathu
-version:             0.1.11.0
+version:             0.1.11.1
 -- synopsis:
 -- description:
 license:             GPL-3.0-only
@@ -13,7 +13,8 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 
 library
-  exposed-modules:  Kathu.Game
+  exposed-modules:  Kathu.Cursor
+                    Kathu.Game
                     Kathu.Language
                     -- Entity
                     Kathu.Entity.Action
@@ -94,6 +95,7 @@ executable kathu
                     Kathu.App.System
                     Kathu.App.World
                     -- Data
+                    Kathu.App.Data.Controls
                     Kathu.App.Data.KathuStore
                     Kathu.App.Data.Library
                     Kathu.App.Data.Settings

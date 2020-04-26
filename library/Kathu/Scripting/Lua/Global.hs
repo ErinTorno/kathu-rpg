@@ -10,8 +10,10 @@ import           Control.Monad             (forM_, when)
 import           Data.Maybe                (fromMaybe, isJust)
 import           Data.Text                 (Text)
 import           Foreign.Lua
+import           Linear.V2                 (V2(..))
 import qualified System.Random             as R
 
+import           Kathu.Cursor
 import           Kathu.Entity.Components
 import           Kathu.Entity.Logger
 import           Kathu.Entity.System
@@ -24,41 +26,46 @@ import           Kathu.Util.Apecs
 import           Kathu.Util.Collection     (fromJustElseError)
 import           Kathu.Util.Types
 
-registerGlobalFunctions :: forall w g. (ReadWriteEach w IO [ActiveScript, Camera, Debug, Local, Logger, LogicTime, Random, RenderTime, RunningScriptEntity, ScriptEventBuffer, Variables]) => w -> ExternalFunctions w g -> Lua ()
+registerGlobalFunctions :: forall w g. (ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Debug, Local, Logger, LogicTime, Random, RenderTime, RunningScriptEntity, ScriptEventBuffer, Variables]) => w -> ExternalFunctions w g -> Lua ()
 registerGlobalFunctions world extFuns = do
-    registerHaskellFunction "log"             (logLua world)
-    registerHaskellFunction "getPlayerEntity" (getPlayerEntity world)
-    registerHaskellFunction "getCameraEntity" (getCameraEntity world)
-    registerHaskellFunction "setCameraEntity" (setCameraEntity world)
-    registerHaskellFunction "getScriptEntity" (getScriptEntity world)
-    registerHaskellFunction "isDebug"         (isDebug world)
-    registerHaskellFunction "getRandomInt"    (getRandomInt world)
-    registerHaskellFunction "getRandomDouble" (getRandomDouble world)
-    registerHaskellFunction "getLogicTime"    (getLogicTime world)
-    registerHaskellFunction "getRenderTime"   (getRenderTime world)
+    registerHaskellFunction "log"               $ logLua world
+    registerHaskellFunction "getCursorPosition" $ getCursorPosition world
+    registerHaskellFunction "getPlayerEntity"   $ getPlayerEntity world
+    registerHaskellFunction "getCameraEntity"   $ getCameraEntity world
+    registerHaskellFunction "setCameraEntity"   $ setCameraEntity world
+    registerHaskellFunction "getScriptEntity"   $ getScriptEntity world
+    registerHaskellFunction "isDebug"           $ isDebug world
+    registerHaskellFunction "getRandomInt"      $ getRandomInt world
+    registerHaskellFunction "getRandomDouble"   $ getRandomDouble world
+    registerHaskellFunction "getLogicTime"      $ getLogicTime world
+    registerHaskellFunction "getRenderTime"     $ getRenderTime world
 
-    registerHaskellFunction "getWorldVar"     (getVariable getWorldVariable world)
-    registerHaskellFunction "getGlobalVar"    (getVariable getGlobalVariable world)
+    registerHaskellFunction "getWorldVar"       $ getVariable getWorldVariable world
+    registerHaskellFunction "getGlobalVar"      $ getVariable getGlobalVariable world
 
-    registerHaskellFunction "setWorldBool"    (setWorldBool world)
-    registerHaskellFunction "setWorldDouble"  (setWorldDouble world)
-    registerHaskellFunction "setWorldInt"     (setWorldInt world)
-    registerHaskellFunction "setWorldText"    (setWorldText world)
-    registerHaskellFunction "setGlobalBool"   (setGlobalBool world)
-    registerHaskellFunction "setGlobalDouble" (setGlobalDouble world)
-    registerHaskellFunction "setGlobalInt"    (setGlobalInt world)
-    registerHaskellFunction "setGlobalText"   (setGlobalText world)
+    registerHaskellFunction "setWorldBool"      $ setWorldBool world
+    registerHaskellFunction "setWorldDouble"    $ setWorldDouble world
+    registerHaskellFunction "setWorldInt"       $ setWorldInt world
+    registerHaskellFunction "setWorldText"      $ setWorldText world
+    registerHaskellFunction "setGlobalBool"     $ setGlobalBool world
+    registerHaskellFunction "setGlobalDouble"   $ setGlobalDouble world
+    registerHaskellFunction "setGlobalInt"      $ setGlobalInt world
+    registerHaskellFunction "setGlobalText"     $ setGlobalText world
 
-    registerHaskellFunction "setPalette"      (setPaletteLua extFuns world)
-    registerHaskellFunction "newEntity"       (newFromPrototypeLua extFuns world)
-    registerHaskellFunction "destroyEntity"   (destroyEntityLua extFuns world)
+    registerHaskellFunction "setPalette"        $ setPaletteLua extFuns world
+    registerHaskellFunction "newEntity"         $ newFromPrototypeLua extFuns world
+    registerHaskellFunction "destroyEntity"     $ destroyEntityLua extFuns world
 
-    registerHaskellFunction "registerGlobalVarListener" (registerListener addGlobalListener world)
-    registerHaskellFunction "registerWorldVarListener"  (registerListener addWorldListener world)
+    registerHaskellFunction "registerGlobalVarListener" $ registerListener addGlobalListener world
+    registerHaskellFunction "registerWorldVarListener"  $ registerListener addWorldListener world
 
 
 logLua :: forall w. (Get w IO Logger, Has w IO Logger) => w -> Text -> Lua ()
 logLua !world t = liftIO . Apecs.runWith world $ logLine Info t
+
+getCursorPosition :: forall w. (ReadWrite w IO CursorMotionState) => w -> Lua (V2 Double)
+getCursorPosition !world = liftIO . Apecs.runWith world $
+    cursorPosition <$> get global
 
 setPaletteLua :: ExternalFunctions w g -> w -> Text -> Lua Bool
 setPaletteLua extFuns !world !idt = liftIO . Apecs.runWith world $ runW

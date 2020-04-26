@@ -7,11 +7,12 @@ import           Apecs                           hiding (($=))
 import           Apecs.Physics                   hiding (($=))
 import           Control.Lens                    hiding (Identity)
 import           Control.Monad                   (foldM, when)
+import           Data.Maybe                      (fromMaybe)
 import           Data.Vector                     (Vector)
 import qualified Data.Vector                     as Vec
 import qualified Data.Vector.Mutable             as MVec
 import           Data.Word
-import           Linear.V2                       (V2(..), _y)
+import           Linear.V2                       (V2(..))
 import           SDL                             (($=))
 import qualified SDL
 
@@ -31,37 +32,16 @@ import           Kathu.Graphics.Drawable
 import           Kathu.World.Field
 import           Kathu.World.Tile                hiding (Vector, MVector)
 import           Kathu.World.WorldSpace
-import           Kathu.Util.Collection           (mapMVec)
-import           Kathu.Util.Numeric              (clampBetween)
-
--- the height of the screen in units; depending on screen size, more or less is included
-
-minUnitsPerHeight :: (Floating a, RealFrac a) => a
-minUnitsPerHeight = 8.0
-
-maxUnitsPerHeight :: (Floating a, RealFrac a) => a
-maxUnitsPerHeight = 14.0
-
-pixelsForMinUnits :: Integral a => a
-pixelsForMinUnits = 360
-
-pixelsForMaxUnits :: Integral a => a
-pixelsForMaxUnits = 1080
+import           Kathu.Util.Apecs
+import           Kathu.Util.Collection           (forMVec)
 
 -- if sprite position is more than this many units from left or right, or from bottom, we don't draw
 -- we don't draw anything above the top of the screen, however, since sprites draw out and upwards
 renderBorderUnits :: (Floating a, RealFrac a) => a
 renderBorderUnits = 3.0
 
-pixelsPerUnit :: (Floating a, RealFrac a) => a
-pixelsPerUnit = 16.0
-
 aspectRatio :: (Floating a, RealFrac a) => V2 a -> a
 aspectRatio (V2 x y) = x / y
-
--- sprite dimensions are multiplied by this to prevent tiny streaks between adjacent sprites
-edgeBleedScaling :: (Floating a, RealFrac a) => a
-edgeBleedScaling = 1.005
 
 logicCoordToRender :: (Floating a, RealFrac a) => a -> V2 a -> V2 a -> V2 a
 logicCoordToRender scale (V2 topX topY) (V2 tarX tarY) = V2 ((tarX - topX) * scale) ((tarY - topY) * scale)
@@ -92,7 +72,7 @@ updateAnimations dT = do
 
     -- since tile graphics information isn't stored as entities, we instead just grab all tiles and update their animations
     Tiles tileVector <- get global :: SystemT' IO (Tiles ImageID)
-    lift . mapMVec tileVector $ over tileRender (\(Render frames) -> Render (updateFramesIfAnim <$> frames))
+    lift . forMVec tileVector $ over tileRender (\(Render frames) -> Render (updateFramesIfAnim <$> frames))
 
 ----------------------
 -- main render loop --
@@ -112,22 +92,20 @@ runRender !renderer !renderBuffer !dT = do
         getTile = lift . MVec.read tileVector . fromIntegral .  unTileID . view tile
 
     world :: WorldSpace ImageID <- get global
-    (camPos@(V2 camX camY), zoomScale) <- cfold (\_ (Position pos, Camera z) -> (pos, z)) (V2 0 0, 1.0)
+    (Position (V2 camX camY), Camera zoomScale) <- fromMaybe (Position (V2 0 0), Camera 1) <$> getUnique
 
     -- clears background
     SDL.rendererDrawColor renderer $= (unColor . backgroundColor $ imageManager)
     SDL.clear renderer
 
-    let scale       = (fromIntegral . view _y . resolution $ settings) / (zoomScale * unitsPerHeight * pixelsPerUnit)
-        logicScale  = scale * pixelsPerUnit -- we mult by this again to convert the 1-per-tile view of the entity-world into a N-pixels-per-tile view
-        V2 _ resY   = resolution settings
-        resToCenter = (*0.5) . fromIntegral <$> resolution settings
-        unitsPerHeight = minUnitsPerHeight + (maxUnitsPerHeight - minUnitsPerHeight) * pixMult
-            where pixMult = fromIntegral (clampBetween pixelsForMinUnits pixelsForMaxUnits resY) / fromIntegral (pixelsForMaxUnits :: Int)
-        unitsPerWidth = unitsPerHeight * aspectRatio resToCenter
-        camShiftUp = 0.75
+    let V2 _ resY      = resolution settings
+        res            = fromIntegral <$> resolution settings
+        unitsPerHeight = getUnitsPerHeight resY
+        unitsPerWidth  = unitsPerHeight * aspectRatio res
 
-        shiftedCamera@(V2 camX' camY')  = V2 camX (camY - camShiftUp)
+        scale          = getScale (fromIntegral resY) unitsPerHeight zoomScale
+        worldToScreen  = worldToScreenScale res scale camX camY 
+        V2 camX' camY' = V2 camX (camY - cameraShiftUp)
         isOffScreen (V2 !x !y) = y < minY || y > maxY || x < minX || x > maxX
         -- coordinates must be in these ranges for us to draw them
         -- if a sprite is taller or wider than units * 16px, then it can potentially be on screen but not drawn
@@ -142,7 +120,7 @@ runRender !renderer !renderBuffer !dT = do
         addToBuffer !idx render !pos
             | isOffScreen pos = pure idx
             | otherwise       = lift $ do
-                let renderPos = (*logicScale) <$> (pos - shiftedCamera)
+                let renderPos = worldToScreen pos
                 Vec.ifoldM'_ (\_ i spr -> writeToBuffer (idx + i) (renderPos, spr) renderBuffer) () render
                 pure $ idx + Vec.length render
 
@@ -162,7 +140,7 @@ runRender !renderer !renderBuffer !dT = do
         gatherEntityRender i (Render render, Position pos) = addToBuffer i render pos
 
         gatherTileRender :: Int -> SystemT' IO Int
-        gatherTileRender i = foldM foldFnField i . fieldsSurrounding camPos $ world 
+        gatherTileRender i = foldM foldFnField i . fieldsSurrounding camX camY $ world 
 
         -- this collects all renders into our buffer with their positions
         gatherRender :: SystemT' IO Int
@@ -172,7 +150,7 @@ runRender !renderer !renderBuffer !dT = do
         renderEvery !i !len
             | i == len    = pure ()
             | otherwise   = do
-                let drawEach !pos !ren = blitRenderSprite renderer imageManager (mkRenderRect edgeBleedScaling resToCenter scale pos) ren
+                let drawEach !pos !ren = blitRenderSprite renderer imageManager (mkRenderRect edgeBleedScaling scale pos) ren
                 (pos, !spr) <- readFromBuffer i renderBuffer
                 drawEach pos spr
                 renderEvery (i + 1) len
@@ -185,6 +163,6 @@ runRender !renderer !renderBuffer !dT = do
     renderUI renderer scale playerAS
 
     when isDebug $
-        renderDebug renderer (\pos -> (+resToCenter) . fmap (*logicScale) . (+(pos - shiftedCamera)))
+        renderDebug renderer worldToScreen
 
     SDL.present renderer

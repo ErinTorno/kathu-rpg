@@ -13,6 +13,7 @@ import           Apecs.Physics
 import           Control.Monad                   (void)
 import           Data.Semigroup                  (Semigroup)
 
+import           Kathu.App.Data.Controls
 import           Kathu.App.Data.Library
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Font
@@ -20,6 +21,7 @@ import           Kathu.App.Graphics.Image        (ImageID)
 import           Kathu.App.Graphics.ImageManager
 import           Kathu.App.Graphics.UI
 import           Kathu.App.Tools.ToolMode
+import           Kathu.Cursor
 import           Kathu.Entity.Action
 import           Kathu.Entity.ActorState
 import           Kathu.Entity.Components
@@ -61,6 +63,11 @@ type AllComponents =
     
 -- New Globals
 
+newtype ShouldQuit = ShouldQuit Bool
+instance Semigroup ShouldQuit where (<>) = mappend
+instance Monoid ShouldQuit where mempty = ShouldQuit False
+instance Component ShouldQuit where type Storage ShouldQuit = Global ShouldQuit
+
 type Tiles' = Tiles ImageID
 instance Semigroup Tiles' where (<>) = mappend
 instance Monoid Tiles' where mempty  = error "Attempted to use Tiles before it has been loaded"
@@ -69,6 +76,10 @@ instance Component Tiles' where type Storage Tiles' = Global Tiles'
 instance Semigroup Settings where (<>) = mappend
 instance Monoid Settings where mempty = defaultSettings
 instance Component Settings where type Storage Settings = Global Settings
+
+instance Semigroup ControlState where (<>) = mappend
+instance Monoid ControlState where mempty = error "Attempted to use ControlState before it has been loaded"
+instance Component ControlState where type Storage ControlState = Global ControlState
 
 instance Semigroup ImageManager where (<>) = mappend
 instance Monoid ImageManager where mempty = defaultImageManager
@@ -112,8 +123,8 @@ instance Component WireReceivers where type Storage WireReceivers = Global WireR
 makeWorld "EntityWorld"
     $ [''Physics]
    ++ [''Existance, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
-   ++ [''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Counter, ''Logger, ''ToolMode]
-   ++ [''Settings, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
+   ++ [''ShouldQuit, ''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Counter, ''Logger, ''ToolMode]
+   ++ [''Settings, ''CursorMotionState, ''ControlState, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a

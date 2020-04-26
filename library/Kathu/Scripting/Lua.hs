@@ -33,6 +33,7 @@ import           Foreign.Lua                       hiding (call, error, runWith)
 import qualified Foreign.Lua.Core                  as Lua
 import qualified Foreign.Lua.FunctionCalling       as Lua
 
+import           Kathu.Cursor
 import           Kathu.Entity.Components
 import           Kathu.Entity.Logger
 import           Kathu.Entity.System
@@ -112,7 +113,7 @@ releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched signals singS
             Lua.close lstate
             putMVar stmvar $ error "Attempted to use a release ActiveScript"
 
-loadScript :: forall w g. (Has w IO Physics, Members w IO (Render g), ReadWriteEach w IO [ActiveScript, Camera, Debug, Force, Identity, Local, Logger, LogicTime, Mass, MovingSpeed, Position, Random, Render g, RenderTime, RunningScriptEntity, ScriptBank, ScriptEventBuffer, Tags, Variables, Velocity, WireReceivers])
+loadScript :: forall w g. (Has w IO Physics, Members w IO (Render g), ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Debug, Force, Identity, Local, Logger, LogicTime, Mass, MovingSpeed, Position, Random, Render g, RenderTime, RunningScriptEntity, ScriptBank, ScriptEventBuffer, Tags, Variables, Velocity, WireReceivers])
            => (ActiveScript -> ActiveScript) -> ExternalFunctions w g -> Entity -> Script -> SystemT w IO ActiveScript
 loadScript mapper extFuns ety script
     | isSingleton script = runIfOnInit =<< fromBank

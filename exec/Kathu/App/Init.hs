@@ -15,6 +15,7 @@ import qualified SDL
 import qualified SDL.Video                       as SDLV
 import qualified System.Random                   as R
 
+import           Kathu.App.Data.Controls
 import           Kathu.App.Data.Library
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Font         (initFontCache)
@@ -75,15 +76,17 @@ system window renderer settings = do
     manager    <- lift . mkImageManager renderer $ surfaces
     tilesV     <- lift . makeTiles . view tiles $ library
     variables  <- initVariables
+    controlST  <- mkControlState
     initScripting
-    global  $= variables
-    global  $= library
-    global  $= manager
-    global  $= Random (R.mkStdGen seed)
-    global  $= tilesV
-    global  $= settings
-    global  $= library^.uiConfig
-    global  $= (Gravity $ V2 0 0) -- no gravity, as the game is top-down
+    global $= variables
+    global $= library
+    global $= manager
+    global $= Random (R.mkStdGen seed)
+    global $= tilesV
+    global $= settings
+    global $= controlST
+    global $= library^.uiConfig
+    global $= (Gravity $ V2 0 0) -- no gravity, as the game is top-down
 
     initLanguage window renderer settings library
 

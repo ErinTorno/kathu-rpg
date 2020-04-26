@@ -82,10 +82,10 @@ emptyWorldSpace :: WorldSpace g
 emptyWorldSpace = WorldSpace "" "the void..." "" Map.empty (V2 0 0) False Map.empty Nothing Vec.empty Vec.empty emptyFieldSet Map.empty
 
 -- right now we only consider horizontal fields; ones with different z depths are ignored
-fieldsSurrounding :: RealFrac a => V2 a -> WorldSpace g -> [(V2 Int, Field)]
-fieldsSurrounding v ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
+fieldsSurrounding :: RealFrac a => a -> a -> WorldSpace g -> [(V2 Int, Field)]
+fieldsSurrounding wx wy ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
     where fields    = unFieldSet $ ws^.worldFields
-          (# ox, oy #) = fieldContainingCoordV2 v
+          (# ox, oy #) = fieldContainingCoord wx wy
           readFields !acc !x !y | y > oy + 1 = acc
                                 | x > ox + 1 = readFields acc 0 (y + 1)
                                 | otherwise  = readFields (((curV,) <$> Map.lookup curV fields):acc) (x + 1) y

@@ -18,7 +18,8 @@ import           Kathu.Editor.GtkUtil
 import           Kathu.Editor.Resources
 import           Kathu.Editor.Types
 import           Kathu.Util.Types
-import           Kathu.World.WorldSpace     (worldID, worldName)
+import           Kathu.World.WorldSpace
+import           Kathu.World.Tile           (emptyTile)
 
 mkWorldSpaceToolbar :: EditorState -> IO Gtk.Toolbar
 mkWorldSpaceToolbar EditorState{eventQueue = queue, resources = res} = do
@@ -26,8 +27,8 @@ mkWorldSpaceToolbar EditorState{eventQueue = queue, resources = res} = do
 
     let btnConfigs :: Vector (Text, ToolMode, Gtk.Image, Gtk.Image)
         btnConfigs = Vec.fromList
-            [ ("Play Game",  NoTool,     iconToolPlayGame res,   iconToolPlayGameActive res)
-            , ("Draw Tiles", TilePlacer, iconToolTilePlacer res, iconToolTilePlacerActive res)
+            [ ("Play Game",  NoTool, iconToolPlayGame res, iconToolPlayGameActive res)
+            , ("Draw Tiles", TilePlacer (mkTilePlacerState emptyTile), iconToolTilePlacer res, iconToolTilePlacerActive res)
             ]
         mkButton idx (lbl, mode, icon, activeIcon) = do
             img <- Gtk.imageNewFromPixbuf =<< Gtk.imageGetPixbuf (if idx == 0 then activeIcon else icon)

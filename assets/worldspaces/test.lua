@@ -9,6 +9,8 @@ function onUpdate(ety)
     state = getGlobalVar("orb-toggle-state") or false
   
     setGlobalBool("orb-toggle-state", not state)
+    -- cursor = getCursorPosition()
+    -- log("Cursor is at (" .. cursor[1] .. ", " .. cursor[2] .. ")")
   end
 end
 

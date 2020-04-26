@@ -1,15 +1,15 @@
 mod-dir: /mods
 controls:
-  key-move-south: 22
-  key-debug-zoom-in: 86
-  key-debug-print-physics: 64
-  key-move-north: 26
-  key-debug-next-palette: 62
-  key-toggle-debug: 60
-  key-debug-zoom-out: 87
-  key-move-east: 7
-  key-move-west: 4
-  key-focus: 225
+  input-focus: 225
+  input-debug-zoom-in: 86
+  input-toggle-debug: 60
+  input-debug-print-physics: 64
+  input-debug-zoom-out: 87
+  input-move-east: 7
+  input-move-west: 4
+  input-move-south: 22
+  input-debug-next-palette: 62
+  input-move-north: 26
 modded-save-dir: /modded-saves
 can-use-debug: true
 resolution:

@@ -110,6 +110,6 @@ drawBar renderer scale im dyn (DisplayBar startingPos ppu capBegin capEnd capw p
           fixPartial p = p
           emptyUnits = unitCount - fullUnits - 1
           primaryImg = case partialRem of {1 -> pi1; 2 -> pi2; 3 -> pi3; 4 -> pi4; _ -> pi4}
-          drawAt img w x = blitRenderSprite renderer im (mkRenderRectNoCenter barIconBleed (V2 0 0) scale (V2 x sy)) img >> pure (x + scale * w)
+          drawAt img w x = blitRenderSprite renderer im (mkRenderRectNoCenter barIconBleed scale (V2 x sy)) img >> pure (x + scale * w)
           drawN 0 _ _ x   = pure x
           drawN i img w x = drawAt img w x >>= drawN (i - 1) img w

@@ -3,29 +3,73 @@
 
 module Kathu.App.Graphics.Drawing where
 
-import Control.Monad.IO.Class (MonadIO)
-import Foreign.C.Types (CInt)
-import Linear.V2 (V2(..))
+import           Control.Monad.IO.Class          (MonadIO)
+import           Foreign.C.Types                 (CInt)
+import           Linear.V2                       (V2(..))
 import qualified SDL
 
-import Kathu.App.Graphics.Image (ImageID)
-import Kathu.App.Graphics.ImageManager
-import qualified Kathu.App.SDLCommon as SDLC
-import Kathu.Graphics.Drawable
+import           Kathu.App.Graphics.Image        (ImageID)
+import           Kathu.App.Graphics.ImageManager
+import qualified Kathu.App.SDLCommon             as SDLC
+import           Kathu.Graphics.Drawable
+import           Kathu.Util.Numeric              (clampBetween)
+
+-- the height of the screen in units; depending on screen size, more or less is included
+
+minUnitsPerHeight :: (Floating a, RealFrac a) => a
+minUnitsPerHeight = 8.0
+
+maxUnitsPerHeight :: (Floating a, RealFrac a) => a
+maxUnitsPerHeight = 14.0
+
+pixelsForMinUnits :: Integral a => a
+pixelsForMinUnits = 360
+
+pixelsForMaxUnits :: Integral a => a
+pixelsForMaxUnits = 1080
+
+pixelsPerUnit :: (Floating a, RealFrac a) => a
+pixelsPerUnit = 16.0
+
+cameraShiftUp :: (Floating a, RealFrac a) => a
+cameraShiftUp = 0.75
+
+-- sprite dimensions are multiplied by this to prevent tiny streaks between adjacent sprites
+edgeBleedScaling :: (Floating a, RealFrac a) => a
+edgeBleedScaling = 1.005
+
+getUnitsPerHeight :: (Integral i, Floating a, RealFrac a) => i -> a
+getUnitsPerHeight resY = minUnitsPerHeight + (maxUnitsPerHeight - minUnitsPerHeight) * pixMult
+    where pixMult = fromIntegral (clampBetween pixelsForMinUnits pixelsForMaxUnits resY) / fromIntegral (pixelsForMaxUnits :: Int)
+
+getScale :: (Floating a, RealFrac a) => a -> a -> a -> a
+getScale screenY unitsPerH zoomScale = screenY / (zoomScale * unitsPerH * pixelsPerUnit)
+
+worldToScreenScale :: (Floating a, RealFrac a) => V2 a -> a -> a -> a -> (V2 a -> V2 a)
+worldToScreenScale screenDim scale camX camY = \pos -> halfScreenDim + ((*logicScale) <$> (pos - shiftedCamera))
+    where -- we mult by this again to convert the 1-per-tile view of the entity-world into a N-pixels-per-tile view
+          logicScale    = scale * pixelsPerUnit
+          shiftedCamera = V2 camX (camY - cameraShiftUp)
+          halfScreenDim = (*0.5) <$> screenDim
+
+screenToWorldScale :: (Floating a, RealFrac a) => V2 a -> a -> a -> a -> (V2 a -> V2 a)
+screenToWorldScale screenDim scale camX camY = \pos -> ((/logicScale) <$> (pos - halfScreenDim)) + shiftedCamera
+    where logicScale    = scale * pixelsPerUnit
+          shiftedCamera = V2 camX (camY - cameraShiftUp)
+          halfScreenDim = (*0.5) <$> screenDim
 
 getImageID :: RenderSprite ImageID -> ImageID
 getImageID (RSStatic (StaticSprite !img _ _)) = img
 getImageID (RSAnimated !anim) = animAtlas . animation $ anim
 
-mkRenderRect :: (Floating a, RealFrac a) => a -> V2 a -> a -> V2 a -> SDL.Rectangle CInt -> SDL.Rectangle CInt
-mkRenderRect !bleed (V2 !shiftX !shiftY) !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = SDLC.mkRectWith round x' y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
-    where x' = x - scale * 0.5 * fromIntegral w + shiftX
-          y' = y - scale * fromIntegral h + shiftY
+mkRenderRect :: (Floating a, RealFrac a) => a -> a -> V2 a -> SDL.Rectangle CInt -> SDL.Rectangle CInt
+mkRenderRect !bleed !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = SDLC.mkRectWith round x' y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
+    where x' = x - scale * 0.5 * fromIntegral w
+          y' = y - scale * fromIntegral h
 
-mkRenderRectNoCenter :: (Floating a, RealFrac a) => a -> V2 a -> a -> V2 a -> SDL.Rectangle CInt -> SDL.Rectangle CInt
-mkRenderRectNoCenter !bleed (V2 !shiftX !shiftY) !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = SDLC.mkRectWith round x' y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
-    where x' = x - scale * shiftX
-          y' = y - scale * fromIntegral h + shiftY
+mkRenderRectNoCenter :: (Floating a, RealFrac a) => a -> a -> V2 a -> SDL.Rectangle CInt -> SDL.Rectangle CInt
+mkRenderRectNoCenter !bleed !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = SDLC.mkRectWith round x y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
+    where y' = y - scale * fromIntegral h
 
 blitRenderSprite :: MonadIO m => SDL.Renderer -> ImageManager -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite ImageID -> m ()
 blitRenderSprite !renderer !im !mkRect !ren = blit ren

@@ -2,13 +2,13 @@
 
 module Kathu.Util.Collection where
 
-import           Control.Monad.Primitive (PrimMonad, PrimState)
-import           Data.Char               (toLower, toUpper)
-import           Data.Map                (Map)
-import qualified Data.Map                as Map
-import           Data.Vector.Mutable     (MVector)
-import qualified Data.Vector.Mutable     as MVec
-import           Numeric                 (showHex)
+import           Control.Monad.Primitive     (PrimMonad, PrimState)
+import           Data.Char                   (toLower, toUpper)
+import           Data.Map                    (Map)
+import qualified Data.Map                    as Map
+import           Data.Vector.Generic.Mutable (MVector)
+import qualified Data.Vector.Generic.Mutable as MVec
+import           Numeric                     (showHex)
 
 -- Maybe functions
 
@@ -41,18 +41,18 @@ findByElem cond = Map.foldlWithKey' isNext Nothing
 
 -- Vector functions
 
-iterMVec :: PrimMonad m => MVector (PrimState m) a -> (a -> m b) -> m ()
+iterMVec :: (PrimMonad m, MVector v a) => v (PrimState m) a -> (a -> m b) -> m ()
 iterMVec !vec !f = go 0
     where go !i | i == MVec.length vec = pure ()
                 | otherwise            = MVec.unsafeRead vec i >>= f >> go (i + 1)
 
-mapMVec :: PrimMonad m => MVector (PrimState m) a -> (a -> a) -> m ()
-mapMVec !vec !f = go 0
+forMVec :: (PrimMonad m, MVector v a) => v (PrimState m) a -> (a -> a) -> m ()
+forMVec !vec !f = go 0
     where go !i | i == MVec.length vec = pure ()
                 | otherwise            = MVec.unsafeModify vec f i >> go (i + 1)
 
-mapMMVec :: PrimMonad m => MVector (PrimState m) a -> (a -> m a) -> m ()
-mapMMVec !vec !f = go 0
+forMMVec :: (PrimMonad m, MVector v a) => v (PrimState m) a -> (a -> m a) -> m ()
+forMMVec !vec !f = go 0
     where go !i | i == MVec.length vec = pure ()
                 | otherwise            = MVec.unsafeRead vec i >>= f >>= MVec.unsafeWrite vec i >> go (i + 1)
 

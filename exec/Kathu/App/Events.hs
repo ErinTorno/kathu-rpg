@@ -1,89 +1,144 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Kathu.App.Events where
+module Kathu.App.Events (runEvents) where
 
 import           Apecs                           hiding (set)
 import           Apecs.Physics
 import           Control.Lens                    hiding (Identity)
 import           Control.Monad                   (void, when)
+import           Data.Maybe                      (fromMaybe)
 import qualified Data.Text.IO                    as T
 import qualified SDL
 
+import           Kathu.App.Data.Controls
 import           Kathu.App.Data.Settings
+import           Kathu.App.Graphics.Drawing
 import           Kathu.App.Graphics.ImageManager (nextPaletteManager, setPaletteManager)
 import           Kathu.App.System
 import           Kathu.App.Tools.ToolMode
+import           Kathu.Cursor
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.System
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
-import           Kathu.Util.Flow                 (whileFstM)
+import           Kathu.Util.Apecs
 import           Kathu.Util.Timing
 import           Kathu.Util.Types                (unID)
 
-handleControls :: System' ()
-handleControls = do
-    (LogicTime time) <- get global
-    cs  <- controls <$> get global
-    ikp <- SDL.getKeyboardState
+runEvents :: System' ()
+runEvents = do
+    controlSt        <- get global
+    nextInputStateFrame controlSt
 
-    -- don't updating timestamp if its just the same state again
-    let updateTS nb ts@(TimeStamped b _) = if b /= nb then TimeStamped nb time else ts
-        updateKeys (Local actions) = Local (mkNewActions actions)
-            where ukp key getter = over getter (updateTS $ ikp key)
-                  mkNewActions = ukp (keyMoveWest cs) moveWest
-                               . ukp (keyMoveEast cs) moveEast
-                               . ukp (keyMoveNorth cs) moveNorth
-                               . ukp (keyMoveSouth cs) moveSouth
-                               . ukp (keyFocus cs) useFocus
-    cmap updateKeys
+    -- set motion to zero now
+    cursorMotion <- get global
+    global       $= cursorMotion {cursorMovement = V2 0 0, cursorScrollWheel = 0}
 
-runEvents :: SystemT' IO Bool
-runEvents = whileFstM (SDL.pollEvent >>= handleEvent)
+    settings  <- get global
+    (Position (V2 camX camY), Camera zoomScale) <- fromMaybe (Position (V2 0 0), Camera 1) <$> getUnique
 
-handleEvent :: Maybe SDL.Event -> SystemT' IO (Bool, Bool)
-handleEvent Nothing = pure (False, True) -- stop running, with end result of True
-handleEvent (Just ev) = case SDL.eventPayload ev of
-    SDL.QuitEvent ->
-        pure (False, False)
-    -- key is pressed, but not repeating
-    SDL.KeyboardEvent (SDL.KeyboardEventData _ SDL.Pressed False keysym) -> do
-        settings      <- get global
+    let V2 _ resY      = resolution settings
+        unitsPerHeight = getUnitsPerHeight resY
+        scale          = getScale (fromIntegral resY) unitsPerHeight zoomScale
+        screenToWorld  = screenToWorldScale (fromIntegral <$> resolution settings) scale camX camY 
+
+    SDL.mapEvents (handleEvent controlSt scale screenToWorld)
+
+    updateControls
+    updateDebugControls
+    updateToolMode
+
+handleEvent :: ControlState -> Double -> (V2 Double -> V2 Double) -> SDL.Event -> SystemT' IO ()
+handleEvent controlSt scale screenToWorld event =
+    case SDL.eventPayload event of
+        SDL.QuitEvent -> global $= ShouldQuit True
+        -- marks key with its state
+        SDL.KeyboardEvent (SDL.KeyboardEventData _ motion _ keysym) ->
+            let key = fromScanCode $ SDL.keysymScancode keysym
+            in updateInputCode controlSt key motion
+        -- sets mouse clicks
+        SDL.MouseButtonEvent SDL.MouseButtonEventData{SDL.mouseButtonEventMotion = motion, SDL.mouseButtonEventButton = btn} ->
+            updateInputCode controlSt (fromMouseButton btn) motion
+        -- sets mouse's position and motion
+        -- we want to convert this from screen pixels to game world units
+        SDL.MouseMotionEvent SDL.MouseMotionEventData{SDL.mouseMotionEventPos = SDL.P pos, SDL.mouseMotionEventRelMotion = relPos} -> do
+            motionState <- get global
+            global      $= motionState { cursorPosition = screenToWorld . fmap fromIntegral $ pos
+                                       , cursorMovement = (/(scale * pixelsPerUnit)) . fromIntegral <$> relPos}
+        -- sets mouse's scrolling amount
+        SDL.MouseWheelEvent SDL.MouseWheelEventData{SDL.mouseWheelEventPos = V2 _ y, SDL.mouseWheelEventDirection = dir} -> do
+            motionState <- get global
+            global      $= motionState {cursorScrollWheel = fromIntegral y * (if dir == SDL.ScrollFlipped then -1 else 1)}
+        _ -> pure ()
+
+updateControls :: SystemT' IO ()
+updateControls = do
+    controlSt      <- get global
+    cs             <- controls <$> get global
+    LogicTime time <- get global
+
+    let -- don't update the timestamp unless the state has changed
+        updateTimeStamp nb ts@(TimeStamped b _) = if b /= nb then TimeStamped nb time else ts
+        ukp inputCode getter actions = do
+            st <- getInputState controlSt inputCode
+            pure $ over getter (updateTimeStamp (isPressedOrHeld st)) actions
+        -- updates all actions according to their control in the settings
+        updateActions actions = ukp (inputMoveWest cs) moveWest actions
+                            >>= ukp (inputMoveEast cs) moveEast
+                            >>= ukp (inputMoveNorth cs) moveNorth
+                            >>= ukp (inputMoveSouth cs) moveSouth
+                            >>= ukp (inputFocus cs) useFocus
+    cmapM $ \(Local actions) -> Local <$> updateActions actions
+
+updateToolMode :: SystemT' IO ()
+updateToolMode = do
+    toolmode  <- get global
+    when (usesFreeCam toolmode) $ do
+        controlSt <- get global
+        cursorSt  <- get global
+
+        middleMouseSt <- getInputState controlSt (fromMouseButton SDL.ButtonMiddle)
+        when (isPressedOrHeld middleMouseSt) $
+            cmap $ \(_ :: Camera, Position pos) ->
+                Position $ pos - cursorMovement cursorSt
+
+        let scroll = cursorScrollWheel cursorSt
+        when (scroll /= 0) $
+            cmap $ \(Camera z) ->
+                Camera $ max 0 (z - 0.1 * scroll)
+
+------------------
+-- Debug Events --
+------------------
+
+updateDebugControls :: SystemT' IO ()
+updateDebugControls = do
+    controlSt         <- get global
+    settings          <- get global
+    when (canUseDebug settings) $ do
+        let cs     = controls settings
+
+        debugKeySt <- getInputState controlSt (inputToggleDebug cs)
+        when (debugKeySt == BtnPressed) $ do
+            Debug isDebug <- get global
+            global        $= Debug (not isDebug) -- toggle debug
+
         Debug isDebug <- get global
-        let cs         = controls settings
-            key        = SDL.keysymScancode keysym
-        
-        if canUseDebug settings && key == keyToggleDebug cs then do
-            Debug d <- get global
-            global  $= Debug (not d)
-        else when isDebug $
-            -- debug controls are kept here, to prevent toggling too fast whenever a frame is processed
-            if      key == keyDebugZoomIn cs       then cmap $ \(Camera z) -> Camera (z + 0.25)
-            else if key == keyDebugZoomOut cs      then cmap $ \(Camera z) -> Camera (z - 0.25)
-            else if key == keyDebugPrintPhysics cs then printPhysics
-            else if key == keyDebugNextPalette cs  then do
+        when isDebug $ do
+            let whenPressed code action = getInputState controlSt code >>= \st -> when (st == BtnPressed) action
+
+            whenPressed (inputDebugZoomIn cs) $
+                cmap $ \(Camera z) -> Camera (z + 0.25)
+            whenPressed (inputDebugZoomOut cs) $
+                cmap $ \(Camera z) -> Camera (z - 0.25)
+
+            whenPressed (inputDebugPrintPhysics cs)
+                printPhysics
+            whenPressed (inputDebugNextPalette cs) $ do
                 im <- get global
                 void $ setPaletteManager (nextPaletteManager im)
-            else pure ()
-        pure (True, True)
-    SDL.MouseMotionEvent SDL.MouseMotionEventData{SDL.mouseMotionEventState = btns, SDL.mouseMotionEventRelMotion = relPos} -> do
-        isEnabled <- usesFreeCam <$> get global
-        -- middle mouse moves it around
-        when (SDL.ButtonMiddle `elem` btns && isEnabled) $
-            cmap $ \(Camera z, Position pos) ->
-                -- zoom is included so when zoomed far out, the camera is moved farther too
-                Position $ pos + ((*(-0.015 * max z 0.1)) . fromIntegral <$> relPos)
-        pure (True, True)
-    SDL.MouseWheelEvent SDL.MouseWheelEventData{SDL.mouseWheelEventPos = V2 _ y, SDL.mouseWheelEventDirection = dir} -> do
-        isEnabled <- usesFreeCam <$> get global
-        -- zooms in or out with the wheel
-        when isEnabled $
-            cmap $ \(Camera z) ->
-                Camera $ max 0 (z - 0.1 * fromIntegral y * (if dir == SDL.ScrollFlipped then -1 else 1))
-        pure (True, True)
-    _   -> pure (True, True)
 
 printPhysics :: SystemT' IO ()
 printPhysics = do

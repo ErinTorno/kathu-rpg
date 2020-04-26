@@ -28,12 +28,13 @@ primaryCollisionBoxColor = mkColor 250 50 90 225
 attachedCollisionBoxColor :: Color
 attachedCollisionBoxColor = mkColor 45 170 225 225
 
-renderDebug :: SDL.Renderer -> (V2 Double -> V2 Double -> V2 Double) -> SystemT' IO ()
+renderDebug :: SDL.Renderer -> (V2 Double -> V2 Double) -> SystemT' IO ()
 renderDebug renderer logicToRenderPos = do
     let renderCollision _ _ []             = pure ()
         renderCollision col pos vecs@(v:_) = do
             SDL.rendererDrawColor renderer $= unColor col
-            let points = SVec.fromList (fmap floor . logicToRenderPos pos <$> snoc vecs v)
+            let convPos vpoint = logicToRenderPos (pos + vpoint)
+                points = SVec.fromList (fmap floor . convPos <$> snoc vecs v)
             -- we render in groups of 4 pixels to have thicker lines
             SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 0 0)) points
             SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 0 1)) points
