@@ -67,7 +67,6 @@ library
                     Kathu.Util.Flow
                     Kathu.Util.Numeric
                     Kathu.Util.Polygon
-                    Kathu.Util.Timing
                     Kathu.Util.Types
   build-depends:    base                    >=4.12    && <4.13,
                     apecs                   >=0.8.2   && <0.9,

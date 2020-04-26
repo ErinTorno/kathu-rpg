@@ -109,4 +109,4 @@ dependencyMapInsert key value = (Map.insert key value <$> readStore)
 -- a bit specialized, but a very common scenario
 storeWithKeyFn :: (s `CanStore` Map k a, Monad m, Ord k) => (a -> k) -> a -> Dependency s m a
 storeWithKeyFn getID value = dependencyMapInsert (getID value) value
-                          >> return value 
+                          >> pure value

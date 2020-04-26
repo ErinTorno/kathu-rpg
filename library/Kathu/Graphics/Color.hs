@@ -1,7 +1,9 @@
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Kathu.Graphics.Color
     ( Color(..)
@@ -41,27 +43,31 @@ module Kathu.Graphics.Color
     where
 
 import           Data.Aeson
-import           Data.Aeson.Types      (typeMismatch)
-import           Data.Fixed            (mod')
-import qualified Data.Foldable         as F
-import           Data.Function         (on)
-import           Data.List             (foldl')
-import qualified Data.Text             as T
+import           Data.Aeson.Types             (typeMismatch)
+import           Data.Fixed                   (mod')
+import qualified Data.Foldable                as F
+import           Data.Function                (on)
+import           Data.List                    (foldl')
+import qualified Data.Text                    as T
+import           Data.Vector.Unboxed.Deriving
 import           Data.Word
-import           Foreign.Storable
 import           GHC.Generics
-import           Linear.V4             (V4(..))
-import           Numeric               (readHex)
+import           Linear.V4                    (V4(..))
+import           Numeric                      (readHex)
 
-import           Kathu.Util.Collection (padShowHex)
-import           Kathu.Util.Flow       (readElseFail)
-import           Kathu.Util.Numeric    (closestToZero)
+import           Kathu.Util.Collection        (padShowHex)
+import           Kathu.Util.Flow              (readElseFail)
+import           Kathu.Util.Numeric           (closestToZero)
 
 -----------
 -- Color --
 -----------
 
-newtype Color = Color {unColor :: V4 Word8} deriving (Eq, Generic, Storable)
+newtype Color = Color {unColor :: V4 Word8} deriving (Eq, Generic)
+derivingUnbox "Color"
+    [t| Color -> V4 Word8 |]
+    [| unColor            |]
+    [| Color              |]
 
 instance Show Color where
     show (Color (V4 r g b a)) = ('#':) . padShowHex 2 r . padShowHex 2 g . padShowHex 2 b . padShowHex 2 a $ ""

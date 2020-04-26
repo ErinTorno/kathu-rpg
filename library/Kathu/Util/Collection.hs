@@ -3,7 +3,6 @@
 module Kathu.Util.Collection where
 
 import           Control.Monad.Primitive     (PrimMonad, PrimState)
-import           Data.Char                   (toLower, toUpper)
 import           Data.Map                    (Map)
 import qualified Data.Map                    as Map
 import           Data.Vector.Generic.Mutable (MVector)
@@ -61,11 +60,3 @@ forMMVec !vec !f = go 0
 padShowHex :: (Integral a, Show a) => Int -> a -> ShowS
 padShowHex l a = (++) . pad . showHex a $ ""
     where pad s = let len = length s in if len <= l then replicate (l - len) '0' ++ s else s
-
-toPascalCase :: String -> String
-toPascalCase []     = []
-toPascalCase (c:cs) = toUpper c: cs
-
-toCamelCase :: String -> String
-toCamelCase []     = []
-toCamelCase (c:cs) = toLower c: cs

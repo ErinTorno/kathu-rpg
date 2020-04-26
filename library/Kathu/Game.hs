@@ -24,7 +24,7 @@ import Kathu.Entity.Time
 import Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua as Lua
 import Kathu.Util.Apecs
-import Kathu.Util.Timing
+import Kathu.Util.Types
 import Kathu.World.Time (WorldTime)
 
 updateDelay :: Word32

@@ -24,8 +24,7 @@ import           Kathu.Entity.System
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
 import           Kathu.Util.Apecs
-import           Kathu.Util.Timing
-import           Kathu.Util.Types                (unID)
+import           Kathu.Util.Types
 
 runEvents :: System' ()
 runEvents = do

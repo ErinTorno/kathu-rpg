@@ -21,14 +21,9 @@ import Kathu.Util.Dependency
 import Kathu.Util.Flow         ((>>>=))
 import Kathu.Util.Types        (Identifier, IDMap, Range)
 
-data Slot = UseItem | Weapon | Head | Torso | Legs | Accessory | NoSlot deriving (Show, Eq, Generic)
+data Slot = UseItem | Weapon | Head | Torso | Legs | Accessory | NoSlot deriving (Show, Eq, Ord, Enum, Generic)
 
 data SpecialCategory = NonUnique | KeyItem | WorldSpaceShared deriving (Show, Eq, Generic)
-
--- allows use to compare slot types
-instance Ord Slot where
-    compare a b = slotPriority a `compare` slotPriority b
-    (<=) a b    = slotPriority a <= slotPriority b
 
 data Item g = Item
     { itemID      :: Identifier
@@ -58,20 +53,6 @@ data DeathDrop g = DeathDrop
     }
 
 data Inventory g = InvContainer (Container g) | InvDeathDrops [DeathDrop g]
-
------------------------
--- Utility functions --
------------------------
-
--- when we sort and inventory or items, use this order
-slotPriority :: Slot -> Int
-slotPriority UseItem   = 0
-slotPriority Weapon    = 1
-slotPriority Head      = 2
-slotPriority Torso     = 3
-slotPriority Legs      = 4
-slotPriority Accessory = 5
-slotPriority NoSlot    = 6
 
 -------------------
 -- Serialization --

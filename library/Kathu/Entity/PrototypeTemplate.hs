@@ -5,6 +5,7 @@ module Kathu.Entity.PrototypeTemplate (defineData, defineEntityCreator, defineEn
 
 import Apecs
 import Data.Aeson
+import Data.Char (toLower)
 import Data.Functor.Compose
 import Data.List (nub)
 import Data.Maybe (maybe)
@@ -15,7 +16,6 @@ import Kathu.Entity.SerializableComponent
 import Kathu.Parsing.Aeson ((.:~?), (.:^?))
 import Kathu.Util.Dependency
 import Kathu.Util.Flow ((>>>=))
-import Kathu.Util.Collection (toCamelCase)
 import Kathu.Util.Types (IDMap)
 
 -- This modules contains functions that generating helper functions for EntityPrototypes from a given list of components
@@ -28,6 +28,8 @@ defaultBang = Bang NoSourceUnpackedness NoSourceStrictness
 -- we filter out ' as those usually signify a more specified type, and we'd like to just use the generic for naming
 fieldName :: String -> Name -> Name
 fieldName prefix name = mkName . toCamelCase . filter (/='\'') $ prefix <> nameBase name
+    where toCamelCase [] = []
+          toCamelCase (c:cs) = toLower c : cs
 
 -- MyType -> ["m", "a"] -> MyType m a
 applyParams :: Type -> [String] -> Type

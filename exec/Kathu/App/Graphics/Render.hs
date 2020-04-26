@@ -59,10 +59,12 @@ updateAnimations dT = do
         updateAnimated (Render sprites, ActionSet {_moving = m, _facingDirection = fac}) = Render $ updateEach <$> sprites
             where updateEach (RSAnimated anim)  = RSAnimated $ update m anim
                   updateEach s                  = s
-                  update Nothing anim = anim {activeAnim = dirToAnimIndex fac, currentFrame = 0, animTime = timeBeforeFrameChange anim} -- we ensure that this is paused and waiting on first frame
+                  update Nothing anim =
+                      -- we ensure that this is paused and waiting on first frame
+                      anim {activeAnim = dirToAnimIndex fac, currentFrame = 0, animTime = timeBeforeFrameChange anim}
                   update (Just d) anim
-                      | dir == act = updateFrames dT anim -- if same direction, we just update its frames
-                      | otherwise  = switchAnimation dir anim -- we switch to new animation and reset
+                      | dir == act  = updateFrames dT anim -- if same direction, we just update its frames
+                      | otherwise   = switchAnimation dir anim -- we switch to new animation and reset
                           where dir = dirToAnimIndex d
                                 act = activeAnim anim
     -- only update frames for those without any controller for them
@@ -84,8 +86,8 @@ runRender !renderer !renderBuffer !dT = do
     updateAnimations dT
 
     runImageManager
-    imageManager   <- get global
-    settings       <- get global
+    imageManager     <- get global
+    settings         <- get global
     Debug isDebug    <- get global
     Tiles tileVector <- get global
     let getTile :: TileState -> SystemT' IO (Tile ImageID)
@@ -151,7 +153,7 @@ runRender !renderer !renderBuffer !dT = do
             | i == len    = pure ()
             | otherwise   = do
                 let drawEach !pos !ren = blitRenderSprite renderer imageManager (mkRenderRect edgeBleedScaling scale pos) ren
-                (pos, !spr) <- readFromBuffer i renderBuffer
+                (!pos, !spr) <- readFromBuffer i renderBuffer
                 drawEach pos spr
                 renderEvery (i + 1) len
 

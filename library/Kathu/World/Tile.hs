@@ -38,7 +38,7 @@ import           Kathu.Util.Types             (Identifier, IDMap)
 newtype TileID = TileID {unTileID :: Word32} deriving (Show, Eq, Ord)
 derivingUnbox "TileID"
     [t| TileID -> Word32 |]
-    [| \(TileID i) -> i  |]
+    [| unTileID          |]
     [| TileID            |]
 
 instance (s `CanStore` CountingIDs, Monad m) => FromJSON (Dependency s m TileID) where

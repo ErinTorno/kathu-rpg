@@ -33,8 +33,8 @@ import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Data.Bits
 import qualified Data.Map                     as Map
 import qualified Data.Vector                  as Vec
-import qualified Data.Vector.Storable         as SVec
-import qualified Data.Vector.Storable.Mutable as MSVec
+import qualified Data.Vector.Unboxed          as UVec
+import qualified Data.Vector.Unboxed.Mutable  as UMVec
 import           Data.Word
 import           Foreign.Ptr
 import           Foreign.Storable
@@ -72,8 +72,8 @@ basePaletteMaximum = 256
 
 data TextureSet = TextureSet
     { textures    :: Vec.Vector SDL.Texture -- each color in image other than alpha is split into separate texture
-    , basePalette :: SVec.Vector Color     -- the default palette; not used in rendering, only when creating new palettes, never for rendering or updating textures
-    , palettes    :: MSVec.IOVector Color   -- all available colors to textureColorMod; palette i starts at index i*(size textures)
+    , basePalette :: UVec.Vector Color      -- the default palette; not used in rendering, only when creating new palettes, never for rendering or updating textures
+    , palettes    :: UMVec.IOVector Color   -- all available colors to textureColorMod; palette i starts at index i*(size textures)
     }
 
 data ImageManager = ImageManager
@@ -81,7 +81,7 @@ data ImageManager = ImageManager
     , _paletteSetCount   :: Int -- Not including base idx 0 colors
     , _currentManagerIdt :: Identifier
     , _paletteManagers   :: IDMap PaletteManager
-    , _backgrounds       :: SVec.Vector Color
+    , _backgrounds       :: UVec.Vector Color
     , _textureSets       :: Vec.Vector TextureSet
     }
 makeLenses ''ImageManager
@@ -100,12 +100,12 @@ mkImageManager renderer surfaces = do
             let mkTex col  = copyColorMaskOverSurface col surface copySurface >> SDL.createTextureFromSurface renderer copySurface
             -- for each color in palette, we create a separate texture with only pixel information 
             texs          <- Vec.fromList <$> mapM mkTex nBasePalette
-            paletteVec    <- MSVec.unsafeNew (length nBasePalette * basePaletteMaximum)
-            foldM_ (\i col -> MSVec.write paletteVec i col >> pure (i + 1)) 0 nBasePalette
-            pure $ TextureSet texs (SVec.fromList nBasePalette) paletteVec
+            paletteVec    <- UMVec.unsafeNew (length nBasePalette * basePaletteMaximum)
+            foldM_ (\i col -> UMVec.write paletteVec i col >> pure (i + 1)) 0 nBasePalette
+            pure $ TextureSet texs (UVec.fromList nBasePalette) paletteVec
         basePalManagers = Map.singleton noPalette (staticManager 0)
 
-    ImageManager 0 1 noPalette basePalManagers (SVec.singleton black) <$> mapM mkSet surfaces
+    ImageManager 0 1 noPalette basePalManagers (UVec.singleton black) <$> mapM mkSet surfaces
 
 runImageManager :: forall w m. (MonadIO m, ReadWriteEach w m '[ImageManager, PaletteManager, RenderTime])
                 => SystemT w m ()
@@ -116,8 +116,8 @@ runImageManager = do
 nextPaletteManager :: ImageManager -> Identifier
 nextPaletteManager im =
     case im^.paletteManagers.to (Map.lookupGT (im^.currentManagerIdt)) of
-    (Just (idt, _)) -> idt
-    Nothing         -> fst (im^.paletteManagers.to Map.findMin)
+        (Just (idt, _)) -> idt
+        Nothing         -> fst (im^.paletteManagers.to Map.findMin)
 
 setPaletteIdx :: forall w m. (MonadIO m, ReadWriteEach w m '[ImageManager, PaletteManager, RenderTime])
               => Int -> SystemT w m ()
@@ -143,7 +143,7 @@ setPalette newSet = (\im -> liftIO (mapM_ updateTex . view textureSets $ im) >> 
     where updateTex :: TextureSet -> IO ()
           updateTex (TextureSet texs _ pals) = foldM_ (applyColorMod pals) (newSet * Vec.length texs) texs
           applyColorMod pals i tex = do
-              (Color (V4 r g b a)) <- MSVec.unsafeRead pals i
+              (Color (V4 r g b a)) <- UMVec.unsafeRead pals i
               SDL.textureColorMod tex $= V3 r g b
               SDL.textureAlphaMod tex $= a
               pure (i + 1)
@@ -151,7 +151,7 @@ setPalette newSet = (\im -> liftIO (mapM_ updateTex . view textureSets $ im) >> 
                    | otherwise                     = im
 
 backgroundColor :: ImageManager -> Color
-backgroundColor (ImageManager i _ _ _ bkg _) = bkg SVec.! i
+backgroundColor im = (im^.backgrounds) UVec.! (im^.currentSetIdx)
 
 currentPalette :: ImageManager -> Int
 currentPalette im = im^.currentSetIdx
@@ -165,47 +165,47 @@ fetchTextures (ImageID iid) = textures . (Vec.!iid) . view textureSets
 loadPalettes :: MonadIO m => IDMap Palette -> ImageManager -> m ImageManager
 loadPalettes newPalettes im = liftIO (mapM updateSet . view textureSets $ im)
                           >>= setPalette (min 1 paletteCount) . ImageManager 0 (paletteCount + 1) noPalette newManagers newBackgrounds
-    where paletteCount = SVec.length newBackgrounds
+    where paletteCount = UVec.length newBackgrounds
           interpolatedBackgrounds :: [(Palette, [Color])]
           interpolatedBackgrounds = (\p -> (p,) . allBackgrounds $ p) <$> Map.elems newPalettes
 
           backgroundVecs = Vec.fromList . cons (Vec.singleton black) . fmap (Vec.fromList . snd) $ interpolatedBackgrounds
-          newBackgrounds = SVec.convert . join $ backgroundVecs
+          newBackgrounds = UVec.convert . join $ backgroundVecs
           newManagers :: IDMap PaletteManager
           newManagers = Map.fromList . fst . Vec.foldl' mkManager ([], 0) . Vec.zip assocVec $ backgroundVecs
-              where assocVec = Vec.fromList . cons ("", emptyPalette) . Map.assocs $ newPalettes
+              where assocVec = Vec.fromList . cons (noPalette, emptyPalette) . Map.assocs $ newPalettes
                     -- We know that a palette will take up a number of slots equal to its background frame count
                     mkManager (acc, idx) ((pid, p), bkgs) = let endIdx = idx + Vec.length bkgs - 1
                                                              in ((pid, managerFromPalette idx endIdx p):acc, endIdx + 1)
           updateSet :: TextureSet -> IO TextureSet
           updateSet (TextureSet texs basePal pals) = do
-              let colorsPerSet = SVec.length basePal
+              let colorsPerSet = UVec.length basePal
               pals' <- growIfNeeded colorsPerSet pals
               foldM_ (writeNewCols basePal pals') colorsPerSet interpolatedBackgrounds
               pure (TextureSet texs basePal pals')
           -- If shader is Nothing, we write base palette into slots; otherwise we write the value yielded from passing each color into the shader function
-          writeNewCols :: SVec.Vector Color -> MSVec.IOVector Color -> Int -> (Palette, [Color]) -> IO Int
+          writeNewCols :: UVec.Vector Color -> UMVec.IOVector Color -> Int -> (Palette, [Color]) -> IO Int
           writeNewCols basePal pals i (pal, bkgs) = case pal of
-              (SPalette (StaticPalette bkg (Shader shdr))) -> SVec.foldM (writeFrame pals bkg shdr) i basePal
-              (APalette animPalette)                       -> fmap (const $ i + length bkgs * SVec.length basePal)
-                                                            . Vec.foldM_ (\off cols -> writeAnimFrame (SVec.length basePal) pals (i + off) cols >> pure (off + 1)) 0
+              (SPalette (StaticPalette bkg (Shader shdr))) -> UVec.foldM (writeFrame pals bkg shdr) i basePal
+              (APalette animPalette)                       -> fmap (const $ i + length bkgs * UVec.length basePal)
+                                                            . Vec.foldM_ (\off cols -> writeAnimFrame (UVec.length basePal) pals (i + off) cols >> pure (off + 1)) 0
                                                             . Vec.map (applyAnimPalette bkgs animPalette)
                                                             . Vec.convert
                                                             $ basePal
           applyAnimPalette :: [Color] -> AnimatedPalette -> Color -> [Color]
           applyAnimPalette bkgs pal col | col == backgroundMask = bkgs
                                         | otherwise             = applyAnimatedPalette pal col
-          writeAnimFrame :: Int -> MSVec.IOVector Color -> Int -> [Color] -> IO Int
-          writeAnimFrame count pals = foldM (\i col -> MSVec.unsafeWrite pals i col >> pure (i + count))
-          writeFrame pals bkg shdr idx col = MSVec.unsafeWrite pals idx (getColor shdr bkg col) >> pure (idx + 1)
+          writeAnimFrame :: Int -> UMVec.IOVector Color -> Int -> [Color] -> IO Int
+          writeAnimFrame count pals = foldM (\i col -> UMVec.unsafeWrite pals i col >> pure (i + count))
+          writeFrame pals bkg shdr idx col = UMVec.unsafeWrite pals idx (getColor shdr bkg col) >> pure (idx + 1)
           -- if the base color matches our mask, we instead use the background color instead
           getColor f bkg col = if col == backgroundMask then bkg else f col
           -- If we are trying to add more shaders than the current vectors can hold, we grow them to fit
           -- The amount of room we add is basePaletteMaximum, unless more is needed
-          growIfNeeded n pals | reqSlots > palsLen = MSVec.unsafeGrow pals (max (reqSlots - palsLen) basePaletteMaximum)
+          growIfNeeded n pals | reqSlots > palsLen = UMVec.unsafeGrow pals (max (reqSlots - palsLen) basePaletteMaximum)
                               | otherwise          = pure pals -- just good friends :)
               where reqSlots = n * (paletteCount + 1)
-                    palsLen  = MSVec.length pals
+                    palsLen  = UMVec.length pals
 
 -- Not strictly ImageManager related, but this module is filled with almost all of the ugly dangerous SDL rendering functions
 setWindowIcon :: MonadIO m => SDL.Window -> SDL.Surface -> m ()
