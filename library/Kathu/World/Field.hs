@@ -69,8 +69,13 @@ setTileState !x !y t (Field fgTiles) = liftIO $ UMVec.write fgTiles (indexFromCo
 indexFromCoordV2 :: V2 Int -> Int
 indexFromCoordV2 (V2 !x !y) = x * fieldDim + y
 
-fieldContainingCoordV2 :: RealFrac a => V2 a -> (# Int, Int #)
-fieldContainingCoordV2 (V2 !x !y) = (# getCoord x, getCoord y #)
+-- | Takes a coordinate from the entire world, and transforms it into the coordinate relative to the containing field
+localCoordFromGlobalV2 :: V2 Int -> V2 Int
+localCoordFromGlobalV2 pos = pos - fieldPos
+    where fieldPos = (*fieldDim) . (`div`fieldDim) <$> pos
+
+fieldContainingCoordV2 :: RealFrac a => V2 a -> V2 Int
+fieldContainingCoordV2 (V2 !x !y) = V2 (getCoord x) (getCoord y)
     where getCoord = floor . (/(unitsPerTile * fieldDim))
 
 fetchTileStateV2 :: MonadIO m => V2 Int -> Field -> m TileState

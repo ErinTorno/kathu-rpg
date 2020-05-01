@@ -54,11 +54,10 @@ runCommandAndSwapBetweenStacks runCommandAction getPopList getPushList st = do
 
     unless (null poppedCmds) $ do
         let lastCmd = head poppedCmds
-            ucmdRef = undoneCommands st
 
         runCommandAction lastCmd
         lift $ do
             pushedCmds <- readIORef pushCmdRef
-            -- moves command from applied to undone
-            writeIORef ucmdRef (lastCmd:pushedCmds)
-            writeIORef popCmdRef (tail pushedCmds)
+            -- moves command from popped list to pushed
+            writeIORef pushCmdRef (lastCmd:pushedCmds)
+            writeIORef popCmdRef (tail poppedCmds)

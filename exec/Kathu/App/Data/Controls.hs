@@ -63,7 +63,7 @@ getInputState (ControlState st) (InputCode code)
 -- | Moves unreleased buttons from just-pressed to held; and released ones to not-pressed
 nextInputStateFrame :: MonadIO m => ControlState -> m ()
 nextInputStateFrame (ControlState st) = liftIO $ forMVec st update
-    where update BtnPressed = BtnHeld
+    where update BtnPressed  = BtnHeld
           update BtnReleased = BtnUnpressed
           update e           = e
 

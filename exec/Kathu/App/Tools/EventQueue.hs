@@ -14,12 +14,14 @@ import           Kathu.App.Tools.ToolMode
 import           Kathu.App.Tools.ToolSystem
 import           Kathu.App.World             (loadWorldSpace)
 import           Kathu.Entity.System         (Debug(..))
+import           Kathu.World.Tile            (Tile)
 import           Kathu.World.WorldSpace      (WorldSpace, emptyWorldSpace, worldID)
 
 -- Events that the app receives
 data AppEvent
     = UseToolMode ToolMode
-    | LoadWorldSpace (WorldSpace ImageID)
+    | SetSelectedTile (Tile ImageID)
+    | LoadWorldSpace  (WorldSpace ImageID)
     | NewWorldSpace
     | ToggleDebug
     | RunSystem (SystemT' IO ())
@@ -49,6 +51,9 @@ handleEvent event = case event of
         global        $= Debug (not isDebug)
     UseToolMode newMode ->
         handleUseToolModeEvent newMode
+    SetSelectedTile sTile -> do
+        toolUnivSt <- get global
+        global $= toolUnivSt {selectedTile = sTile}
     NewWorldSpace ->
         loadWorldSpace emptyWorldSpace
     LoadWorldSpace worldspace -> do

@@ -94,11 +94,26 @@ fieldsSurrounding wx wy ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
                                 | otherwise  = readFields (((curV,) <$> Map.lookup curV fields):acc) (x + 1) y
               where curV = V2 x y -- only consider same z level right now
 
+-- | Returned the given Field, creating a new one and inserting into the current worldspace if the given field is missing
+mkFieldIfNotPresent :: forall w g. (ReadWrite w IO (WorldSpace g)) => Proxy g -> V2 Int -> SystemT w IO Field
+mkFieldIfNotPresent _ fieldPos = do
+    ws :: WorldSpace g <- get global
+
+    let fieldMap = ws^.worldFields.to unFieldSet
+
+    case Map.lookup fieldPos fieldMap of
+        Just field -> pure field
+        Nothing    -> do
+            field <- mkField
+            let fieldMap' = FieldSet $ Map.insert fieldPos field fieldMap
+            global $= (worldFields .~ fieldMap' $ ws)
+            pure field
+
 --------------------
 -- System Related --
 --------------------
 
-initWorldSpace :: forall w g. (Get w IO EntityCounter, Get w IO (Tiles g), Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[Existance, Local, LifeTime, Render g, Variables, WireReceivers, WorldSpace g, WorldStases])
+initWorldSpace :: forall w g. (Get w IO EntityCounter, Get w IO (Tiles g), Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[Existance, Local, LifeTime, Render g, SpecialEntity, Variables, WireReceivers, WorldSpace g, WorldStases])
                => (Entity -> SystemT w IO ())
                -> ((Lua.ActiveScript -> Lua.ActiveScript) -> EntityPrototype g -> SystemT w IO Entity)
                -> (Entity -> Lua.Script -> SystemT w IO Lua.ActiveScript)
@@ -113,7 +128,6 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
     saveWorldVariables ws
 
     global $= ws
-    tiles :: Tiles g <- get global
 
     cmap $ \(Local _)   -> ws^.loadPoint.to Position
     -- we place all items in the world as entities
@@ -132,18 +146,8 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
             maybeScript <- getIfExists ety
             forM_ maybeScript $ \script ->
                  when (Lua.shouldScriptRun onSignalChange script) $ Lua.addWireReceiver sig script
-    
-    let worldCollisionFilter = groupCollisionFilter Movement
-        addWorldCollision polygons
-            | Vec.null polygons = pure ()
-            | otherwise         = do
-                ety <- newExistingEntity (StaticBody, Position (V2 0 0))
-                ety $= (Shape ety (Convex (Vec.head polygons) 0), worldCollisionFilter)
-                
-                mapM_ (\p -> newExistingEntity (Shape ety $ Convex p 0)) . Vec.tail $ polygons
-    colPolys <- mkCollisionPolygons tiles $ ws^.worldFields
 
-    addWorldCollision colPolys
+    buildTileCollisions ws
 
     case ws^.worldScript of
         Nothing    -> pure ()
@@ -151,6 +155,28 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
             ety    <- newExistingEntity ()
             active <- loadScript ety scr
             ety    $= active
+
+destroyTileCollisions :: forall w. (ReadWrite w IO SpecialEntity) => (Entity -> SystemT w IO ()) -> SystemT w IO ()
+destroyTileCollisions destroyEty =
+    cmapM_ $ \(specialEty, ety) -> when (specialEty == WorldCollision) $ destroyEty ety
+
+buildTileCollisions :: forall w g. (Get w IO EntityCounter, Get w IO (Tiles g), Has w IO Physics, ReadWriteEach w IO '[Existance, SpecialEntity])
+                      => WorldSpace g
+                      -> SystemT w IO ()
+buildTileCollisions ws = do
+    tiles :: Tiles g <- get global
+    let worldCollisionFilter = groupCollisionFilter Movement
+        addWorldCollision polygons
+            | Vec.null polygons = pure ()
+            | otherwise         = do
+                ety <- newExistingEntity (WorldCollision, StaticBody, Position (V2 0 0))
+                ety $= (Shape ety (Convex (Vec.head polygons) 0), worldCollisionFilter)
+                
+                mapM_ (\p -> newExistingEntity (WorldCollision, Shape ety $ Convex p 0)) . Vec.tail $ polygons
+    colPolys <- mkCollisionPolygons tiles $ ws^.worldFields
+
+    addWorldCollision colPolys
+
 
 -- | Loads in the new variables for the current world, and saves the previous to its Stasis
 saveWorldVariables :: forall w m g. (MonadIO m, ReadWriteEach w m '[Variables, WorldSpace g, WorldStases]) => WorldSpace g -> SystemT w m ()

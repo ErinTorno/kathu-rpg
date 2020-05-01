@@ -161,3 +161,8 @@ updateFrames !dT d@AnimatedSprite {animTime = animT, activeAnim = act, animation
 spriteLayer :: RenderSprite g -> Double
 spriteLayer (RSStatic st)   = staticLayer st
 spriteLayer (RSAnimated an) = animatedLayer an
+
+getRenderGraphicsVector :: Render g -> Vector g
+getRenderGraphicsVector (Render renVec) = getGraphic <$> renVec
+    where getGraphic (RSStatic spr)   = staticSurface spr
+          getGraphic (RSAnimated spr) = animAtlas . animation $ spr

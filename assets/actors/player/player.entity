@@ -52,11 +52,6 @@ actor-state:
   resists: {}
 inventory:
   type: container
-  equip-slots:
-  - {slot: weapon,   count: 1}
-  - {slot: use-item, count: 3} # can have 3 use items, which we switch through with hotkeys
-  - {slot: head,     count: 1}
-  - {slot: torso,    count: 1}
-  - {slot: legs,     count: 1}
+  equip-slots: []
   misc-slots:
   - {count: 30}

@@ -55,7 +55,7 @@ instance Component Render' where type Storage Render' = Map Render'
 -- selects all unique and non-unique components that an individual entity might have
 type AllComponents =
     ( Existance
-    , ActiveScript
+    , (ActiveScript, SpecialEntity)
     , (Identity, LifeTime, WorldFloor, Tags, Render', Body)
     , (MovingSpeed, ActorState, Inventory', ActionSet)
     , (Local, Camera)
@@ -122,9 +122,10 @@ instance Component WireReceivers where type Storage WireReceivers = Global WireR
 
 makeWorld "EntityWorld"
     $ [''Physics]
-   ++ [''Existance, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
-   ++ [''ShouldQuit, ''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Counter, ''Logger, ''ToolMode]
+   ++ [''Existance, ''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
+   ++ [''ShouldQuit, ''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Counter, ''Logger]
    ++ [''Settings, ''CursorMotionState, ''ControlState, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
+   ++ [''ToolMode, ''ToolModeUniversalState]
 
 type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a

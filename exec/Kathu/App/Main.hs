@@ -1,6 +1,5 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE Strict #-}
 
 module Kathu.App.Main
     ( RenderInfo(..)
@@ -27,7 +26,9 @@ import           Kathu.App.Graphics.RenderBuffer (RenderBuffer, mkRenderBuffer)
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
+import           Kathu.App.Tools.ToolSystem      (runToolMode)
 import qualified Kathu.App.Init                  as Init
+import qualified Kathu.App.SDLCommon             as SDLC
 import           Kathu.App.System
 import           Kathu.Game                      (runGame, updateDelay)
 
@@ -44,6 +45,11 @@ createWindow :: IO RenderInfo
 createWindow = do
     SDL.initialize [SDL.InitVideo]
     SDL.HintRenderScaleQuality $= SDL.ScaleNearest
+    
+    -- very important if it editor mode, as we want to be able to click an option in the editor window,
+    -- and then immediately place it without needing to double-click in the game window
+    SDLC.setOnFocusMouseClickthrough True
+
     settings <- loadSettings
 
     let config = SDL.defaultWindow {SDL.windowInitialSize = fromIntegral <$> resolution settings}
@@ -88,19 +94,16 @@ startWith updateSettings runner = do
     destroyWindow renInfo
     SDL.quit
 
-replicateRunGame :: Integral a => a -> SystemT' IO ()
-replicateRunGame n = replicateM_ (fromIntegral n) $ do
-    runEvents
-    runGame destroyEntity updateDelay
-    stepPhysics (fromIntegral  updateDelay / 1000)
-
 run :: Word32 -> SDL.Renderer -> RenderBuffer -> Word32 -> Word32 -> SystemT' IO ()
-run renDelay renderer renBuf !prevPhysTime !prevRendTime = do
+run !renDelay !renderer !renBuf !prevPhysTime !prevRendTime = do
     startTime <- SDL.ticks
     let (n, remainder) = (startTime - prevPhysTime) `divMod` updateDelay
 
     -- physics steps as a constant rate as given by the update delay
-    replicateRunGame n
+    replicateM_ (fromIntegral n) $ do
+        runEvents
+        runGame destroyEntity updateDelay
+        stepPhysics (fromIntegral updateDelay / 1000)
 
     renderStartTime <- SDL.ticks
     let renderDiffer = renderStartTime - prevRendTime
@@ -117,7 +120,7 @@ run renDelay renderer renBuf !prevPhysTime !prevRendTime = do
     else run renDelay renderer renBuf (startTime - remainder) renderStartTime
 
 runForEventQueue :: EventQueue -> CommandState -> Word32 -> SDL.Renderer -> RenderBuffer -> Word32 -> Word32 -> IO ()
-runForEventQueue queue commandState renDelay renderer renBuf !prevPhysTime !prevRendTime = do
+runForEventQueue !queue !commandState !renDelay !renderer !renBuf !prevPhysTime !prevRendTime = do
     -- the editor might want to work with the world, so we need to make sure it hasn't taken the world when this runs
     world         <- takeEntityWorld queue
     shouldRunGame <- runWith world $ do
@@ -127,7 +130,14 @@ runForEventQueue queue commandState renDelay renderer renBuf !prevPhysTime !prev
     startTime <- SDL.ticks
     let (n, remainder) = (startTime - prevPhysTime) `divMod` updateDelay
 
-    when shouldRunGame $ runWith world (replicateRunGame n)
+    runWith world $
+        replicateM_ (fromIntegral n) $ do
+            runEvents
+            -- this relies on keyboard on mouse events being processed above
+            runToolMode commandState
+            when shouldRunGame $ do
+                runGame destroyEntity updateDelay
+                stepPhysics (fromIntegral updateDelay / 1000)
     runWith world runEvents
 
     renderStartTime <- SDL.ticks

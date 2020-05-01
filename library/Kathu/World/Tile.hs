@@ -103,15 +103,12 @@ emptyTile :: Tile g
 emptyTile = Tile
     { _tileID         = emptyTileID
     , _tileTextID     = ""
-    , _tileName       = ""
-    , _tileRender     = error "Attempted to draw an empty tile"
+    , _tileName       = "empty tile"
+    , _tileRender     = error "Attempted to use an empty tile's render"
     , _isRenderRandom = False
     , _isSolid        = False
     , _breakBehavior  = Unbreakable
     }
-
-mkTileState :: Tile g -> TileState
-mkTileState t = TileState (t^.tileID) 0
 
 -- | Uses randomIO to initialize metadata for tiles that make use of random properties through its metadata
 mkTileStateWithMetadata :: MonadIO m => Tile g -> m TileState
@@ -128,6 +125,12 @@ derivingUnbox "TileState"
     [t| TileState -> (TileID, Word32) |]
     [| \(TileState tl mt) -> (tl, mt) |]
     [| uncurry TileState              |]
+
+mkTileState :: Tile g -> TileState
+mkTileState t = TileState (t^.tileID) 0
+
+emptyTileState :: TileState
+emptyTileState = mkTileState emptyTile
 
 getTileRender :: TileState -> Tile g -> Render g
 getTileRender !tileState !tileInst

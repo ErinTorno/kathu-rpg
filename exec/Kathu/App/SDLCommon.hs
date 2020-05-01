@@ -1,9 +1,15 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Kathu.App.SDLCommon where
 
-import Control.Monad.IO.Class (MonadIO)
+import           Control.Monad          (void)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Foreign.C.String
 import qualified SDL
-import qualified SDL.Internal.Types as SDLIn.Types
-import qualified SDL.Raw.Video as SDLRaw.Video
+import qualified SDL.Internal.Types     as SDLIn.Types
+import qualified SDL.Raw.Basic          as SDLRaw
+import qualified SDL.Raw.Enum           as SDLRaw
+import qualified SDL.Raw.Video          as SDLRaw
                              
 isOpen :: Maybe SDL.Event -> Bool
 isOpen = maybe True (not . isQuitEvent)
@@ -17,7 +23,15 @@ conditionalRun f True  = True <$ f
 conditionalRun _ False = pure False
 
 setWindowIcon :: MonadIO m => SDL.Window -> SDL.Surface -> m ()
-setWindowIcon (SDLIn.Types.Window window) (SDL.Surface sur _) = SDLRaw.Video.setWindowIcon window sur
+setWindowIcon (SDLIn.Types.Window window) (SDL.Surface sur _) = SDLRaw.setWindowIcon window sur
+
+setOnFocusMouseClickthrough :: MonadIO m => Bool -> m ()
+setOnFocusMouseClickthrough isEnabled = void . liftIO .
+    withCString "SDL_MOUSE_FOCUS_CLICKTHROUGH" $ \hintStr ->
+        withCString (if isEnabled then "1" else "0") $ \enabledStr -> do
+            r <- SDLRaw.setHintWithPriority hintStr enabledStr SDLRaw.SDL_HINT_OVERRIDE
+            print r
+            pure ()
 
 -- working with SDL data types
 

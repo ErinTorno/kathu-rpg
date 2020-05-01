@@ -16,11 +16,12 @@ data SerializableComponent = SerializableComponent {compName :: Name, requiresDe
 
 serializableComponentConfigs :: [SerializableComponent]
 serializableComponentConfigs =
-    [ SerializableComponent {compName = ''Identity,    requiresDependencies = False, params = []}
-    , SerializableComponent {compName = ''LifeTime,    requiresDependencies = False, params = []}
-    , SerializableComponent {compName = ''Tags,        requiresDependencies = False, params = []}
-    , SerializableComponent {compName = ''MovingSpeed, requiresDependencies = False, params = []}
-    , SerializableComponent {compName = ''Render,      requiresDependencies = True,  params = ["g"]}
-    , SerializableComponent {compName = ''ActorState,  requiresDependencies = True,  params = []}
-    , SerializableComponent {compName = ''Inventory,   requiresDependencies = True,  params = ["g"]}
+    [ SerializableComponent {compName = ''Identity,      requiresDependencies = False, params = []}
+    , SerializableComponent {compName = ''SpecialEntity, requiresDependencies = False, params = []}
+    , SerializableComponent {compName = ''LifeTime,      requiresDependencies = False, params = []}
+    , SerializableComponent {compName = ''Tags,          requiresDependencies = False, params = []}
+    , SerializableComponent {compName = ''MovingSpeed,   requiresDependencies = False, params = []}
+    , SerializableComponent {compName = ''Render,        requiresDependencies = True,  params = ["g"]}
+    , SerializableComponent {compName = ''ActorState,    requiresDependencies = True,  params = []}
+    , SerializableComponent {compName = ''Inventory,     requiresDependencies = True,  params = ["g"]}
     ]

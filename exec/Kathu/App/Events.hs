@@ -16,7 +16,6 @@ import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Drawing
 import           Kathu.App.Graphics.ImageManager (nextPaletteManager, setPaletteManager)
 import           Kathu.App.System
-import           Kathu.App.Tools.ToolSystem
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.Cursor
@@ -50,7 +49,6 @@ runEvents = do
 
     updateControls
     updateDebugControls
-    updateToolMode
 
 handleEvent :: ControlState -> Double -> SDL.Event -> SystemT' IO ()
 handleEvent controlSt scale event =

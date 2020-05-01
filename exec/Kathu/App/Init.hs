@@ -42,10 +42,8 @@ entityWorld = initEntityWorld
 
 -- initializes an entity as the local player
 initLocalPlayer :: Entity -> SystemT' IO ()
-initLocalPlayer ety = do
-    ety $= Camera 1.0
-    ety $= Local emptyActionPressed
-    ety $= emptyActionSet
+initLocalPlayer ety =
+    ety $= (Camera 1.0, Local emptyActionPressed, emptyActionSet, Player)
 
 initLanguage :: SDL.Window -> SDL.Renderer -> Settings -> Library -> SystemT' IO ()
 initLanguage window renderer settings library = do

@@ -3,6 +3,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -32,6 +33,17 @@ instance Component Existance where type Storage Existance = Cache CacheSize (Map
 -- | If all entities are created through this, then we can use it to get all entities
 newExistingEntity :: (MonadIO m, Set w m c, Set w m Existance, Get w m EntityCounter) => c -> SystemT w m Entity
 newExistingEntity c = newEntity (Existance, c)
+
+-- | Mutually exclusive categories that mark special properties about a given entity
+data SpecialEntity = Player | WorldCollision | Spirit deriving (Show, Eq)
+
+instance Component SpecialEntity where type Storage SpecialEntity = Map SpecialEntity
+
+-- Not all can be parsed, as some are while-running only
+instance FromJSON SpecialEntity where
+    parseJSON = withText "SpecialEntity" $ \case
+        "spirit" -> pure Spirit
+        e        -> fail $ "Unknown SpecialEntity " ++ show e
 
 data Identity = Identity
     { identifier  :: Identifier

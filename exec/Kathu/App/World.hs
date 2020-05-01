@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Kathu.App.World where
 
 import           Apecs
@@ -20,3 +22,9 @@ loadWorldSpace ws = do
 
     -- to prevent pausing issues during gameplay, we force a GC now while it's just done loading
     runGC
+
+rebuildCurrentTileCollisions :: SystemT' IO ()
+rebuildCurrentTileCollisions = do
+    worldspace :: WorldSpace ImageID <- get global
+    destroyTileCollisions destroyEntity
+    buildTileCollisions worldspace

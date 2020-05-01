@@ -1,12 +1,20 @@
+{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections       #-}
 
-module Kathu.App.Tools.ToolSystem where
+module Kathu.App.Tools.ToolSystem
+    ( renderToolMode
+    , runToolMode
+    , handleUseToolModeEvent
+    ) where
 
 import           Apecs
 import           Apecs.Physics
 import           Control.Lens
-import           Control.Monad               (forM_, when)
+import           Control.Monad               (forM_, void, unless, when)
+import           Data.Maybe                  (fromJust, isJust)
+import qualified Data.Map                    as Map
 import           Linear.V2                   (V2(..), _x, _y)
 import qualified SDL
 
@@ -14,18 +22,24 @@ import           Kathu.App.Data.Controls
 import           Kathu.App.Data.Library
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Drawing
+import           Kathu.App.Graphics.Image    (ImageID)
 import           Kathu.App.System
+import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.ToolMode
+import           Kathu.App.World
 import           Kathu.Entity.Components     (Local, simpleIdentity)
 import           Kathu.Entity.Cursor
 import           Kathu.Entity.Logger
 import           Kathu.Graphics.Camera
 import           Kathu.Graphics.Color
+import           Kathu.World.Field
+import           Kathu.World.Tile
+import           Kathu.World.WorldSpace
 import           Kathu.Util.Apecs
 import           Kathu.Util.Flow             (ireplicateM_)
 
 gridColor :: Color
-gridColor = mkColor 180 134 134 150
+gridColor = mkColor 110 90 110 255
 
 renderToolMode :: SDL.Renderer -> (V2 Double -> V2 Double) -> SystemT' IO ()
 renderToolMode renderer logicToRenderPos = do
@@ -52,13 +66,12 @@ renderToolMode renderer logicToRenderPos = do
                  in SDL.drawLine renderer (SDL.P (V2 colScreenCoord 0)) (SDL.P (V2 colScreenCoord resH))
 
 -- | Updates tool mode after new frame's controls have been updated
-updateToolMode :: SystemT' IO ()
-updateToolMode = do
+runToolMode :: CommandState -> SystemT' IO ()
+runToolMode commandSt = do
     cursorSt  <- get global
     toolmode  <- get global
+    controlSt <- get global
     when (usesFreeCam toolmode) $ do
-        controlSt <- get global
-
         middleMouseSt <- getInputState controlSt (fromMouseButton SDL.ButtonMiddle)
         when (isPressedOrHeld middleMouseSt) $
             cmap $ \(_ :: Camera, Position pos) ->
@@ -68,13 +81,30 @@ updateToolMode = do
         when (scroll /= 0) $
             cmap $ \(Camera z) ->
                 Camera $ max 0 (z - 0.1 * scroll)
-    case toolmode of
-        TilePlacer TilePlacerState{tileSelectorEty = selectorEty} -> do
-            let hoveredTilePos = fromIntegral <$> ((floor <$> V2 0.5 1 + cursorPosition cursorSt) :: V2 Int)
-            -- we move the tile selector entity to hover over the currently selected tile
-            forM_ selectorEty $ \ety ->
-                ety $= Position hoveredTilePos
-        _ -> pure ()
+
+    unless (isNoTool toolmode) $ do
+        ctrlSt <- getInputState controlSt (fromScanCode SDL.ScancodeLCtrl)
+        zSt    <- getInputState controlSt (fromScanCode SDL.ScancodeZ)
+        ySt    <- getInputState controlSt (fromScanCode SDL.ScancodeY)
+
+        when (isPressedOrHeld ctrlSt) $
+            -- ctrl can be held, but we only run on initial Z or Y press so we don't accidentally undo many commands in a few frames
+            if   zSt == BtnPressed
+            then undoLastCommand commandSt
+            else if   ySt == BtnPressed
+                then redoNextCommand commandSt
+                else pure ()
+
+        case toolmode of
+            TilePlacer TilePlacerState{tileSelectorEty = selectorEty} -> do
+                let hoveredTilePos = floor <$> V2 0.5 1 + cursorPosition cursorSt
+                sTile <- selectedTile <$> get global
+                -- we move the tile selector entity to hover over the currently selected tile
+                forM_ selectorEty $ \ety ->
+                    ety $= Position (fromIntegral <$> hoveredTilePos)
+
+                runTilePlaceCommand commandSt sTile hoveredTilePos
+            _ -> pure ()
 
 -- | Handles changing toolmodes after the editor has pushed the UseToolMode event
 handleUseToolModeEvent :: ToolMode -> SystemT' IO ()
@@ -117,6 +147,9 @@ finalizeToolMode mode = case mode of
 
 initToolMode :: ToolMode -> SystemT' IO ()
 initToolMode mode = case mode of
+    NoTool -> 
+        -- these might have changed when we could run commands
+        rebuildCurrentTileCollisions
     TilePlacer st -> do
         library <- get global
         -- we want to create a tile placer entity to help show which tiles are which
@@ -127,3 +160,110 @@ initToolMode mode = case mode of
                 ety    $= Position (V2 10000 10000) -- should be offscreen for first frame before it get's updated to follow camera
                 global $= TilePlacer st{tileSelectorEty = Just ety}
     _ -> pure ()
+
+----------------
+-- TilePlacer --
+----------------
+
+runTilePlaceCommand :: CommandState -> Tile ImageID -> V2 Int -> SystemT' IO ()
+runTilePlaceCommand commandSt sTile hoveredTilePos = do
+    controlSt    <- get global
+    shiftSt      <- getInputState controlSt $ fromScanCode SDL.ScancodeLShift
+    leftMouseSt  <- getInputState controlSt $ fromMouseButton SDL.ButtonLeft
+    maybeLastPos <- lastPlacedTilePos <$> get global
+    
+    when (isPressedOrHeld leftMouseSt) $
+        if   BtnPressed == leftMouseSt && isPressedOrHeld shiftSt && isJust maybeLastPos
+        then do
+            command <- mkLineTilePlaceCommand (fromJust maybeLastPos) hoveredTilePos sTile
+            runCommand commandSt command
+        else do
+            worldspace <- get global
+            prevTileSt <- getTileState worldspace hoveredTilePos
+            let isClick  = leftMouseSt == BtnPressed
+                diffTile = prevTileSt^.tile /= sTile^.tileID
+                diffPos  = maybeLastPos /= Just hoveredTilePos
+            -- only generate a new command if we click again, the tile is different from the square, or the position is different from last time
+            when (isClick || diffTile || diffPos) $ do
+                command <- mkSingleTilePlaceCommand hoveredTilePos sTile prevTileSt
+                runCommand commandSt command
+
+mkSingleTilePlaceCommand :: V2 Int -> Tile ImageID -> TileState -> SystemT' IO Command
+mkSingleTilePlaceCommand hoveredTilePos sTile prevTileSt = do
+    maybeLastPos <- lastPlacedTilePos <$> get global
+
+    pure $ Command
+        { applyCommand = do
+            placeTileState (mkTileState sTile) hoveredTilePos
+            univToolSt <- get global
+            global     $= univToolSt {lastPlacedTilePos = Just hoveredTilePos}
+        , removeCommand = do
+            placeTileState prevTileSt hoveredTilePos
+            univToolSt <- get global
+            global     $= univToolSt {lastPlacedTilePos = maybeLastPos}
+        }
+
+mkLineTilePlaceCommand :: V2 Int -> V2 Int -> Tile ImageID -> SystemT' IO Command
+mkLineTilePlaceCommand lastPos hoveredTilePos sTile = do
+    worldspace <- get global
+    prevTileSt <- replicateLineM lastPos hoveredTilePos (\pos -> (,pos) <$> getTileState worldspace pos)
+
+    pure $ Command 
+        { applyCommand = do
+            void $ replicateLineM lastPos hoveredTilePos (placeTileState $ mkTileState sTile)
+            univToolSt <- get global
+            global     $= univToolSt {lastPlacedTilePos = Just hoveredTilePos}
+        , removeCommand = do
+            forM_ prevTileSt $ uncurry placeTileState
+            univToolSt <- get global
+            global     $= univToolSt {lastPlacedTilePos = Just lastPos}
+        }
+
+-- Bresenham's line algorithm
+replicateLineM :: Monad m => V2 Int -> V2 Int -> (V2 Int -> m a) -> m [a]
+replicateLineM (V2 !x0 !y0) (V2 !x1 !y1) action
+    | abs (y1 - y0) < abs (x1 - x0) = chooseSolver replicateLineLowM (x0 > x1)
+    | otherwise                     = chooseSolver replicateLineHighM (y0 > y1)
+    where chooseSolver runner cond
+              | cond      = runner x1 y1 x0 y0 action
+              | otherwise = runner x0 y0 x1 y1 action
+
+replicateLineLowM :: Monad m => Int -> Int -> Int -> Int -> (V2 Int -> m a) -> m [a]
+replicateLineLowM x0 y0 x1 y1 action = go [] x0 y0 (2 * dy - dx)
+    where dx    = x1 - x0
+          dy    = if y1 - y0 < 0 then y0 - y1 else y1 - y0
+          yIncr = if y1 - y0 < 0 then -1 else 1
+          go acc x y d
+              | x > x1    = pure acc
+              | otherwise = action (V2 x y)
+                        >>= \a -> if d > 0
+                                  then go (a:acc) (x + 1) (y + yIncr) ((d - 2 * dx) + 2 * dy)
+                                  else go (a:acc) (x + 1) y (d + 2 * dy)
+
+replicateLineHighM :: Monad m => Int -> Int -> Int -> Int -> (V2 Int -> m a) -> m [a]
+replicateLineHighM x0 y0 x1 y1 action = go [] x0 y0 (2 * dx - dy)
+    where dx    = if x1 - x0 < 0 then x0 - x1 else x1 - x0
+          dy    = y1 - y0
+          xIncr = if x1 - x0 < 0 then -1 else 1
+          go acc x y d
+              | y > y1    = pure acc
+              | otherwise = action (V2 x y)
+                        >>= \a -> if d > 0
+                                  then go (a:acc) (x + xIncr) (y + 1) ((d - 2 * dy) + 2 * dx)
+                                  else go (a:acc) x (y + 1) (d + 2 * dx)
+
+placeTileState :: TileState -> V2 Int -> SystemT' IO ()
+placeTileState tilest pos = do
+    let fieldPos    = fieldContainingCoordV2 ((fromIntegral <$> pos) :: V2 Double)
+        relativePos = localCoordFromGlobalV2 pos
+    field    <- mkFieldIfNotPresent (Proxy :: Proxy ImageID) fieldPos
+    setTileStateV2 relativePos tilest field
+
+getTileState :: WorldSpace ImageID -> V2 Int -> SystemT' IO TileState
+getTileState worldspace pos =
+    let fieldPos    = fieldContainingCoordV2 ((fromIntegral <$> pos) :: V2 Double)
+        relativePos = localCoordFromGlobalV2 pos
+        fieldMap    = worldspace^.worldFields.to unFieldSet
+     in case Map.lookup fieldPos fieldMap of
+        Just field -> fetchTileStateV2 relativePos field
+        Nothing    -> pure emptyTileState

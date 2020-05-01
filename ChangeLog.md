@@ -15,8 +15,9 @@
 * Scripts can access the mouse's position in the world with getCursorPosition()
 * Additional toolmode changes and some render code cleanup
 
-### 0.1.11.2 -- Unreleased
-* The tile placer tool shows a grid for the tiles, and has a box highlighting the location where a tile would be placed
+### 0.1.11.2 -- 2020-04-30
+* The editor can now switch between tool modes; some modes enable the tile grid or free camera
+* One new tool is the tile drawer, where tiles can be selected in the editor and placed in the world
 * Entity instances in worldspaces can be given IDs
 
 ## 0.1.10.0 -- 2020-01-27

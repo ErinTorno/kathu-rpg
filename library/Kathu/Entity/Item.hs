@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE MonoLocalBinds       #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -21,15 +22,19 @@ import Kathu.Util.Dependency
 import Kathu.Util.Flow         ((>>>=))
 import Kathu.Util.Types        (Identifier, IDMap, Range)
 
-data Slot = UseItem | Weapon | Head | Torso | Legs | Accessory | NoSlot deriving (Show, Eq, Ord, Enum, Generic)
+data ItemSlot = UseItem | Weapon | Body | SpiritCharm | Accessory | NoSlot deriving (Show, Eq, Ord, Enum, Generic)
 
-data SpecialCategory = NonUnique | KeyItem | WorldSpaceShared deriving (Show, Eq, Generic)
+data SpecialCategory
+    = NonUnique
+    | KeyItem          -- Important, do not let the player get rid of this
+    | WorldSpaceShared -- Linked to the current worldspace, rather than the player
+    deriving (Show, Eq, Generic)
 
 data Item g = Item
     { itemID      :: Identifier
     , itemName    :: Text
     , description :: Text
-    , slot        :: Slot
+    , itemSlot    :: ItemSlot
     , itemIcon    :: Render g
     , stackSize   :: Int
     , price       :: Int
@@ -39,7 +44,7 @@ data Item g = Item
 
 data ItemStack g = ItemStack {stackItem :: Item g, stackCount :: Int}
 
-data ContainerSlot g = ContainerSlot {restriction :: Maybe Slot, heldItem :: Maybe (Item g)}
+data ContainerSlot g = ContainerSlot {slotRestriction :: Maybe ItemSlot, heldItem :: Maybe (Item g)}
 
 data Container g = Container
     { invEquippedItems :: [ContainerSlot g]
@@ -62,36 +67,36 @@ data Inventory g = InvContainer (Container g) | InvDeathDrops [DeathDrop g]
 -- This is due to its length and complexity compared to other modules
 
 -- need custom implementation, as even with project options the type isn't converted to the correct case
-instance ToJSON Slot where
-    toJSON UseItem   = String "use-item"
-    toJSON Weapon    = String "weapon"
-    toJSON Head      = String "head"
-    toJSON Torso     = String "torso"
-    toJSON Legs      = String "legs"
-    toJSON Accessory = String "accessory"
-    toJSON NoSlot    = String "no-slot"
-instance FromJSON Slot where
-    parseJSON (String "use-item")  = pure UseItem
-    parseJSON (String "weapon")    = pure Weapon
-    parseJSON (String "head")      = pure Head
-    parseJSON (String "torso")     = pure Torso
-    parseJSON (String "legs")      = pure Legs
-    parseJSON (String "accessory") = pure Accessory
-    parseJSON (String "no-slot")   = pure NoSlot
-    parseJSON (String "misc")      = pure NoSlot
-    parseJSON (String s)           = error . concat $ ["Attempted to parse item with invalid slot \"", show s, "\""]
-    parseJSON v = typeMismatch "Slot" v
+instance ToJSON ItemSlot where
+    toJSON slot = case slot of
+        UseItem     -> String "use-item"
+        Weapon      -> String "weapon"
+        Body        -> String "body"
+        SpiritCharm -> String "spirit-charm"
+        Accessory   -> String "accessory"
+        NoSlot      -> String "no-slot"
+instance FromJSON ItemSlot where
+    parseJSON = withText "Slot" $ \case
+        "use-item"     -> pure UseItem
+        "weapon"       -> pure Weapon
+        "body"         -> pure Body
+        "spirit-charm" -> pure SpiritCharm
+        "accessory"    -> pure Accessory
+        "no-slot"      -> pure NoSlot
+        "misc"         -> pure NoSlot
+        e              -> fail $ "Attempted to invalid item slot " ++ show e
     
 instance ToJSON SpecialCategory where
-    toJSON WorldSpaceShared = String "worldspace-shared"
-    toJSON KeyItem          = String "key-item"
-    toJSON NonUnique        = String "non-unique"
+    toJSON category = case category of
+        WorldSpaceShared -> String "worldspace-shared"
+        KeyItem          -> String "key-item"
+        NonUnique        -> String "non-unique"
 instance FromJSON SpecialCategory where
-    parseJSON (String "worldspace-shared") = pure WorldSpaceShared
-    parseJSON (String "key-item")          = pure KeyItem
-    parseJSON (String "non-unique")        = pure NonUnique
-    parseJSON (String s)                   = error . concat $ ["Attempted to parse item with invalid special category \"", show s, "\""]
-    parseJSON v = typeMismatch "Slot" v
+    parseJSON = withText "SpecialCategory" $ \case
+        "worldspace-shared" -> pure WorldSpaceShared
+        "key-item"          -> pure KeyItem
+        "non-unique"        -> pure NonUnique
+        e                   -> fail $ "Attempted to parse item with invalid special category " ++ show e
 
 -- Item
 
