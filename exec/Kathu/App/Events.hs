@@ -27,7 +27,7 @@ import           Kathu.Util.Types
 
 runEvents :: System' ()
 runEvents = do
-    controlSt        <- get global
+    controlSt <- get global
     nextInputStateFrame controlSt
 
     -- set motion to zero now

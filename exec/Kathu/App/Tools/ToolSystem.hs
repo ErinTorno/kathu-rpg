@@ -30,6 +30,7 @@ import           Kathu.App.World
 import           Kathu.Entity.Components     (Local, simpleIdentity)
 import           Kathu.Entity.Cursor
 import           Kathu.Entity.Logger
+import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
 import           Kathu.Graphics.Color
 import           Kathu.World.Field
@@ -83,22 +84,28 @@ runToolMode commandSt = do
                 Camera $ max 0 (z - 0.1 * scroll)
 
     unless (isNoTool toolmode) $ do
+        univToolSt      <- get global
+        RenderTime time <- get global
         ctrlSt <- getInputState controlSt (fromScanCode SDL.ScancodeLCtrl)
         zSt    <- getInputState controlSt (fromScanCode SDL.ScancodeZ)
         ySt    <- getInputState controlSt (fromScanCode SDL.ScancodeY)
 
-        when (isPressedOrHeld ctrlSt) $
+        when (isPressedOrHeld ctrlSt && lastUndoRedoTime univToolSt + timeBetweenUndoRedo <= time) $
             -- ctrl can be held, but we only run on initial Z or Y press so we don't accidentally undo many commands in a few frames
-            if   zSt == BtnPressed
-            then undoLastCommand commandSt
-            else if   ySt == BtnPressed
-                then redoNextCommand commandSt
-                else pure ()
+            if isPressedOrHeld zSt
+            then do
+                undoLastCommand commandSt
+                global $= univToolSt {lastUndoRedoTime = time}
+            else if isPressedOrHeld ySt
+                 then do
+                     redoNextCommand commandSt
+                     global $= univToolSt {lastUndoRedoTime = time}
+                 else pure ()
 
         case toolmode of
             TilePlacer TilePlacerState{tileSelectorEty = selectorEty} -> do
                 let hoveredTilePos = floor <$> V2 0.5 1 + cursorPosition cursorSt
-                sTile <- selectedTile <$> get global
+                    sTile          = selectedTile univToolSt
                 -- we move the tile selector entity to hover over the currently selected tile
                 forM_ selectorEty $ \ety ->
                     ety $= Position (fromIntegral <$> hoveredTilePos)

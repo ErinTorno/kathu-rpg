@@ -3,6 +3,7 @@
 module Kathu.App.Tools.ToolMode where
 
 import Apecs
+import Data.Word
 import Linear.V2                (V2(..))
 
 import Kathu.App.Graphics.Image (ImageID)
@@ -38,8 +39,9 @@ shouldShowGrid _      = True
 data ToolModeUniversalState = ToolModeUniversalState
     { lastPlacedTilePos :: !(Maybe (V2 Int))
     , selectedTile      :: !(Tile ImageID)
+    , lastUndoRedoTime  :: !Word32 
     }
 
 instance Semigroup ToolModeUniversalState where (<>) = mappend
-instance Monoid ToolModeUniversalState where mempty = ToolModeUniversalState Nothing emptyTile
+instance Monoid ToolModeUniversalState where mempty = ToolModeUniversalState Nothing emptyTile 0
 instance Component ToolModeUniversalState where type Storage ToolModeUniversalState = Global ToolModeUniversalState
