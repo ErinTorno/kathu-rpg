@@ -26,6 +26,7 @@ import           Control.Concurrent.MVar
 import           Control.Monad                     (unless, when)
 import           Control.Monad.IO.Class            (liftIO)
 import           Control.Monad.ST                  (stToIO)
+import           Control.Lens                      ((^.))
 import qualified Data.HashTable.ST.Basic           as HT
 import qualified Data.Map                          as Map
 import qualified Data.Vector                       as Vec
@@ -116,8 +117,8 @@ releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched signals singS
 loadScript :: forall w g. (Has w IO Physics, Members w IO (Render g), ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Debug, Force, Identity, Local, Logger, LogicTime, Mass, MovingSpeed, Position, Random, Render g, RenderTime, RunningScriptEntity, ScriptBank, ScriptEventBuffer, Tags, Variables, Velocity, WireReceivers])
            => (ActiveScript -> ActiveScript) -> ExternalFunctions w g -> Entity -> Script -> SystemT w IO ActiveScript
 loadScript mapper extFuns ety script
-    | isSingleton script = runIfOnInit =<< fromBank
-    | otherwise          = runIfOnInit =<< mkAS mapper NonSingleton ety
+    | script^.isSingleton = runIfOnInit =<< fromBank
+    | otherwise           = runIfOnInit =<< mkAS mapper NonSingleton ety
     where mkAS f singStatus e = ask >>= (\l -> mkActiveScript f e singStatus l script) . initLua
           initLua world = do
               openbase
@@ -130,7 +131,7 @@ loadScript mapper extFuns ety script
           runIfOnInit as | shouldScriptRun onInit as = set ety as >> execFor as (call "onInit" (unEntity ety)) >> return as
                          | otherwise                 = set ety as >> return as
           fromBank = do
-              let sID = scriptID script
+              let sID = script^.scriptID
               sbank     <- unScriptBank <$> get global
               curScript <- liftIO . stToIO $ HT.lookup sbank sID
               case curScript of

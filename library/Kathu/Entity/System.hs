@@ -109,7 +109,11 @@ getNextFromCounter = do
 -------------
 
 fromTiles :: Tiles g -> TileState -> IO (Tile g)
-fromTiles (Tiles vec) (TileState (TileID tid) _) = MVec.read vec . fromIntegral $ tid
+fromTiles tiles (TileState tid _) = fromTilesID tiles tid
+-------------
+
+fromTilesID :: Tiles g -> TileID -> IO (Tile g)
+fromTilesID (Tiles vec) (TileID tid) = MVec.read vec . fromIntegral $ tid
 
 makeTiles :: Map k (Tile g) -> IO (Tiles g)
 makeTiles elemMap = MVec.unsafeNew (Map.size elemMap) >>= \vec -> foldM (setElem vec) 0 allElems $> Tiles vec

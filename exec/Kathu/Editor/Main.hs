@@ -36,24 +36,33 @@ import           Kathu.World.WorldSpace
 
 mkMenuBarDescription :: EditorState -> MenuBarDescription
 mkMenuBarDescription es@EditorState{editorApp = app, editorWindow = window, eventQueue = queue} =
-    [ ("_File", [ ("New Worldspace", pushAppEvent queue NewWorldSpace)
-                , ("_Open",   onFileLoad es =<< showFileChooser window Gtk.FileChooserActionOpen "Open WorldSpace File" "WorldSpace files" "*.world")
-                , ("_Save",   putStrLn "Save pressed")
-                , ("Save As", putStrLn "Save As pressed")
-                , ("_Quit",   void $ onApplicationClose app)])
-    , ("_Game", [ ("Toggle _Debug", pushAppEvent queue ToggleDebug)])
-    , ("_Help", [ ("_About",  showAboutDialog)])]
+    [ ("_File", [ ("New Worldspace", onNewFile es)
+                , ("_Open",          onFileLoad es =<< showFileChooser window Gtk.FileChooserActionOpen "Open WorldSpace File" "WorldSpace files" "*.world")
+                , ("_Save",          saveWorldSpace es SaveIfHasFile)
+                , ("Save As",        saveWorldSpace es ForceSaveAs)
+                , ("_Quit",          void $ onApplicationClose app)])
+    , ("_Game", [ ("Toggle _Debug",  pushAppEvent queue ToggleDebug)])
+    , ("_Help", [ ("_About",         showAboutDialog)])]
 
 -- Later can include save unsaved work option
 onApplicationClose :: Gtk.Application -> IO Bool
 onApplicationClose app = Gio.applicationQuit app >> pure True
 
-onFileLoad :: EditorState -> Maybe FilePath -> IO ()
-onFileLoad es@EditorState{eventQueue = queue} maybeFile =
-    forM_ maybeFile $ \f ->
-        loadWorldSpace queue f
-        >>= setActiveWorldSpace es (T.pack $ takeFileName f)
+onNewFile :: EditorState -> IO ()
+onNewFile es@EditorState{wsEditState = wsEditStRef} = do
+    modifyIORef' wsEditStRef $ \wsEditSt ->
+        wsEditSt {wsFilePath = Nothing}
+    setActiveWorldSpace es "new worldspace" emptyWorldSpace
 
+onFileLoad :: EditorState -> Maybe FilePath -> IO ()
+onFileLoad es@EditorState{eventQueue = queue, wsEditState = wsEditStRef} maybeFile =
+    forM_ maybeFile $ \f -> do
+        ws <- loadWorldSpace queue f
+
+        modifyIORef' wsEditStRef $ \wsEditSt ->
+            wsEditSt {wsFilePath = Just f}
+
+        setActiveWorldSpace es (T.pack $ takeFileName f) ws
 
 setActiveWorldSpace :: EditorState -> Text -> WorldSpace ImageID -> IO ()
 setActiveWorldSpace EditorState{editorWindow = window, eventQueue = queue, wsEditState = wsStateRef} name worldspace = do
@@ -61,8 +70,13 @@ setActiveWorldSpace EditorState{editorWindow = window, eventQueue = queue, wsEdi
     set window [#title := windowName]
 
     pushAppEvent queue (LoadWorldSpace worldspace)
+
+    wsState <- readIORef wsStateRef
+    let wsProps = wsProperties  wsState
+        wsRef   = worldspaceRef wsState
+    writeIORef wsRef worldspace
+    
     -- we update all editable property watchers to use the new values
-    wsProps <- wsProperties <$> readIORef wsStateRef
     mapM_ ($worldspace) wsProps
 
 handleEditorEvents :: EditorState -> IO Bool
@@ -84,14 +98,14 @@ activateApp app queue args = do
     window <- new Gtk.ApplicationWindow
         [ #application   := app
         , #title         := Kathu.appName
-        , #defaultHeight := 200
-        , #defaultWidth  := 380
+        , #defaultHeight := 300
+        , #defaultWidth  := 340
         ]
     Gtk.windowSetIconFromFile window appIconPath
 
-    res      <- loadResources 
-    wsRef    <- newIORef emptyWorldSpace
-    wsEditSt <- newIORef $ WSEditState wsRef []
+    res       <- loadResources 
+    wsRef     <- newIORef emptyWorldSpace
+    wsEditSt  <- newIORef $ WSEditState wsRef [] Nothing
     let editorState = EditorState app window queue wsEditSt res
 
     -- For some reason letting it close on its own can generate a lot of access violations that don't occur when applicationQuit is called
@@ -137,11 +151,12 @@ start args = do
     -- don't load any world yet, and force debug to be usable
     let updateSettings s = s {initialWorld = Nothing, canUseDebug = True}
 
+    curTime <- SDL.ticks
+    commandState <- newCommandState
+
     forkIO . Kathu.startWith updateSettings $ \(Kathu.RenderInfo _ renderer buffer settings) world -> do
-        curTime <- SDL.ticks
         -- need to put this first or else it will get stuct waiting for the MVar to be filled
         putEntityWorld world queue
-        commandState <- newCommandState
         Kathu.runForEventQueue queue commandState (Kathu.renderDelay settings) renderer buffer curTime curTime
 
     Gio.applicationRun app Nothing

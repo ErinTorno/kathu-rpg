@@ -13,20 +13,21 @@ import           Data.Aeson.Text            (encodeToLazyText)
 import qualified Data.Bifunctor             as Bi
 import qualified Data.ByteString            as B
 import qualified Data.ByteString.Lazy       as BL
-import           Data.List                  (isPrefixOf)
+import           Data.List                  (isSuffixOf)
 import           Data.Text.Lazy.IO          as IL
 import qualified Data.Yaml                  as Y
 import           System.Directory
 import           System.FilePath
 
 import           Kathu.IO.Directory
+import qualified Kathu.Parsing.Yaml         as Yaml
 import           Kathu.Util.Dependency
 import           Kathu.Util.Flow            (partitionM)
 
 toStrict :: BL.ByteString -> B.ByteString
 toStrict = B.concat . BL.toChunks
 
-data Format = FormatJSON | FormatYAML
+data Format = FormatJSON | FormatYAML deriving (Show, Eq)
 
 fileExists :: FilePath -> IO Bool
 fileExists = doesFileExist
@@ -34,13 +35,18 @@ fileExists = doesFileExist
 loadError :: String -> FilePath -> a
 loadError file = error . (++) (file ++ " | ")
 
+-- | Files types can be put into the path, in the format of "filename~FORMAT.ext"
+-- | If no format is given, it is assumed to use YAML
+fileFormatPrefix :: FilePath -> Format
+fileFormatPrefix filepath
+    | "~json" `isSuffixOf` takeBaseName filepath = FormatJSON
+    | otherwise                                  = FormatYAML
+
 loadWithHandlers :: FromJSON a => (String -> b) -> (a -> b) -> FilePath -> IO b
-loadWithHandlers onFail onSuccess filepath
-    | typePrefix "~json" = handle eitherDecode
-    | otherwise          = handle (Bi.first show . Y.decodeEither' . toStrict) -- we default to yaml when nothing matches
-    where -- files types are put into the path, in the format of "filename~FORMAT.ext"
-          typePrefix c   = c `isPrefixOf` takeBaseName filepath
-          handle decoder  = either onFail onSuccess . decoder <$> BL.readFile filepath
+loadWithHandlers onFail onSuccess filepath = case fileFormatPrefix filepath of
+    FormatJSON -> handle eitherDecode
+    FormatYAML -> handle (Bi.first show . Y.decodeEither' . toStrict) -- we default to yaml when nothing matches
+    where handle decoder  = either onFail onSuccess . decoder <$> BL.readFile filepath
 
 loadFromFile :: FromJSON a => FilePath -> IO a
 loadFromFile fp = loadWithHandlers (loadError fp) id fp
@@ -49,8 +55,11 @@ maybeLoad :: FromJSON a => FilePath -> IO (Maybe a)
 maybeLoad = loadWithHandlers (const Nothing) Just
 
 saveToFile :: ToJSON a => Format -> FilePath -> a -> IO ()
-saveToFile FormatJSON fd config = IL.writeFile fd (encodeToLazyText config)
-saveToFile FormatYAML fd config = B.writeFile fd (Y.encode config)
+saveToFile FormatJSON fd val = IL.writeFile fd (encodeToLazyText val)
+saveToFile FormatYAML fd val = B.writeFile fd (Yaml.encodeYaml val)
+
+saveYamlToFileWithFieldOrder :: ToJSON a => Yaml.FieldOrder -> FilePath -> a -> IO ()
+saveYamlToFileWithFieldOrder fieldOrd fd val = B.writeFile fd (Yaml.encodeYamlWithFieldOrder fieldOrd val)
 
 ---------------------
 -- Parsing Related --

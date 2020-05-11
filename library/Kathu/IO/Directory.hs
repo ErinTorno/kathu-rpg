@@ -20,7 +20,7 @@ newtype WorkingDirectory = WorkingDirectory {unWorkingDir :: FilePath}
     deriving (Show, Eq, Ord, Generic, IsString, ToJSON, FromJSON)
 
 assetPath :: IsString a => a
-assetPath = "./assets"
+assetPath = "assets"
 
 -- | Strips unnecessary-but-informative `./` from relative file paths
 sanitizeRelativePath :: FilePath -> FilePath

@@ -35,7 +35,12 @@ newExistingEntity :: (MonadIO m, Set w m c, Set w m Existance, Get w m EntityCou
 newExistingEntity c = newEntity (Existance, c)
 
 -- | Mutually exclusive categories that mark special properties about a given entity
-data SpecialEntity = Player | WorldCollision | Spirit deriving (Show, Eq)
+data SpecialEntity
+    = Player
+    | WorldCollision
+    | Spirit
+    | EditorRefTo Entity
+    deriving (Show, Eq)
 
 instance Component SpecialEntity where type Storage SpecialEntity = Map SpecialEntity
 

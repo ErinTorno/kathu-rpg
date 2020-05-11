@@ -17,6 +17,8 @@ data Resources = Resources
     , iconToolSignalWirerActive :: Gtk.Image
     , iconToolTilePlacer        :: Gtk.Image
     , iconToolTilePlacerActive  :: Gtk.Image
+    , iconEdit                  :: Gtk.Image
+    , iconDelete                :: Gtk.Image
     }
 
 loadResources :: IO Resources
@@ -27,3 +29,5 @@ loadResources = Resources
     <*> Gtk.imageNewFromFile (editorAssetPath ++ "tool-signal-wirer-active.png")
     <*> Gtk.imageNewFromFile (editorAssetPath ++ "tool-tile-placer.png")
     <*> Gtk.imageNewFromFile (editorAssetPath ++ "tool-tile-placer-active.png")
+    <*> Gtk.imageNewFromFile (editorAssetPath ++ "icon-edit.png")
+    <*> Gtk.imageNewFromFile (editorAssetPath ++ "icon-delete.png")

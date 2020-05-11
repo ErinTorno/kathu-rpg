@@ -102,7 +102,7 @@ instance ( s `CanStore` (IDMap (Tile g))
 emptyTile :: Tile g
 emptyTile = Tile
     { _tileID         = emptyTileID
-    , _tileTextID     = ""
+    , _tileTextID     = "empty"
     , _tileName       = "empty tile"
     , _tileRender     = error "Attempted to use an empty tile's render"
     , _isRenderRandom = False

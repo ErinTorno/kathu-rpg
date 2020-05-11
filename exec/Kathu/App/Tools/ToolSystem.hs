@@ -27,7 +27,7 @@ import           Kathu.App.System
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.ToolMode
 import           Kathu.App.World
-import           Kathu.Entity.Components     (Local, simpleIdentity)
+import           Kathu.Entity.Components     (Local, SpecialEntity(..), simpleIdentity)
 import           Kathu.Entity.Cursor
 import           Kathu.Entity.Logger
 import           Kathu.Entity.Time
@@ -40,7 +40,10 @@ import           Kathu.Util.Apecs
 import           Kathu.Util.Flow             (ireplicateM_)
 
 gridColor :: Color
-gridColor = mkColor 110 90 110 255
+gridColor = mkColor 100 80 100 255
+
+placeLineColor :: Color
+placeLineColor = mkColor 140 120 140 255
 
 renderToolMode :: SDL.Renderer -> (V2 Double -> V2 Double) -> SystemT' IO ()
 renderToolMode renderer logicToRenderPos = do
@@ -65,6 +68,22 @@ renderToolMode renderer logicToRenderPos = do
                 --  add 0.5 after flooring as tiles are normally centered, and we want to offset that
                 let colScreenCoord = floor . view _x . logicToRenderPos . flip V2 0 . (+0.5) . floorF $ (camX - 0.5 * unitWidthToDraw + fromIntegral col)
                  in SDL.drawLine renderer (SDL.P (V2 colScreenCoord 0)) (SDL.P (V2 colScreenCoord resH))
+    
+    case toolmode of
+        TilePlacer _ -> do
+            cursorSt         <- get global
+            maybeLastTilePos <- lastPlacedTilePos <$> get global
+
+            forM_ maybeLastTilePos $ \lastPos ->
+                let hoveredTilePos :: V2 Int
+                    hoveredTilePos = floor <$> V2 0.5 1 + cursorPosition cursorSt
+                    -- we want to show lines originating from the center of tiles, so we adjust them
+                    shiftPos :: V2 Double
+                    shiftPos       = V2 0 (-0.5)
+                    mkPoint pos    = SDL.P . fmap floor . logicToRenderPos $ shiftPos + (fromIntegral <$> pos)
+                 in do SDL.rendererDrawColor renderer SDL.$= unColor placeLineColor
+                       SDL.drawLine renderer (mkPoint lastPos) (mkPoint hoveredTilePos)
+        _ -> pure ()
 
 -- | Updates tool mode after new frame's controls have been updated
 runToolMode :: CommandState -> SystemT' IO ()
@@ -86,9 +105,9 @@ runToolMode commandSt = do
     unless (isNoTool toolmode) $ do
         univToolSt      <- get global
         RenderTime time <- get global
-        ctrlSt <- getInputState controlSt (fromScanCode SDL.ScancodeLCtrl)
-        zSt    <- getInputState controlSt (fromScanCode SDL.ScancodeZ)
-        ySt    <- getInputState controlSt (fromScanCode SDL.ScancodeY)
+        ctrlSt <- getInputState controlSt $ fromScanCode SDL.ScancodeLCtrl
+        zSt    <- getInputState controlSt $ fromScanCode SDL.ScancodeZ
+        ySt    <- getInputState controlSt $ fromScanCode SDL.ScancodeY
 
         when (isPressedOrHeld ctrlSt && lastUndoRedoTime univToolSt + timeBetweenUndoRedo <= time) $
             -- ctrl can be held, but we only run on initial Z or Y press so we don't accidentally undo many commands in a few frames
@@ -141,6 +160,9 @@ handleUseToolModeEvent newMode = do
         forM_ playerEty $ \(_ :: Local, ety) ->
             ety $= defaultCamera
 
+    when (isNoTool prevMode && not (isNoTool newMode)) $
+        pure ()
+
     finalizeToolMode prevMode
     initToolMode newMode
 
@@ -154,9 +176,13 @@ finalizeToolMode mode = case mode of
 
 initToolMode :: ToolMode -> SystemT' IO ()
 initToolMode mode = case mode of
-    NoTool -> 
+    NoTool -> do
         -- these might have changed when we could run commands
         rebuildCurrentTileCollisions
+        -- delete all editor references
+        let cleanUpRef (EditorRefTo _, ety) = destroyEntity ety
+            cleanUpRef (_, _)               = pure ()
+        cmapM_ cleanUpRef
     TilePlacer st -> do
         library <- get global
         -- we want to create a tile placer entity to help show which tiles are which
@@ -165,7 +191,7 @@ initToolMode mode = case mode of
             Just proto -> do
                 ety    <- newFromPrototype proto
                 ety    $= Position (V2 10000 10000) -- should be offscreen for first frame before it get's updated to follow camera
-                global $= TilePlacer st{tileSelectorEty = Just ety}
+                global $= TilePlacer st {tileSelectorEty = Just ety}
     _ -> pure ()
 
 ----------------

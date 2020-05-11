@@ -8,8 +8,10 @@ import qualified Apecs
 import           Control.Lens               hiding (set)
 import           Control.Monad              (forM_, void, when)
 import           Data.GI.Base
+import           Data.Int
 import           Data.IORef
 import qualified Data.Map                   as Map
+import           Data.Maybe
 import           Data.Text                  (Text)
 import qualified Data.Text                  as T
 import           Data.Vector                (Vector)
@@ -22,11 +24,13 @@ import           Kathu.App.Data.KathuStore  (countingIDs)
 import           Kathu.App.Graphics.Image   (ImageID(..))
 import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
+import           Kathu.Editor.Dialogs
 import           Kathu.Editor.GtkUtil
 import           Kathu.Editor.Resources
 import           Kathu.Editor.Types
 import           Kathu.Graphics.Drawable    (getRenderGraphicsVector)
 import           Kathu.Parsing.Counting
+import qualified Kathu.Scripting.Lua        as Lua
 import           Kathu.Util.Collection      (fromJustElseError)
 import           Kathu.Util.Types
 import           Kathu.World.WorldSpace
@@ -140,6 +144,46 @@ mkWorldSpaceToolbar EditorState{eventQueue = queue, resources = res} = do
     pushAppEvent queue (UseToolMode NoTool)
     pure toolbar
 
+-- | Creates a row that shows the script file, and has a button to edit or delete the script
+mkScriptPropertyRow :: EditorState -> Gtk.Grid -> Int32 -> IO (EditableProperty (WorldSpace ImageID))
+mkScriptPropertyRow EditorState{resources = res, wsEditState = wsEditStRef} grid rowNum = do
+    wsRef <- worldspaceRef <$> readIORef wsEditStRef
+    box <- new Gtk.Box [#orientation := Gtk.OrientationHorizontal]
+
+    fileEntry <- new Gtk.Entry [#editable := False, #canFocus := False]
+
+    let onDelete = do
+            Gtk.entrySetText fileEntry "No Script"
+            modifyIORef' wsRef $
+                worldScript .~ Nothing
+        onScriptChange script = do
+            Gtk.entrySetText fileEntry $ Lua.sanitizedScriptID script
+            modifyIORef' wsRef $
+                worldScript ?~ script
+
+    prevScript   <- view worldScript <$> readIORef wsRef
+    dialogRunner <- createEditScriptDialogRunner onScriptChange
+
+    editBtn   <- new Gtk.Button [#image := iconEdit res,   #tooltipText := "Edit Script"]
+    deleteBtn <- new Gtk.Button [#image := iconDelete res, #tooltipText := "Remove Script"]
+
+    void $ on editBtn #clicked $ do
+        script <- view worldScript <$> readIORef wsRef
+        dialogRunner $ fromMaybe Lua.blankScript script
+    void $ on deleteBtn #clicked onDelete
+
+    case prevScript of
+        Just script -> onScriptChange script
+        Nothing     -> onDelete
+
+    Gtk.containerAdd box fileEntry
+    Gtk.containerAdd box editBtn
+    Gtk.containerAdd box deleteBtn
+
+    addPropertyRowReadOnly grid rowNum "Script" (pure box) $ \_ worldspace ->
+        onScriptChange (worldspace^.worldScript.to (fromMaybe Lua.blankScript))
+
+-- | Makes a panel for editing a worldspace and its properties
 mkWorldSpacePanel :: EditorState -> IO Gtk.Widget
 mkWorldSpacePanel es@EditorState{wsEditState = wsStateRef} = do
     box  <- new Gtk.Box [#orientation := Gtk.OrientationVertical]
@@ -148,8 +192,9 @@ mkWorldSpacePanel es@EditorState{wsEditState = wsStateRef} = do
     let wsRef = worldspaceRef wsState
 
     editProps <- sequence
-        [ addPropertyRowText grid wsRef 0 "Worldspace ID"   (worldID . textIDLens)
-        , addPropertyRowText grid wsRef 1 "Worldspace Name" worldName
+        [ addPropertyRowText grid wsRef 0 "Worldspace ID" $ worldID . textIDLens
+        , addPropertyRowText grid wsRef 1 "Name"            worldName
+        , mkScriptPropertyRow es grid 3
         ]
 
     writeIORef wsStateRef $ wsState {wsProperties = editProps}

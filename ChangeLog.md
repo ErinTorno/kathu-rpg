@@ -20,6 +20,14 @@
 * One new tool is the tile drawer, where tiles can be selected in the editor and placed in the world
 * Entity instances in worldspaces can be given IDs
 
+### 0.1.11.3 -- 2020-05-10
+* The editor can now save worldspace files
+* The editor now displays an example line from the beginning to the target when drawing a line of tiles
+* The editor can now display script paths and modify their event listeners
+* Change .world files to use many tile fields instead of one giant config, preventing origin changing issues
+* .world tile legends can now be auto-generated
+* Added module for serializing "pretty" yaml files
+
 ## 0.1.10.0 -- 2020-01-27
 * Lua scripts can now be loaded and ran from files
 * Scripts can be attached to entities and worldspaces

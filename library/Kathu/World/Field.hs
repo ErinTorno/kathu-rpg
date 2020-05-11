@@ -1,23 +1,32 @@
-{-# LANGUAGE BangPatterns  #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE BangPatterns      #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE UnboxedTuples     #-}
 
 module Kathu.World.Field where
 
-import           Control.Lens
+import           Data.Aeson
+import           Data.Aeson.Types            (Pair)
+import           Control.Lens                hiding ((.=))
 import           Control.Monad
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Control.Monad.ST            (RealWorld)
+import qualified Data.Foldable               as F
 import           Data.Map.Strict             (Map)
 import qualified Data.Map.Strict             as Map
+import qualified Data.Set                    as Set
 import qualified Data.Vector                 as Vec
 import qualified Data.Vector.Unboxed         as UVec
 import qualified Data.Vector.Unboxed.Mutable as UMVec
 import           Linear.V2                   (V2(..))
 
-import           Kathu.Entity.System         (Tiles, fromTiles)
+import           Kathu.Entity.System         (Tiles, fromTiles, fromTilesID)
+import           Kathu.Parsing.Aeson         ()
+import           Kathu.Util.Collection       (foldlMVec, foldrMVec, fromJustElseError, splitEveryN)
 import           Kathu.Util.Flow             (mapPair, mapFst, mapSnd)
 import           Kathu.Util.Polygon
+import           Kathu.Util.Types
 import           Kathu.World.Tile
 
 unitsPerTile :: Num a => a
@@ -129,36 +138,6 @@ fieldFoldWithEmptyM f !acc (Field fgTiles) = go fgTiles 0 0 acc
               | x == fieldDim     = go tiles 0 (y + 1) b
               | otherwise         = liftIO (UMVec.unsafeRead tiles $ indexFromCoord x y) >>= f b (V2 x y) >>= go tiles (x + 1) y
 
-----------------
--- Conversion --
-----------------
-   
--- | Creates a FieldSet from a given 2D Vector of Tiles 
-fromTileVector2D :: MonadIO m => Vec.Vector (Vec.Vector (Tile g)) -> m FieldSet
-fromTileVector2D fgTiles = FieldSet <$> (if yLayers == 0 || xLayers == 0 then empty else buildNew)
-    where empty                       = Map.singleton (V2 0 0) <$> mkField
-          minFields :: (Integral a) => Float -> a -> Int
-          minFields s                 = ceiling . (/s) . fromIntegral
-          getContField x y   = fieldContainingCoord ((fromIntegral :: Int -> Double) x) (fromIntegral y)
-          (yLen, xLen)       = (Vec.length fgTiles, Vec.length (fgTiles Vec.! 0))
-          (yLayers, xLayers) = (minFields fieldDim yLen, minFields fieldDim xLen)
-          buildNew = liftIO (go 0 0 Map.empty)
-          go :: Int -> Int -> Map (V2 Int) Field -> IO (Map (V2 Int) Field)
-          go !x !y m | y == yLen = pure m
-                     | x == xLen = go 0 (y + 1) m
-                     | otherwise = runForTile ((fgTiles Vec.! y) Vec.! x) writeTile >>= go (x + 1) y
-              where (# fx, fy #) = getContField x y
-                    runForTile :: Tile g -> (Tile g -> Field -> IO Field) -> IO (Map (V2 Int) Field)
-                    runForTile t a | t^.tileID == emptyTileID = pure m -- do nothing if wanting to write empty tile, since Fields are initialized with all emptyTile
-                                   | otherwise                = case Map.lookup (V2 fx fy) m of
-                                       Just f  -> a t f >> pure m
-                                       Nothing -> flip (Map.insert (V2 fx fy)) m <$> (a t =<< mkField)
-                    writeTile :: Tile g -> Field -> IO Field
-                    writeTile t field = do
-                        newTileState <- mkTileStateWithMetadata t
-                        setTileState (x - fx * fieldDim) (y - fy * fieldDim) newTileState field
-                        pure field
-
 -- | Transforms a FieldSet into a list of V2 lists defining collision shapes
 mkCollisionPolygons :: MonadIO m => Tiles g -> FieldSet -> m (Vec.Vector [V2 Double])
 mkCollisionPolygons tiles = fmap (Vec.concat . fmap mkTriangles) . mapM isSolidVec . Map.assocs . unFieldSet
@@ -174,3 +153,81 @@ mkCollisionPolygons tiles = fmap (Vec.concat . fmap mkTriangles) . mapM isSolidV
                                     . mapSnd  (Vec.concat . Vec.toList . Vec.map (Vec.fromList . triangulate))
                                     . mapPair (Vec.map (mapPolyVertices ((+ V2 (-0.5) (-1)) . fmap fromIntegral . (+ V2 (wx * fieldDim) (wy * fieldDim)))))
                                     $ convexAndConcaveFromBinaryGrid v fieldDim fieldDim
+
+-------------------
+-- Serialization --
+-------------------
+
+type MapLegend g = Map Char (Tile g)
+
+data FieldConfig = FieldConfig {fcPosition :: !(V2 Int), fcData :: !(Vec.Vector String)}
+
+instance ToJSON FieldConfig where
+    toJSON (FieldConfig pos fdata) = object ["position" .= pos, "data" .= fdata]
+
+instance FromJSON FieldConfig where
+    parseJSON = withObject "FieldConfig" $ \v -> FieldConfig <$> v .: "position" <*> v .: "data"
+
+applyFieldConfig :: MonadIO m => MapLegend g -> FieldSet -> FieldConfig -> m FieldSet
+applyFieldConfig legend (FieldSet fieldMap) (FieldConfig pos fdata) = liftIO $ do
+    Field field <- mkField
+
+    let legendLookup k = mkTileState . fromJustElseError "Attempted to tile without a listing in the WorldSpace's legend" . Map.lookup k $ legend
+
+    iforM_ fdata $ \y rowStr ->
+        iforM_ rowStr $ \x key ->
+            UMVec.write field (indexFromCoord x y) (legendLookup key)
+
+    pure . FieldSet . flip (Map.insert pos) fieldMap . Field $ field
+
+-- When creating a tile legend, we choose symbols from associated groups;
+-- Once one of those groups run out, they can grab from the extra
+legendSolidTileKeys, legendNonSolidTileKeys, legendExtraTileKeys :: [Char]
+legendSolidTileKeys    = "#@=$%&/()0123456789" ++ ['A'..'B']
+legendNonSolidTileKeys = ".,-'\"`_~+*:;<>!?" ++ ['a'..'z']
+legendExtraTileKeys    = ['¿'..]
+
+mkLegend :: MonadIO m => Tiles g -> FieldSet -> m (MapLegend g)
+mkLegend allTiles (FieldSet fieldMap) = mkMap <$> liftIO allUniqueTiles
+    where mkMap = Map.fromList . view _1 . F.foldl' assignNext initialAcc
+
+          initialAcc = ([(' ', emptyTile)], legendSolidTileKeys, legendNonSolidTileKeys, legendExtraTileKeys)
+          -- next tile will get its legend key given
+          assignNext (acc, solid, nonSolid, extra) cTile
+              | cTile^.isSolid = extraIfNull solid    (tail solid) nonSolid
+              | otherwise      = extraIfNull nonSolid solid        (tail nonSolid)
+              where extraIfNull keys solKeys nonSolKeys
+                        | null keys = ((head extra, cTile):acc, solid,   nonSolid,   tail extra)
+                        | otherwise = ((head keys, cTile):acc,  solKeys, nonSolKeys, extra)
+        
+          allUniqueTiles   = mapM (fromTilesID allTiles) =<< allUniqueTileIDs
+        
+          allUniqueTileIDs = Set.elems . Set.unions <$> uniqueTileIDSets
+          
+          uniqueTileIDSets = mapM getUniqueTiles . Map.elems $ fieldMap
+
+          getUniqueTiles (Field fvec) = foldlMVec addUnique Set.empty fvec
+          addUnique acc ts
+              | ts^.tile == emptyTileID = acc -- ignore empty
+              | otherwise               = Set.insert (ts^.tile) acc
+
+-- | Serializes a FieldSet into pairs with a legend and many fields
+-- | The legend is map of characters to tile text IDs
+-- | The fields are a fieldDim-element list of fieldDim-character Strings
+serializeFieldSetPairs :: MonadIO m => Tiles g -> FieldSet -> m [Pair]
+serializeFieldSetPairs allTiles fs@(FieldSet fieldMap) = do
+    legend    <- mkLegend allTiles fs
+    let nameLegend :: Map Char Identifier
+        nameLegend = view tileTextID <$> legend
+        revLegend :: Map TileID Char
+        revLegend  = Map.fromList . map (\(k, v) -> (v, k)) . Map.assocs . fmap (view tileID) $ legend
+        getKey ts  = revLegend Map.! (ts^.tile)
+
+    fieldLists <- liftIO . forM (Map.assocs fieldMap) $ \(pos, Field field) -> do
+        fieldStr <- foldrMVec (\ts str -> getKey ts : str) "" field
+
+        let rows = Vec.fromList . take fieldDim $ splitEveryN fieldDim fieldStr
+
+        pure (FieldConfig pos rows)
+
+    pure ["legend" .= nameLegend, "fields" .= fieldLists]

@@ -16,13 +16,12 @@ module Kathu.World.WorldSpace where
 import           Apecs                     hiding (Map)
 import           Apecs.Physics             hiding (Map)
 import           Control.Lens              hiding ((.=), set)
-import           Control.Monad             (forM_, when)
+import           Control.Monad             (foldM, forM_, when)
 import           Control.Monad.IO.Class    (MonadIO)
 import           Data.Aeson
 import           Data.Aeson.Types          (Parser, typeMismatch)
-import           Data.Map                  (Map)
 import qualified Data.Map                  as Map
-import           Data.Maybe                (catMaybes, fromMaybe, maybe)
+import           Data.Maybe                (catMaybes, maybe)
 import           Data.Text                 (Text)
 import qualified Data.Text                 as T
 import           Data.Vector               (Vector)
@@ -38,6 +37,7 @@ import           Kathu.Entity.System       (Tiles)
 import           Kathu.Graphics.Drawable   (Render)
 import           Kathu.Graphics.Palette
 import           Kathu.IO.Directory        (WorkingDirectory)
+import           Kathu.Parsing.Yaml        (FieldOrder, mkFieldOrderFromList)
 import           Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua       as Lua
 import           Kathu.Scripting.Variables
@@ -47,7 +47,7 @@ import           Kathu.Util.Dependency
 import           Kathu.Util.Types          (Identifier, IDMap)
 import           Kathu.World.Field
 import           Kathu.World.Stasis
-import           Kathu.World.Tile          (Tile, _tileTextID)
+import           Kathu.World.Tile          (Tile)
 
 data InstancedPrototype g = InstancedPrototype
     { _instanceID         :: !Identifier
@@ -77,12 +77,11 @@ data WorldSpace g = WorldSpace
     , _worldEntities      :: Vector (InstancedPrototype g)
     , _worldItems         :: Vector (InstancedItem g)
     , _worldFields        :: !FieldSet
-    , _worldLegend        :: !(Map Char (Tile g))
     }
 makeLenses ''WorldSpace
 
 emptyWorldSpace :: WorldSpace g
-emptyWorldSpace = WorldSpace "" "the void..." "" Map.empty (V2 0 0) False Map.empty Nothing Vec.empty Vec.empty emptyFieldSet Map.empty
+emptyWorldSpace = WorldSpace "" "the void..." "" Map.empty (V2 0 0) False Map.empty Nothing Vec.empty Vec.empty emptyFieldSet
 
 -- right now we only consider horizontal fields; ones with different z depths are ignored
 fieldsSurrounding :: RealFrac a => a -> a -> WorldSpace g -> [(V2 Int, Field)]
@@ -243,22 +242,23 @@ instance (FromJSON (Dependency s m (ItemStack g)), Functor m) => FromJSON (Depen
 ----------------
 -- WorldSpace --
 ----------------
-    
-instance ToJSON (WorldSpace g) where
-    toJSON (WorldSpace wid wname initPal palettes loadPos shouldSavePos vars script etys items _ legend) = object
+
+encodeValueForWorldSpace :: MonadIO m => Tiles g -> WorldSpace g -> m Value
+encodeValueForWorldSpace allTiles (WorldSpace wid wname initPal palettes loadPos shouldSavePos vars script etys items fields) = do
+    fieldPairs <- serializeFieldSetPairs allTiles fields
+    pure . object $
         [ "world-id"                   .= wid
         , "name"                       .= wname
-        , "script"                     .= (Lua.scriptID <$> script)
+        , "script"                     .= script
         , "initial-palette"            .= initPal
         , "palettes"                   .= Map.keys palettes
         , "load-point"                 .= (loadPos / unitsPerTile)
         , "should-save-exact-position" .= shouldSavePos
-        , "legend"                     .= (_tileTextID <$> legend)
-        -- map
         , "variables"                  .= vars
         , "entities"                   .= etys
         , "items"                      .= items
         ]
+        ++ fieldPairs
 
 instance ( s `CanProvide` IDMap (EntityPrototype g)
          , s `CanProvide` IDMap Palette
@@ -275,12 +275,12 @@ instance ( s `CanProvide` IDMap (EntityPrototype g)
         loadPnt    <- (*unitsPerTile) <$> v .: "load-point"
         variables  <- v .:? "global-variables" .!= Map.empty
 
-        shouldSerializePosition      <- v .:? "should-save-exact-position" .!= False
-        foregroundT :: Vector [Char] <- v .: "tiles"
+        shouldSerializePosition <- v .:? "should-save-exact-position" .!= False
+        fieldConfigs :: Vector FieldConfig <- v .: "fields"
         
         wScript :: Dependency s m (Maybe Lua.Script) <- flattenDependency <$> v .:? "script"
 
-        legend :: Dependency s m (Map Char (Tile g)) <- do
+        dLegend :: Dependency s m (MapLegend g) <- do
             (keys, vals) :: ([Text], [Identifier]) <- unzip . Map.toList <$> v .: "legend"
 
             pure . fmap (Map.fromList . zip (T.head <$> keys))
@@ -292,13 +292,41 @@ instance ( s `CanProvide` IDMap (EntityPrototype g)
         entities <- v .: "entities"
 
         let palettes = dependencyMapLookupMap (paletteIDs :: Vector Identifier)
-            
-            failIfNothing = error "Attempted to tile without a listing in the WorldSpace's legend"
-
-            mkForegroundTiles lgnd = Vec.fromList . fmap (fromMaybe failIfNothing . flip Map.lookup lgnd) <$> foregroundT
 
             newFieldSet :: Dependency s m FieldSet
-            newFieldSet = (mkForegroundTiles <$> legend) >>= liftDependency . fromTileVector2D
+            newFieldSet = do
+                legend <- dLegend
+                liftDependency $
+                    foldM (applyFieldConfig legend) emptyFieldSet fieldConfigs
 
-        pure $ WorldSpace worldId wName initPal <$> palettes <*> pure loadPnt <*> pure shouldSerializePosition <*> pure variables <*> wScript <*> entities <*> items <*> newFieldSet <*> legend
+        pure $ WorldSpace worldId wName initPal <$> palettes <*> pure loadPnt <*> pure shouldSerializePosition <*> pure variables <*> wScript <*> entities <*> items <*> newFieldSet
     parseJSON e          = typeMismatch "WorldSpace" e
+
+-- | When we serialize the WorldSpace, we serialize the fields in the following order
+worldspaceFieldOrder :: FieldOrder
+worldspaceFieldOrder = mkFieldOrderFromList
+    [ "world-id"
+    , "name"
+    , "script"
+    , "initial-palette"
+    , "palettes"
+    , "load-point"
+    , "should-save-exact-position"
+    , "variables"
+    , "legend"
+    , "fields"
+    , "entities"
+    , "items"
+    -- Sub Configs
+    , "entity"
+    , "item"
+    , "position"
+    , "data"
+    , "emitting-signal"
+    , "receiving-signal"
+    , "config"
+    , "file"
+    , "events"
+    , "is-singleton"
+    , " "
+    ]

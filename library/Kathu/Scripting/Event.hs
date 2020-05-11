@@ -3,8 +3,10 @@
 module Kathu.Scripting.Event
     ( ScriptEvent
     , EventFlag
+    , allEvents
     , noEventFlags
     , mkEventFlags
+    , setEventFlagEnabled
     , isEventSet
     , onUpdate
     , onInit
@@ -24,9 +26,9 @@ import qualified Data.Foldable         as F
 
 import           Kathu.Util.Collection (findByElem)
 
-newtype ScriptEvent = ScriptEvent Word32 deriving Eq
+newtype ScriptEvent = ScriptEvent Word32 deriving (Show, Eq)
     
-newtype EventFlag = EventFlag Word32 deriving Eq
+newtype EventFlag = EventFlag Word32 deriving (Show, Eq)
 
 noEventFlags :: EventFlag
 noEventFlags = EventFlag 0
@@ -36,6 +38,13 @@ mkEventFlags = F.foldl' (flip enableEventFlag) noEventFlags
 
 enableEventFlag :: ScriptEvent -> EventFlag -> EventFlag
 enableEventFlag (ScriptEvent e) (EventFlag f) = EventFlag $ f .|. e
+
+disableEventFlag :: ScriptEvent -> EventFlag -> EventFlag
+disableEventFlag (ScriptEvent e) (EventFlag f) = EventFlag $ f .&. complement e
+
+setEventFlagEnabled :: ScriptEvent -> EventFlag -> Bool -> EventFlag
+setEventFlagEnabled event flags True  = enableEventFlag event flags
+setEventFlagEnabled event flags False = disableEventFlag event flags
 
 isEventSet :: ScriptEvent -> EventFlag -> Bool
 isEventSet (ScriptEvent e) (EventFlag f) = 0 /= e .&. f

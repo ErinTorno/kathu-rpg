@@ -1,5 +1,11 @@
 updateCount = 0
 
+function onInit(ety)
+  playerEty = getPlayerEntity()
+
+  log("test-world script has been initialized; player entity has ID " .. playerEty)
+end
+
 function onUpdate(ety)
   updateCount = updateCount + 1
   
@@ -14,6 +20,3 @@ function onUpdate(ety)
   end
 end
 
-playerEty = getPlayerEntity()
-
-log("test-world script has been initialized; player entity has ID " .. playerEty)

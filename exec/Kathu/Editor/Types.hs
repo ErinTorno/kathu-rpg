@@ -13,9 +13,12 @@ type MenuBarDescription = [(Text, [(Text, Gtk.MenuItemActivateCallback)])]
 
 type EditableProperty a = a -> IO ()
 
+data SaveType = ForceSaveAs | SaveIfHasFile deriving Eq
+
 data WSEditState = WSEditState
     { worldspaceRef :: !(IORef (WorldSpace ImageID))
     , wsProperties  :: ![EditableProperty (WorldSpace ImageID)]
+    , wsFilePath    :: !(Maybe FilePath)
     }
 
 data EditorState = EditorState

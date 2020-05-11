@@ -8,6 +8,7 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 
@@ -19,11 +20,14 @@ import           Apecs
 import           Control.Concurrent.MVar
 import           Control.Monad               (forM_)
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Control.Lens                hiding ((.=))
 import           Data.Aeson
 import           Data.Aeson.Types            (typeMismatch)
 import           Data.Functor.Compose
 import           Data.ByteString             (ByteString)
 import qualified Data.ByteString             as BS
+import           Data.Maybe                  (fromMaybe)
+import           Data.Text                   (Text)
 import qualified Data.Text                   as T
 import           Foreign.Lua                 (Lua)
 import qualified Foreign.Lua                 as Lua
@@ -39,12 +43,35 @@ import           Kathu.Util.Apecs
 import           Kathu.Util.Dependency
 import           Kathu.Util.Types
 
+import qualified Debug.Trace as DT
+
 data Script = Script
-    { scriptID         :: !Identifier -- a unique identifier to refer to this script (usually its file path)
-    , mainScript       :: !ByteString -- this is main script
-    , scriptEventFlags :: !EventFlag
-    , isSingleton      :: !Bool       -- if True, then there all users of this script share the same instance and state
-    }
+    { _scriptID         :: !Identifier -- a unique identifier to refer to this script (usually its file path)
+    , _mainScript       :: !ByteString -- this is main script
+    , _scriptEventFlags :: !EventFlag
+    , _isSingleton      :: !Bool       -- if True, then there all users of this script share the same instance and state
+    } deriving Eq
+makeLenses ''Script
+
+blankScript :: Script
+blankScript = Script "" BS.empty noEventFlags False
+
+sanitizedScriptID :: Script -> Text
+sanitizedScriptID Script{_scriptID = sID} = fromMaybe txtID . T.stripPrefix assetPath $ txtID
+    where txtID = unID sID
+
+instance ToJSON Script where
+    toJSON script@(Script _ _ flags isSingle)
+        -- If everything else can be blank, just serialize this to a string
+        | flags == noEventFlags && not isSingle = toJSON (DT.traceShowId sanitizedFile)
+        | otherwise = object
+            [ "file"         .= sanitizedFile
+            , "events"       .= nothingUnless (flags /= noEventFlags) flags
+            , "is-singleton" .= nothingUnless isSingle True
+            ]
+        where nothingUnless cond val = if cond then Just val else Nothing 
+              -- when saved, assets is the root, so if it keeps the assets, it will parse it wrong
+              sanitizedFile = sanitizedScriptID script
 
 instance (s `CanProvide` WorkingDirectory, MonadIO m) => FromJSON (Dependency s m Script) where
     parseJSON e = let readF f = do path <- (resolveAssetPathDP . T.unpack) f

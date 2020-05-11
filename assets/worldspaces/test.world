@@ -1,119 +1,162 @@
 world-id: test-world
-name:     test world
+name: test world
 script:
-  file:   "test.lua"
-  events: [on-update]
+  file: /worldspaces/test.lua
+  events: [on-init]
 initial-palette: default
-palettes: [default, night, volcanic, poison, rainbow]
+palettes: [night, default, volcanic]
 load-point: [16, 4]
+should-save-exact-position: false
+variables: {}
 legend:
   " ": empty
-  "#": brick-wall
-  "%": brick-wall-cold
-  "V": brick-wall-vibrant
-  "*": brick-floor
-  ",": tall-grass
-  "^": spikes
-  "|": rough-stone-wall-single
-  "[": rough-stone-wall-left
-  "]": rough-stone-wall-right
+  ",": spikes
   "=": rough-stone-wall-middle
-tiles:
-- "##  #######   , ,, # ## , ,,,   #####, #####, "
-- "#    #    #   ,,, ,   #, ,,,,   #   #, # # #, "
-- "#    #   ###     ,   ,# ,,,    ,# # # ,#####,,"
-- "#        ,        ,   #,        #   #    ,,,, "
-- "#       , ,   ,   ,   #,,       #####, ,, , , "
-- "#           ,  ,  ,  ##,   ,  ,      ,,, , ,, "
-- "####  #   #        , ,, ,, ,, ,       ,, ,, ,,"
-- "#         #  ,, ,,,          , ,       ,,,  , "
-- "#         #  ,,,, ,   ,           ,,,  , ,V, ,"
-- "#         #  ,,,,  , ,%%%    %%%,,    , , V ,V"
-- "#         #   ,,,  ,  %        %,,     , ,V  ,"
-- "#         #  , ,,,   ,%        %,     ,, ,V , "
-- "#         #  ,,,,,,  ,%        % , ,,  ,, V, ,"
-- "#         #  , ,,,   ,%        %, ,,,  , ,V,,,"
-- "#         #  ,,,,,,  ,%        %  ,, ,,VVVV ,,"
-- "#  #####  # ,,, , ,   %%%    %%% ,,  ,, ,  , ,"
-- ", ,,, ,, ,, ,,, , , ,,,    , ,,  , , ,,^^^ , ,"
-- ", ,,   ,, ,,  , , , ,,,      , ,  , , ,^^^,  ,"
-- ", ,,|  |, , ,    ,  , , ,, , ,   ,,  ,,^^^ , ,"
-- ", []|  |[=]|[=],, , ,  ,  , , ,, , , ,,, , , ,"
-variables:
-  # this contains variables that are associated with the worldspace itself, and are saved/loaded with it
-  my-bool:   {type: bool,   value: true}
-  my-double: {type: double, value: 100.25}
-  my-int:    {type: int,    value: 32}
-  my-text:   {type: text,   value: "this is an example sentence"}
+  "@": rough-stone-wall-right
+  ".": tall-grass
+  "$": rough-stone-wall-left
+  "/": brick-wall-cold
+  "%": brick-wall
+  "#": rough-stone-wall-single
+  "&": brick-wall-vibrant
+fields:
+- position: [0, 0]
+  data:
+  - '%%  %%%%%%%   . .. % %% . ...   '
+  - '%    %    %   ... .   %. ....   '
+  - '%    %   %%%     .   .% ...    .'
+  - '%        .        .   %.        '
+  - '%       . .   .   .   %..       '
+  - '%           .  .  .  %%.   .  . '
+  - '%%%%  %   %        . .. .. .. . '
+  - '%         %  .. ...          . .'
+  - '%         %  .... .   .         '
+  - '%         %  ....  . .///    ///'
+  - '%         %   ...  .  /        /'
+  - '%         %  . ...   ./        /'
+  - '%         %  ......  ./        /'
+  - '%         %  . ...   ./        /'
+  - '%         %  ......  ./        /'
+  - '%  %%%%%  % ... . .   ///    ///'
+  - '. ... .. .. ... . . ...    . .. '
+  - . ..   .. ..  . . . ...      . .
+  - '. ..#  #. . .    .  . . .. . .  '
+  - '. $@#  #$=@#$=@.. . .  .  . . ..'
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+- position: [1, 0]
+  data:
+  - '%%%%%. %%%%%.                   '
+  - '%   %. % % %.                   '
+  - '% % % .%%%%%..                  '
+  - '%   %    ....                   '
+  - '%%%%%. .. . .                   '
+  - '     ... . ..                   '
+  - '      .. .. ..                  '
+  - '       ...  .                   '
+  - '  ...  . .&. .                  '
+  - '..    . . & .&                  '
+  - '..     . .&  .                  '
+  - '.     .. .& .                   '
+  - ' . ..  .. &. .                  '
+  - '. ...  . .&...                  '
+  - '  .. ..&&&& ..                  '
+  - ' ..  .. .  . .                  '
+  - ' . . ..,,, . .                  '
+  - '  . . .,,,.  .                  '
+  - ' ..  ..,,, . .                  '
+  - ' . . ... . . .                  '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
+  - '                                '
 entities:
-- entity:   chest-locked
-  position: [6.5, 1]
-- entity:   chest-odd
-  position: [25, 12]
-- entity:   door-brick-wide
-  position: [4.5, 6]
-- entity:   door-brick-wide
-  position: [2.5, 0]
-- entity:   door-brick-wide-unlocked
-  position: [1.5, 15]
-- entity:   door-stairs-down
-  position: [5.5, 19]
-- entity:   block
-  position: [15, 12]
-- entity:   block
-  position: [2, 12]
-- entity:   block
-  position: [30, 4]
-- entity:   orb-toggle
-  position: [34, 11]
-- entity:   orb-toggle
-  position: [29, 11]
-- entity:   pot-small
-  position: [32, 5]
-- entity:   button
-  position: [26, 14]
-  emitting-signal: my-button1
-  config:
-    mass-threshold: {type: double, value: 5}
-- entity:   powered-brick-door-cold
-  position: [27.5, 9]
-  receiving-signal: my-button1
-  
-- entity:   block
-  position: [22, 22]
-- entity:   button-huge
+- entity: powered-brick-door
+  position: [27.5, 25]
+  receiving-signal: button-huge1
+- entity: button-huge
   position: [26, 22]
   emitting-signal: button-huge1
   config:
-    mass-threshold: {type: double, value: 80}
-- entity:   powered-brick-door
-  position: [27.5, 25]
-  receiving-signal: button-huge1
+    mass-threshold:
+      value: 80
+      type: double
+- entity: block
+  position: [22, 22]
+- entity: powered-brick-door-cold
+  position: [27.5, 9]
+  receiving-signal: my-button1
+- entity: button
+  position: [26, 14]
+  emitting-signal: my-button1
+  config:
+    mass-threshold:
+      value: 5
+      type: double
+- entity: pot-small
+  position: [32, 5]
+- entity: orb-toggle
+  position: [29, 11]
+- entity: orb-toggle
+  position: [34, 11]
+- entity: block
+  position: [30, 4]
+- entity: block
+  position: [2, 12]
+- entity: block
+  position: [15, 12]
+- entity: door-stairs-down
+  position: [5.5, 19]
+- entity: door-brick-wide-unlocked
+  position: [1.5, 15]
+- entity: door-brick-wide
+  position: [2.5, 0]
+- entity: door-brick-wide
+  position: [4.5, 6]
+- entity: chest-odd
+  position: [25, 12]
+- entity: chest-locked
+  position: [6.5, 1]
 items:
-- item:     apple
-  position: [19, 2.5]
-- item:     apple
-  position: [15.5, 8.5]
-- item:     potion-health
-  position: [1.5, 2]
-- item:     potion-mana
-  position: [2.5, 2]
-- item:     key-small
-  position: [3, 7]
-- item:     key-big
-  position: [4, 8]
-- item:     key-odd
-  position: [26.5, 12]
-- item:     sword
-  position: [8, 7]
-- item:     bomb
-  position: [7, 4.5]
-- item:     pumpkin
-  position: [21, 1]
-- item:     pumpkin
-  position: [11, 6]
-- item:     spirit-lantern
+- item: spirit-lantern
   position: [12, 1]
-
-
-
+- item: pumpkin
+  position: [11, 6]
+- item: pumpkin
+  position: [21, 1]
+- item: bomb
+  position: [7, 4.5]
+- item: sword
+  position: [8, 7]
+- item: key-odd
+  position: [26.5, 12]
+- item: key-big
+  position: [4, 8]
+- item: key-small
+  position: [3, 7]
+- item: potion-mana
+  position: [2.5, 2]
+- item: potion-health
+  position: [1.5, 2]
+- item: apple
+  position: [15.5, 8.5]
+- item: apple
+  position: [19, 2.5]

@@ -31,6 +31,13 @@ splitAtFirst e l  = go [] l
           go acc (x:xs) | x == e    = (acc, xs)
                         | otherwise = go (x:acc) xs
 
+splitEveryN :: Int -> [a] -> [[a]]
+splitEveryN n list
+    | n <= 0    = error $ "Cannot split a list into " ++ show n ++ " length intervals"
+    | otherwise = go [] list
+    where go acc [] = acc
+          go acc ls = go (acc ++ [take n ls]) (drop n ls)
+
 -- Map functions
 
 findByElem :: (a -> Bool) -> Map k a -> Maybe (k, a)
@@ -54,6 +61,18 @@ forMMVec :: (PrimMonad m, MVector v a) => v (PrimState m) a -> (a -> m a) -> m (
 forMMVec !vec !f = go 0
     where go !i | i == MVec.length vec = pure ()
                 | otherwise            = MVec.unsafeRead vec i >>= f >>= MVec.unsafeWrite vec i >> go (i + 1)
+
+foldlMVec :: (PrimMonad m, MVector v a) => (b -> a -> b) -> b -> v (PrimState m) a -> m b
+foldlMVec !accFn !initAcc !vec = go 0 initAcc
+    where go !i !acc
+              | i >= MVec.length vec = pure acc
+              | otherwise            = MVec.unsafeRead vec i >>= pure . accFn acc >>= go (i + 1)
+
+foldrMVec :: (PrimMonad m, MVector v a) => (a -> b -> b) -> b -> v (PrimState m) a -> m b
+foldrMVec !accFn !initAcc !vec = go (MVec.length vec - 1) initAcc
+    where go !i !acc
+              | i < 0     = pure acc
+              | otherwise = MVec.unsafeRead vec i >>= pure . flip accFn acc >>= go (i - 1)
 
 -- Specialized List functions
 

@@ -15,14 +15,13 @@ import           Kathu.App.Tools.ToolSystem
 import           Kathu.App.World             (loadWorldSpace)
 import           Kathu.Entity.System         (Debug(..))
 import           Kathu.World.Tile            (Tile)
-import           Kathu.World.WorldSpace      (WorldSpace, emptyWorldSpace, worldID)
+import           Kathu.World.WorldSpace      (WorldSpace, worldID)
 
 -- Events that the app receives
 data AppEvent
     = UseToolMode ToolMode
     | SetSelectedTile (Tile ImageID)
     | LoadWorldSpace  (WorldSpace ImageID)
-    | NewWorldSpace
     | ToggleDebug
     | RunSystem (SystemT' IO ())
 
@@ -54,8 +53,6 @@ handleEvent event = case event of
     SetSelectedTile sTile -> do
         toolUnivSt <- get global
         global $= toolUnivSt {selectedTile = sTile}
-    NewWorldSpace ->
-        loadWorldSpace emptyWorldSpace
     LoadWorldSpace worldspace -> do
         -- Update it in the library
         library <- get global
@@ -99,14 +96,12 @@ pollEvents eventMVar = do
 -- EntityWorld
 
 takeEntityWorld :: EventQueue -> IO EntityWorld
-takeEntityWorld EventQueue {entityWorld = worldMVar} = takeMVar worldMVar
+takeEntityWorld EventQueue{entityWorld = worldMVar} = takeMVar worldMVar
 
 putEntityWorld :: EntityWorld -> EventQueue -> IO ()
-putEntityWorld world EventQueue {entityWorld = worldMVar} = putMVar worldMVar world
+putEntityWorld world EventQueue{entityWorld = worldMVar} = putMVar worldMVar world
 
 runWithEntityWorld :: EventQueue -> SystemT' IO a -> IO a
-runWithEntityWorld EventQueue {entityWorld = worldMVar} action = do
-    world <- takeMVar worldMVar
-    val   <- runWith world action
-    putMVar worldMVar world
-    pure val
+runWithEntityWorld EventQueue{entityWorld = worldMVar} action =
+    withMVar worldMVar $ \world ->
+        runWith world action

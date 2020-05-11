@@ -99,7 +99,8 @@ instance FromJSON CInt where
 -- We serialize to an array now, as it avoids needing to use x y .. names as they might not always be appropriate for the specific vector
 
 instance ToJSON a => ToJSON (V2 a) where
-    toJSON (V2 x y) = toJSON [x, y]
+    toJSON     (V2 x y) = toJSON     [x, y]
+    toEncoding (V2 x y) = toEncoding [x, y]
 
 instance FromJSON a => FromJSON (V2 a) where
     parseJSON (Object m)    = V2 <$> m .: "x" <*> m .: "y"
