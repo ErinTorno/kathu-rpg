@@ -1,8 +1,3 @@
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Kathu.Scripting.Lua.Global (registerGlobalFunctions) where
 
 import           Apecs
@@ -60,7 +55,7 @@ registerGlobalFunctions world extFuns = do
     registerHaskellFunction "registerWorldVarListener"  $ registerListener addWorldListener world
 
 
-logLua :: forall w. (Get w IO Logger, Has w IO Logger) => w -> Text -> Lua ()
+logLua :: forall w. Get w IO Logger => w -> Text -> Lua ()
 logLua !world t = liftIO . Apecs.runWith world $ logLine Info t
 
 getCursorPosition :: forall w. (ReadWrite w IO CursorMotionState) => w -> Lua (V2 Double)
@@ -159,7 +154,7 @@ registerListener addWatch !world !idt fnName = liftIO . Apecs.runWith world $ do
 
             addWatch (mkIdentifier idt) ety onUpdate variables
 
-getVariable :: forall w. (ReadWrite w IO Variables) => (Identifier -> Variables -> IO (Maybe WorldVariable)) -> w -> Text -> Lua (Optional WorldVariable)
+getVariable :: forall w. ReadWrite w IO Variables => (Identifier -> Variables -> IO (Maybe WorldVariable)) -> w -> Text -> Lua (Optional WorldVariable)
 getVariable getGroup !world !idt = liftIO . Apecs.runWith world $ (getVar =<< get global)
     where getVar !vars = do
               var <- liftIO . getGroup (mkIdentifier idt) $ vars
@@ -167,7 +162,7 @@ getVariable getGroup !world !idt = liftIO . Apecs.runWith world $ (getVar =<< ge
                   Just a  -> Optional $ Just a
                   Nothing -> Optional Nothing
 
-setVariableLua :: forall w a. (Peekable a, ReadWrite w IO Variables) => (Identifier -> Variables -> SystemT w IO Bool) -> (Identifier -> WorldVariable -> Variables -> IO ()) -> (a -> WorldVariable) -> w -> Text -> a -> Lua ()
+setVariableLua :: forall w a. ReadWrite w IO Variables => (Identifier -> Variables -> SystemT w IO Bool) -> (Identifier -> WorldVariable -> Variables -> IO ()) -> (a -> WorldVariable) -> w -> Text -> a -> Lua ()
 setVariableLua getIsValid setter mkVar !world !idtTxt !newVal = liftIO . Apecs.runWith world $ do
     variables <- get global
 

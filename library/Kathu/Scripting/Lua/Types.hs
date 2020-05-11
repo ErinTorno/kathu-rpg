@@ -1,16 +1,8 @@
-{-# OPTIONS_GHC -fno-warn-orphans       #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- We add Lua Peekable and Pushable instances here for commonly used types to make them easier to use
 -- Wrapping them in a newtype would defeat this purpose
 
-{-# LANGUAGE BangPatterns               #-}
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE ExplicitForAll             #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE TemplateHaskell      #-}
 
 -- Meant to be imported qualified
 
@@ -19,7 +11,7 @@ module Kathu.Scripting.Lua.Types where
 import           Apecs
 import           Control.Concurrent.MVar
 import           Control.Monad               (forM_)
-import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Control.Monad.IO.Class      (MonadIO)
 import           Control.Lens                hiding ((.=))
 import           Data.Aeson
 import           Data.Aeson.Types            (typeMismatch)
@@ -31,7 +23,6 @@ import           Data.Text                   (Text)
 import qualified Data.Text                   as T
 import           Foreign.Lua                 (Lua)
 import qualified Foreign.Lua                 as Lua
-import qualified Foreign.Lua.FunctionCalling as Lua
 import           Data.Vector                 (Vector)
 import           Linear.V2                   (V2(..))
 
@@ -140,7 +131,7 @@ execFor ActiveScript {activeState = stmvar, instanceEntity = ety} fn = do
 
     global $= RunningScriptEntity Nothing
 
-runFor :: forall w a. (ReadWriteEach w IO [RunningScriptEntity, ScriptEventBuffer]) => Lua.LuaCallFunc a => ActiveScript -> Lua a -> SystemT w IO (Maybe a)
+runFor :: forall w a. (ReadWriteEach w IO [RunningScriptEntity, ScriptEventBuffer]) => ActiveScript -> Lua a -> SystemT w IO (Maybe a)
 runFor ActiveScript {activeState = stmvar, instanceEntity = ety} fn = do
     global $= RunningScriptEntity (Just ety)
 

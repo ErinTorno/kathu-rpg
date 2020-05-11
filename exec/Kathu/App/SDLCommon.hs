@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kathu.App.SDLCommon where
 
 import           Control.Monad          (void)
@@ -46,7 +44,7 @@ mkRectWith f x y w h = SDL.Rectangle topLeft size
 shiftRect :: Num a => a -> a -> SDL.Rectangle a -> SDL.Rectangle a
 shiftRect dx dy (SDL.Rectangle (SDL.P (SDL.V2 x y)) (SDL.V2 w h)) = mkRect (x + dx) (y + dy) w h
 
-mapRectDim :: Num a => (a -> a) -> SDL.Rectangle a -> SDL.Rectangle a
+mapRectDim :: (a -> a) -> SDL.Rectangle a -> SDL.Rectangle a
 mapRectDim fn (SDL.Rectangle p (SDL.V2 w h)) = SDL.Rectangle p $ SDL.V2 (fn w) (fn h)
 
 rectWidth :: SDL.Rectangle a -> a

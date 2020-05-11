@@ -1,5 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Kathu.World.Stasis where
 
 import           Data.Int

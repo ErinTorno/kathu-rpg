@@ -1,7 +1,3 @@
-{-# LANGUAGE BangPatterns      #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections     #-}
-{-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE UnboxedTuples     #-}
 
 module Kathu.World.Field where

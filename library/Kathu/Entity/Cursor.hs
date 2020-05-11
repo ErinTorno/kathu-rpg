@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
-
 module Kathu.Entity.Cursor where
 
 import           Apecs

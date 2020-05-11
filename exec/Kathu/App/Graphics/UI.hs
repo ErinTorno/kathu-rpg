@@ -1,10 +1,3 @@
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE ExplicitForAll       #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE MonoLocalBinds       #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Kathu.App.Graphics.UI where

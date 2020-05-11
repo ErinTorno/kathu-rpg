@@ -1,7 +1,4 @@
-{-# LANGUAGE DeriveFunctor     #-}
-{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Kathu.Entity.Resource where
 
@@ -46,16 +43,16 @@ instance (Fractional a, FromJSON a) => FromJSON (Dynamic a) where
 
 -- Functions for working with these
 
-maxDynTotal :: (Num a, Ord a) => Dynamic a -> a
+maxDynTotal :: Num a => Dynamic a -> a
 maxDynTotal (Dynamic _ dynMaximum bonus) = dynMaximum + bonus
 
 modDynCur :: (Num a, Ord a) => a -> Dynamic a -> Dynamic a
 modDynCur dval dyn = over dynCur (clampBetween 0 (maxDynTotal dyn) . (+dval)) dyn
 
-modDynBonus :: (Num a, Ord a) => a -> Dynamic a -> Dynamic a
+modDynBonus :: Num a => a -> Dynamic a -> Dynamic a
 modDynBonus dval = over dynBonus (+dval)
 
-modStcBonus :: (Num a, Ord a) => a -> Static a -> Static a
+modStcBonus :: Num a => a -> Static a -> Static a
 modStcBonus dval = over stcBonus (+dval)
 
 total :: Num a => Static a -> a

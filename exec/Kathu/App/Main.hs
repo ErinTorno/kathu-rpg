@@ -1,6 +1,3 @@
-{-# LANGUAGE BangPatterns      #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kathu.App.Main
     ( RenderInfo(..)
     , appName

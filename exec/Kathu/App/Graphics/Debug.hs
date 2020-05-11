@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Kathu.App.Graphics.Debug (renderDebug) where
 
 import           Apecs                           hiding (($=))

@@ -1,7 +1,4 @@
-{-# LANGUAGE OverloadedLabels    #-}
-{-# LANGUAGE OverloadedLists     #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module Kathu.Editor.Dialogs where
 
@@ -9,7 +6,7 @@ import           Paths_kathu                (version)
 import           Data.Version               (showVersion)
 
 import           Control.Lens               hiding (set)
-import           Control.Monad              (forM, forM_, mapM_, void, when)
+import           Control.Monad              (forM, forM_, void, when)
 import           Data.GI.Base
 import           Data.IORef
 import qualified Data.Map                   as Map

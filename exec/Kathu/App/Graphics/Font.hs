@@ -1,11 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE Strict            #-}
-{-# LANGUAGE TypeOperators     #-}
-
 module Kathu.App.Graphics.Font where
 
 import           Control.Monad           (forM_)
@@ -54,12 +48,12 @@ defaultFontCacheSize = 128
 newtype CharCache = CharCache {unCharCache :: HashTable RealWorld Char (V2 CInt, SDL.Texture)}
 
 data FontCache = FontCache
-    { fontMap    :: IDMap SDLF.Font
-    , charCaches :: HashTable RealWorld Identifier CharCache
+    { fontMap    :: !(IDMap SDLF.Font)
+    , charCaches :: !(HashTable RealWorld Identifier CharCache)
     }
 
 writeChar :: MonadIO m => SDL.Renderer -> SDLF.Font -> CharCache -> Char -> m (V2 CInt, SDL.Texture)
-writeChar renderer font (CharCache cache) key = do
+writeChar !renderer !font (CharCache !cache) !key = do
     -- nothing in cache, so we need to render the char then return texture
     surface <- SDLF.blended font (unColor white) (T.singleton key)
     size    <- SDL.surfaceDimensions surface
@@ -70,19 +64,20 @@ writeChar renderer font (CharCache cache) key = do
     pure (size, texture)
 
 getCharacter :: MonadIO m => SDL.Renderer -> SDLF.Font -> CharCache -> Char -> m (V2 CInt, SDL.Texture)
-getCharacter renderer font (CharCache cache) key = insertIfNeeded =<< (liftIO . stToIO $ HT.lookup cache key)
+getCharacter !renderer !font (CharCache !cache) !key = insertIfNeeded =<< (liftIO . stToIO $ HT.lookup cache key)
     where insertIfNeeded (Just p) = pure p
           insertIfNeeded Nothing  = writeChar renderer font (CharCache cache) key
 
 -- | Renderers the given text using the given font at a position, and returns the ending x position
 renderText :: MonadIO m => SDL.Renderer -> FontCache -> Identifier -> Color -> V2 CInt -> Text -> m CInt
-renderText renderer (FontCache fonts caches) fontID (Color (V4 r g b a)) (V2 x0 y0) text = do
+renderText !renderer (FontCache fonts caches) !fontID (Color (V4 !r !g !b !a)) (V2 !x0 !y0) !text = do
     let -- generic error message so that we don't use the generic key-not-found one
+        missingCache :: String -> a
         missingCache t = error $ "Could not find font " ++ show fontID ++ " in " ++ t ++ " cache"
         font           = fromMaybe (missingCache "font") . Map.lookup fontID $ fonts
     cache <- liftIO . stToIO $ fromMaybe (missingCache "character") <$> HT.lookup caches fontID
 
-    let drawChar x ch = do
+    let drawChar !x !ch = do
             (size@(V2 w _), texture) <- getCharacter renderer font cache ch
             SDL.textureColorMod texture $= V3 r g b
             SDL.textureAlphaMod texture $= a
@@ -92,7 +87,7 @@ renderText renderer (FontCache fonts caches) fontID (Color (V4 r g b a)) (V2 x0 
     ofoldlM drawChar x0 text
     
 initFontCache :: MonadIO m => SDL.Renderer -> IDMap SDLF.Font -> m FontCache
-initFontCache renderer fonts = do
+initFontCache !renderer !fonts = do
     allCaches <- liftIO . stToIO $ HT.newSized (Map.size fonts)
 
     forM_ (Map.assocs fonts) $ \(fontID, font) -> do

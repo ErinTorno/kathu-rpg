@@ -1,11 +1,5 @@
-{-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Kathu.Entity.ActorState where
 
@@ -17,7 +11,6 @@ import           Data.Functor.Compose
 import qualified Data.HashMap.Strict   as Hash
 import           Data.Map              (Map)
 import qualified Data.Map              as Map
-import           Data.Maybe            (maybe)
 import           GHC.Generics
 
 import           Kathu.Entity.Damage

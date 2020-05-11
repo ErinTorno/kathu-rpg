@@ -1,12 +1,7 @@
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DefaultSignatures          #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE UndecidableInstances       #-}
+{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
+-- Default signature won't compile unless we disable this
+
+{-# LANGUAGE UndecidableInstances #-}
 
 module Kathu.Util.Dependency where
 
@@ -57,7 +52,7 @@ type family CanStoreEach s as :: Constraint where
 -- Functions --
 ---------------
 
-runDependency :: Monad m => Dependency s m a -> s -> m (a, s)
+runDependency :: Dependency s m a -> s -> m (a, s)
 runDependency (Dependency stateT) = runStateT stateT
 
 evalDependency :: Monad m => Dependency s m a -> s -> m a

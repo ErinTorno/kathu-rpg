@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Kathu.App.Events (runEvents) where
 
 import           Apecs                           hiding (set)

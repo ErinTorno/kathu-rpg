@@ -1,13 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 -- This file contains a lot of "unused" code that clarifies meaning, like names in records
 
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE ExplicitForAll    #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Strict            #-}
 {-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE TupleSections     #-}
 
 module Kathu.App.Graphics.ImageManager
     ( ImageManager

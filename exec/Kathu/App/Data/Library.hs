@@ -1,10 +1,4 @@
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TupleSections       #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Kathu.App.Data.Library
     ( Library(..), uiConfig, prototypes, items, languages, floorProperties, tiles, worldSpaces, kathuStore

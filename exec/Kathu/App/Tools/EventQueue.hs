@@ -2,7 +2,6 @@ module Kathu.App.Tools.EventQueue where
 
 import           Apecs
 import           Control.Concurrent.MVar
-import           Control.Monad               (mapM_)
 import           Control.Lens
 import qualified Data.Map                    as Map
 

@@ -1,6 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeFamilies  #-}
-
 module Kathu.Graphics.Camera where
 
 import Apecs

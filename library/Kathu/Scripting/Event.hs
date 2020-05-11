@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kathu.Scripting.Event
     ( ScriptEvent
     , EventFlag

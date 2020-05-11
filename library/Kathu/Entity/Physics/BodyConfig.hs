@@ -2,11 +2,6 @@
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 -- we create some orphan instances for Apecs.Physics types so we can parse them from json files
 
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE ExplicitForAll    #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kathu.Entity.Physics.BodyConfig (BodyConfig, setBodyConfig) where
 
 import Apecs
@@ -15,7 +10,7 @@ import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
-import Data.Maybe (fromJust, isJust, maybe)
+import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as DSet
 import Data.Text (Text)
 

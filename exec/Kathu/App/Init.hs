@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kathu.App.Init
     ( entityWorld
     , system
@@ -10,7 +8,6 @@ import           Apecs.Physics
 import           Control.Lens                    hiding (Identity)
 import qualified Data.Map                        as Map
 import qualified Data.Text                       as T
-import           Linear.V2                       (V2(..))
 import qualified SDL
 import qualified SDL.Video                       as SDLV
 import qualified System.Random                   as R

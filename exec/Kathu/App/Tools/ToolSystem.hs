@@ -1,8 +1,3 @@
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections       #-}
-
 module Kathu.App.Tools.ToolSystem
     ( renderToolMode
     , runToolMode
@@ -15,7 +10,6 @@ import           Control.Lens
 import           Control.Monad               (forM_, void, unless, when)
 import           Data.Maybe                  (fromJust, isJust)
 import qualified Data.Map                    as Map
-import           Linear.V2                   (V2(..), _x, _y)
 import qualified SDL
 
 import           Kathu.App.Data.Controls

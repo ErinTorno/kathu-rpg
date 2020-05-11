@@ -1,8 +1,3 @@
-{-# LANGUAGE BangPatterns  #-}
-{-# LANGUAGE DataKinds     #-}
-{-# LANGUAGE GADTs         #-}
-{-# LANGUAGE MultiWayIf    #-}
-
 module Kathu.Util.Polygon
     ( Polygon(..)
     , mapPolyList
@@ -141,7 +136,7 @@ mkPolygons paths
 isPolygonInside :: [V2 Int] -> [V2 Int] -> Bool
 isPolygonInside inner outer = isAAInside (toAASegments inner) (toAASegments outer)
 
-triangulate :: (Fractional a, Ord a, Show a) => Polygon a -> [[V2 a]]
+triangulate :: (Fractional a, Ord a) => Polygon a -> [[V2 a]]
 triangulate (Polygon outer inner)
     | null inner = fmap toV2 <$> (points . simplePoly $ outer)
     | otherwise  = filterHoles (fmap toV2 <$> points (Poly.MultiPolygon (CSeq.fromList . map toPoint $ outer) (simplePoly <$> inner)))

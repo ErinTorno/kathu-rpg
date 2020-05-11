@@ -1,11 +1,3 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE Strict                #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-
 module Kathu.Util.Apecs where
 
 import           Apecs
@@ -42,14 +34,14 @@ getUniqueElseError :: forall w m c. (Members w m c, Get w m c) => String -> Syst
 getUniqueElseError errMsg = fromJustElseError errMsg <$> getUnique
 
 getIfExists :: forall w m c. (Members w m c, Get w m c) => Entity -> SystemT w m (Maybe c)
-getIfExists ety = do
+getIfExists !ety = do
     doesExist <- exists ety (Proxy :: Proxy c)
     if doesExist
     then Just <$> get ety
     else pure Nothing
 
 whenExists :: forall w m c. (Members w m c, Get w m c) => Entity -> (c -> SystemT w m ()) -> SystemT w m ()
-whenExists ety f = do
+whenExists !ety !f = do
     doesExist <- exists ety (Proxy :: Proxy c)
     when doesExist (get ety >>= f)
 
@@ -57,7 +49,7 @@ whenExists ety f = do
 {-# INLINE cmapIfM #-}
 cmapIfM :: forall w m cp cx cy. (Get w m cx, Get w m cp, Members w m cx, Set w m cy)
         => (cp -> Bool) -> (cx -> SystemT w m cy) -> SystemT w m ()
-cmapIfM cond f = do
+cmapIfM !cond !f = do
     pStore :: Storage cp <- getStore
     xStore :: Storage cx <- getStore
     yStore :: Storage cy <- getStore

@@ -1,13 +1,3 @@
-{-# LANGUAGE DeriveAnyClass        #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TypeFamilies          #-}
-
 module Kathu.Entity.Components where
 
 import Apecs
@@ -54,7 +44,9 @@ data Identity = Identity
     { identifier  :: Identifier
     , name        :: Text
     , description :: Text
-    } deriving (Show, Eq, Generic, ToJSON)
+    } deriving (Show, Eq, Generic)
+
+instance ToJSON Identity
 
 simpleIdentity :: Identifier -> Identity
 simpleIdentity idt = Identity idt "" ""

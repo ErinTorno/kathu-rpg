@@ -1,8 +1,4 @@
-{-# LANGUAGE MonoLocalBinds    #-}
-{-# LANGUAGE OverloadedLabels  #-}
-{-# LANGUAGE OverloadedLists   #-}
-{-# LANGUAGE PatternSynonyms   #-}
-{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module Kathu.Editor.GtkUtil where
 

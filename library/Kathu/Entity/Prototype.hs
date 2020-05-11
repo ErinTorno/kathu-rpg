@@ -1,12 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 -- newFromSimplePrototype is generated on-the-fly through TH without an explicit type signature
 
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE MonoLocalBinds       #-}
-{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Kathu.Entity.Prototype (EntityPrototype(..), newFromSimplePrototype, getPrototypeID) where

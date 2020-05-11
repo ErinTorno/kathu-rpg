@@ -1,5 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-
 module Kathu.App.Graphics.RenderBuffer where
 
 import           Control.Monad                (when)

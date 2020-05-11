@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kathu.Editor.File where
 
 import           Apecs                      hiding (set)

@@ -1,6 +1,3 @@
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Kathu.App.Graphics.Render where
 
 import           Apecs                           hiding (($=))
@@ -12,7 +9,6 @@ import           Data.Vector                     (Vector)
 import qualified Data.Vector                     as Vec
 import qualified Data.Vector.Mutable             as MVec
 import           Data.Word
-import           Linear.V2                       (V2(..))
 import           SDL                             (($=))
 import qualified SDL
 
@@ -38,10 +34,10 @@ import           Kathu.Util.Collection           (forMVec)
 
 -- if sprite position is more than this many units from left or right, or from bottom, we don't draw
 -- we don't draw anything above the top of the screen, however, since sprites draw out and upwards
-renderBorderUnits :: (Floating a, RealFrac a) => a
+renderBorderUnits :: Floating a => a
 renderBorderUnits = 3.0
 
-logicCoordToRender :: (Floating a, RealFrac a) => a -> V2 a -> V2 a -> V2 a
+logicCoordToRender :: Floating a => a -> V2 a -> V2 a -> V2 a
 logicCoordToRender scale (V2 topX topY) (V2 tarX tarY) = V2 ((tarX - topX) * scale) ((tarY - topY) * scale)
 
 updateAnimations :: Word32 -> SystemT' IO ()

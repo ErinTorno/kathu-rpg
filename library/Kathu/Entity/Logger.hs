@@ -1,11 +1,7 @@
-{-# LANGUAGE ExplicitForAll    #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kathu.Entity.Logger where
 
 import           Apecs
-import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Control.Monad.IO.Class      (MonadIO)
 import           Data.Text                   (Text)
 import qualified Data.Text.IO                as T
 
@@ -23,7 +19,7 @@ defaultLogger = Logger $ \typ msg -> T.putStr (logTypeText typ)
                                   >> T.putStr ": "
                                   >> T.putStrLn msg
 
-logLine :: forall w m. (MonadIO m, Get w m Logger, Has w m Logger) => LogType -> Text -> SystemT w m ()
+logLine :: forall w m. (MonadIO m, Get w m Logger) => LogType -> Text -> SystemT w m ()
 logLine typ msg = do
     Logger logFn <- get global
     liftIO $ logFn typ msg

@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kathu.Parsing.Yaml where
 
 import           Prelude               hiding (null)

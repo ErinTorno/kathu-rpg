@@ -1,6 +1,4 @@
-{-# LANGUAGE BangPatterns    #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies    #-}
 
 module Kathu.Entity.Action where
 
@@ -119,7 +117,7 @@ iWest      = -4
 iNorthwest = -3
 iNone      = 0
 
-indexToDirection :: (Eq a, Integral a) => a -> Maybe Direction
+indexToDirection :: Integral a => a -> Maybe Direction
 indexToDirection 1    = Just North
 indexToDirection 5    = Just Northeast
 indexToDirection 4    = Just East

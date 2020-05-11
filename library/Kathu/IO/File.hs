@@ -1,12 +1,5 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MonoLocalBinds    #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators     #-}
-
 module Kathu.IO.File where
 
-import           Control.Monad              (liftM2, mapM)
 import           Control.Monad.State
 import           Data.Aeson
 import           Data.Aeson.Text            (encodeToLazyText)

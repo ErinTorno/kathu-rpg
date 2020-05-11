@@ -1,5 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-
 module Kathu.Util.Collection where
 
 import           Control.Monad.Primitive     (PrimMonad, PrimState)

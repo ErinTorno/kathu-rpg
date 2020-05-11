@@ -1,9 +1,3 @@
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Kathu.Scripting.Lua.Component (registerComponentFunctions) where
 
 import           Apecs
@@ -16,7 +10,6 @@ import qualified Data.Vector                         as Vec
 import qualified Data.Set                            as DSet
 import qualified Data.Text                           as T
 import           Foreign.Lua
-import           Linear.V2                           (V2(..))
 
 import           Kathu.Entity.Components
 import           Kathu.Entity.Logger
@@ -128,7 +121,7 @@ setCollisionCategory !world !ety colCategory (Optional tag) = liftIO . Apecs.run
 -- Physics --
 -------------
 
-getVector2D :: forall w c. (Get w IO c, Has w IO c, Members w IO c) => (c -> V2 Double) -> w -> Int -> Lua (Optional (V2 Double))
+getVector2D :: forall w c. (Get w IO c, Members w IO c) => (c -> V2 Double) -> w -> Int -> Lua (Optional (V2 Double))
 getVector2D mapper !world !etyID = liftIO . Apecs.runWith world $ do
     comp <- getIfExists (Entity etyID)
     pure $ case comp of

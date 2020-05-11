@@ -1,9 +1,3 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE MonoLocalBinds        #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Kathu.Graphics.UI where
@@ -29,43 +23,43 @@ data UIResourceType = UIHealth | UIMana | UIMiscResource Identifier
 
 data DisplayBar g = DisplayBar
     -- for every N points that this bar measures, there will be a new unit of the image
-    { pointsPerUnit   :: Double
+    { pointsPerUnit   :: !Double
     -- if present this will be drawn at the start and end of the bar
-    , barCapBeginning :: Maybe (RenderSprite g)
-    , barCapEnding    :: Maybe (RenderSprite g)
-    , capWidth        :: Double
-    , primaryWidth    :: Double
-    , secondaryWidth  :: Double
-    , primaryFull     :: RenderSprite g
-    , primary3Q       :: RenderSprite g
-    , primaryHalf     :: RenderSprite g
-    , primary1Q       :: RenderSprite g
-    , secondaryFull   :: RenderSprite g
-    , secondaryEmpty  :: RenderSprite g
+    , barCapBeginning :: !(Maybe (RenderSprite g))
+    , barCapEnding    :: !(Maybe (RenderSprite g))
+    , capWidth        :: !Double
+    , primaryWidth    :: !Double
+    , secondaryWidth  :: !Double
+    , primaryFull     :: !(RenderSprite g)
+    , primary3Q       :: !(RenderSprite g)
+    , primaryHalf     :: !(RenderSprite g)
+    , primary1Q       :: !(RenderSprite g)
+    , secondaryFull   :: !(RenderSprite g)
+    , secondaryEmpty  :: !(RenderSprite g)
     }
 
 data UIElementConfig g
-    = UITextLabel   { uiText           :: Text
-                    , uiFontID         :: Identifier
-                    , uiFontColor      :: Color }
-    | UIAttribute   { uiAttrTitle      :: Text
-                    , uiAttributeType  :: UIAttributeType
-                    , uiAttrColor      :: Color
-                    , uiAttrBonusColor :: Color }
-    | UIResource    { uiResTitle       :: Text
-                    , uiResourceType   :: UIResourceType
-                    , uiResColor       :: Color
-                    , uiResMaxColor    :: Color
-                    , uiResBonusColor  :: Color }
-    | UIResourceBar { uiResBarType     :: UIResourceType
-                    , uiDisplayBar     :: DisplayBar g }
-    | UIImage       { uiRenderImage    :: Render g }
-    | UIItemBox     { uiItemBackground :: g
-                    , uiItemContainer  :: Item.ContainerSlot g }
+    = UITextLabel   { uiText           :: !Text
+                    , uiFontID         :: !Identifier
+                    , uiFontColor      :: !Color }
+    | UIAttribute   { uiAttrTitle      :: !Text
+                    , uiAttributeType  :: !UIAttributeType
+                    , uiAttrColor      :: !Color
+                    , uiAttrBonusColor :: !Color }
+    | UIResource    { uiResTitle       :: !Text
+                    , uiResourceType   :: !UIResourceType
+                    , uiResColor       :: !Color
+                    , uiResMaxColor    :: !Color
+                    , uiResBonusColor  :: !Color }
+    | UIResourceBar { uiResBarType     :: !UIResourceType
+                    , uiDisplayBar     :: !(DisplayBar g) }
+    | UIImage       { uiRenderImage    :: !(Render g) }
+    | UIItemBox     { uiItemBackground :: !g
+                    , uiItemContainer  :: !(Item.ContainerSlot g) }
 
 data UIElement g = UIElement
-    { uiPosition :: V2 Double
-    , uiConfig   :: UIElementConfig g
+    { uiPosition :: !(V2 Double)
+    , uiConfig   :: !(UIElementConfig g)
     }
 
 ---------------

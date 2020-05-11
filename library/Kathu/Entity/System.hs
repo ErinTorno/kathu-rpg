@@ -1,12 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- we need orphan instances to set up the Apecs system
 
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE ExplicitForAll #-}
-{-# LANGUAGE OverloadedStrings #-}
-
-{-# LANGUAGE DataKinds, FlexibleContexts, TypeFamilies #-}
-
 module Kathu.Entity.System where
 
 import           Apecs hiding (Map)
@@ -17,7 +11,6 @@ import           Data.List (sortBy)
 import           Data.Functor (($>))
 import           Data.Map (Map)
 import qualified Data.Map as Map
-import           Data.Semigroup (Semigroup)
 import qualified Data.Vector.Mutable as MVec
 import           Data.Vector.Mutable (IOVector)
 import           Data.Word
@@ -98,7 +91,7 @@ stepRenderTime !dT = modify global $ \(RenderTime t) -> RenderTime (t + dT)
 stepWorldTime :: forall w m. (Has w m WorldTime, MonadIO m) => Word32 -> SystemT w m ()
 stepWorldTime !dT = modify global $ \(WorldTime t) -> WorldTime (t + fromIntegral dT)
 
-getNextFromCounter :: forall w m. (ReadWrite w m Counter, MonadIO m) => SystemT w m Int
+getNextFromCounter :: forall w m. ReadWrite w m Counter => SystemT w m Int
 getNextFromCounter = do
     Counter i <- get global
     global    $= Counter (i + 1)

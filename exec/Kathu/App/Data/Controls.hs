@@ -1,6 +1,3 @@
-{-# LANGUAGE DeriveGeneric   #-}
-{-# LANGUAGE PatternSynonyms #-}
-
 module Kathu.App.Data.Controls where
 
 import           Control.Monad.IO.Class      (MonadIO, liftIO)

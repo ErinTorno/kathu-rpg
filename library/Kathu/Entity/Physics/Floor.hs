@@ -1,12 +1,4 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE ExplicitForAll        #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Kathu.Entity.Physics.Floor where
 
@@ -22,7 +14,6 @@ import           Data.Map                (Map)
 import qualified Data.Map                as Map
 import           Data.Text               (Text)
 import           Data.Word
-import           Linear.V2               (V2(..))
 
 import           Kathu.Entity.Components (CacheSize, Existance, newExistingEntity)
 import           Kathu.Entity.LifeTime
@@ -91,7 +82,7 @@ instance (FromJSON (Dependency s m FloorID), Monad m) => FromJSON (Dependency s 
     parseJSON v          = typeMismatch "FloorProperty" v
 
 -- Floor properties are small entities that should be kept in memory at all times, so we mark it persistant
-initFloorProperty :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, ReadWriteEach w m '[Body, Existance, LifeTime, Position])
+initFloorProperty :: forall w m. (MonadIO m, Get w m EntityCounter, ReadWriteEach w m '[Body, Existance, LifeTime, Position])
                   => FloorProperty -> SystemT w m FloorPropEntity
 initFloorProperty = ((FloorPropEntity <$> newExistingEntity (StaticBody, Position $ V2 0 0, Persistant))<*>) . pure
 

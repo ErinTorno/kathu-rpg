@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
-
 module Kathu.App.Tools.ToolMode where
 
 import Apecs

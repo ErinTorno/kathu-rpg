@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeOperators    #-}
-
 module Kathu.Parsing.Counting where
 
 import           Data.Aeson

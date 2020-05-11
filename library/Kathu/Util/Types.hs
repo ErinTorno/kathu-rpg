@@ -1,10 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- We provide some instances for common typeclasses in here for other library types
 
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE OverloadedStrings          #-}
-
 module Kathu.Util.Types
     ( Identifier(..)
     , IDMap

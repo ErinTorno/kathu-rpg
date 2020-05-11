@@ -1,17 +1,8 @@
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MonoLocalBinds             #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE TypeOperators              #-}
-
 module Kathu.IO.Directory where
 
 import Data.Aeson
 import GHC.Generics
 import Data.String           (IsString)
-import System.FilePath       (FilePath)
 
 import Kathu.Util.Dependency
 

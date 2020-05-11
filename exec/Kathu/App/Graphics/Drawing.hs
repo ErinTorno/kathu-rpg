@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns  #-}
 {-# LANGUAGE UnboxedTuples #-}
 
 module Kathu.App.Graphics.Drawing where
@@ -16,10 +15,10 @@ import           Kathu.Util.Numeric              (clampBetween)
 
 -- the height of the screen in units; depending on screen size, more or less is included
 
-minUnitsPerHeight :: (Floating a, RealFrac a) => a
+minUnitsPerHeight :: Floating a => a
 minUnitsPerHeight = 8.0
 
-maxUnitsPerHeight :: (Floating a, RealFrac a) => a
+maxUnitsPerHeight :: Floating a => a
 maxUnitsPerHeight = 14.0
 
 pixelsForMinUnits :: Integral a => a
@@ -28,34 +27,34 @@ pixelsForMinUnits = 360
 pixelsForMaxUnits :: Integral a => a
 pixelsForMaxUnits = 1080
 
-pixelsPerUnit :: (Floating a, RealFrac a) => a
+pixelsPerUnit :: Floating a => a
 pixelsPerUnit = 16.0
 
-cameraShiftUp :: (Floating a, RealFrac a) => a
+cameraShiftUp :: Floating a => a
 cameraShiftUp = 0.75
 
 -- sprite dimensions are multiplied by this to prevent tiny streaks between adjacent sprites
-edgeBleedScaling :: (Floating a, RealFrac a) => a
+edgeBleedScaling :: Floating a => a
 edgeBleedScaling = 1.005
 
-aspectRatio :: (Floating a, RealFrac a) => V2 a -> a
+aspectRatio :: Floating a => V2 a -> a
 aspectRatio (V2 x y) = x / y
 
-getUnitsPerHeight :: (Integral i, Floating a, RealFrac a) => i -> a
+getUnitsPerHeight :: (Integral i, Floating a) => i -> a
 getUnitsPerHeight resY = minUnitsPerHeight + (maxUnitsPerHeight - minUnitsPerHeight) * pixMult
     where pixMult = fromIntegral (clampBetween pixelsForMinUnits pixelsForMaxUnits resY) / fromIntegral (pixelsForMaxUnits :: Int)
 
-getScale :: (Floating a, RealFrac a) => a -> a -> a -> a
+getScale :: Floating a => a -> a -> a -> a
 getScale screenY unitsPerH zoomScale = screenY / (zoomScale * unitsPerH * pixelsPerUnit)
 
-worldToScreenScale :: (Floating a, RealFrac a) => V2 a -> a -> a -> a -> (V2 a -> V2 a)
+worldToScreenScale :: Floating a => V2 a -> a -> a -> a -> (V2 a -> V2 a)
 worldToScreenScale screenDim scale camX camY = \pos -> halfScreenDim + ((*logicScale) <$> (pos - shiftedCamera))
     where -- we mult by this again to convert the 1-per-tile view of the entity-world into a N-pixels-per-tile view
           logicScale    = scale * pixelsPerUnit
           shiftedCamera = V2 camX (camY - cameraShiftUp)
           halfScreenDim = (*0.5) <$> screenDim
 
-screenToWorldScale :: (Floating a, RealFrac a) => V2 a -> a -> a -> a -> (V2 a -> V2 a)
+screenToWorldScale :: Floating a => V2 a -> a -> a -> a -> (V2 a -> V2 a)
 screenToWorldScale screenDim scale camX camY = \pos -> ((/logicScale) <$> (pos - halfScreenDim)) + shiftedCamera
     where logicScale    = scale * pixelsPerUnit
           shiftedCamera = V2 camX (camY - cameraShiftUp)

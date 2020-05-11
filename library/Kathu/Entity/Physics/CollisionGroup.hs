@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kathu.Entity.Physics.CollisionGroup
     ( CollisionGroup(..)
     , collisionGroupFromString

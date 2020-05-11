@@ -1,11 +1,4 @@
-{-# LANGUAGE BangPatterns     #-}
-{-# LANGUAGE ConstraintKinds  #-}
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE ExplicitForAll   #-}
-{-# LANGUAGE FlexibleContexts #-}
-
 -- Meant to be imported qualified
-
 module Kathu.Scripting.Lua
     ( module Kathu.Scripting.ExternalFunctions
     , module Kathu.Scripting.Lua.Types
@@ -24,7 +17,6 @@ import           Apecs
 import           Apecs.Physics                     (Force, Mass, Physics, Position, Velocity)
 import           Control.Concurrent.MVar
 import           Control.Monad                     (unless, when)
-import           Control.Monad.IO.Class            (liftIO)
 import           Control.Monad.ST                  (stToIO)
 import           Control.Lens                      ((^.))
 import qualified Data.HashTable.ST.Basic           as HT

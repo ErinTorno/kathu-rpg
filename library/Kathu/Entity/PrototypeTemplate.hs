@@ -1,5 +1,4 @@
-{-# LANGUAGE DataKinds, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, TemplateHaskell, TypeApplications, TypeFamilies #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Kathu.Entity.PrototypeTemplate (defineData, defineEntityCreator, defineEntityFromJSON) where
 
@@ -8,7 +7,6 @@ import Data.Aeson
 import Data.Char (toLower)
 import Data.Functor.Compose
 import Data.List (nub)
-import Data.Maybe (maybe)
 import Language.Haskell.TH
 
 import Kathu.Entity.Components (newExistingEntity)
@@ -72,12 +70,12 @@ defineEntityFromJSON getID typename prefix components = pure . pure $ InstanceD 
           constraintStore    = AppT (AppT (ConT ''CanStore) stateVar) (ParensT . AppT (ConT ''IDMap) $ typeNameWithParams)
           contraints         = constraintMonad : constraintStore : (constraintsNoDep ++ constraintsDeps)
           -- now in pair, where if type requires FromJSON Dependency, then snd is True
-          (first:rest) = (\c -> (compName c, requiresDependencies c)) <$> components
+          compDepPairs = (\c -> (compName c, requiresDependencies c)) <$> components
           varName      = mkName "v"
 
           indvParse (cName, isLinked) = UInfixE (VarE varName) (VarE (if isLinked then '(.:~?) else '(.:^?))) (LitE . StringL . camelTo2 '-' . show $ combinedName)
               where combinedName = fieldName prefix cName
-          sucExpr      = foldl (\acc cur -> UInfixE acc (VarE '(<*>)) (indvParse cur)) (UInfixE (ConE . mkName . nameBase $ typename) (VarE '(<$>)) (indvParse first)) rest
+          sucExpr      = foldl (\acc cur -> UInfixE acc (VarE '(<*>)) (indvParse cur)) (UInfixE (ConE . mkName . nameBase $ typename) (VarE '(<$>)) (indvParse $ head compDepPairs)) (tail compDepPairs)
 
           protoName    = mkName "inproto"
           succBody     = UInfixE (VarE 'getCompose) (VarE '($)) sucExpr

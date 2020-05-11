@@ -2,9 +2,6 @@
 -- We make use of orphaned instances in here to provide quick generation of JSON instances
 -- making use of common types like V2, V3, V4, etc.
 
-{-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kathu.Parsing.Aeson where
 
 import           Control.Monad         (foldM, liftM2)
@@ -15,7 +12,7 @@ import qualified Data.HashMap.Strict   as Hash
 import           Data.Functor.Compose
 import           Data.Map              (Map)
 import qualified Data.Map              as Map
-import           Data.Maybe            (fromMaybe, maybe)
+import           Data.Maybe            (fromMaybe)
 import           Data.Text             (Text)
 import           Data.Vector           (Vector)
 import qualified Data.Vector           as Vec
@@ -41,7 +38,7 @@ standardProjectOptions = defaultOptions {fieldLabelModifier = camelTo2 '-' . dro
 (.:^) v = Compose . fmap return . (.:) v
 
 -- gets a type encased in a monad from a Parser and Composes it
-(.:~) :: (Monad m, FromJSON (m a)) => Object -> Text -> Compose Parser m a
+(.:~) :: (FromJSON (m a)) => Object -> Text -> Compose Parser m a
 (.:~) v = Compose . (.:) v
 
 -- same as .:^, but returns a Maybe

@@ -1,13 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 -- The PaletteManager record has names for its components which arent supported, but clarify what they mean
 
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Kathu.Graphics.Palette
@@ -157,11 +150,12 @@ instance FromJSON Shader where
 -- Component Management --
 --------------------------
 
+type PaletteManagerConstraints w m = (Get w m PaletteManager, Has w m PaletteManager, Set w m PaletteManager, Get w m RenderTime, Has w m RenderTime)
+
 data PaletteManager = PaletteManager
-    { initManager :: forall w m. (Get w m PaletteManager, Has w m PaletteManager, Set w m PaletteManager, Get w m RenderTime, Has w m RenderTime)
-                  => (Int -> SystemT w m ()) -> PaletteManager -> SystemT w m () -- we don't allow setting the PaletteManager in the init to prevent infinite loops
-    , runManager  :: forall w m. (Get w m PaletteManager, Has w m PaletteManager, Set w m PaletteManager, Get w m RenderTime, Has w m RenderTime)
-                  => (Int -> SystemT w m ()) -> (Identifier -> SystemT w m ()) -> PaletteManager -> SystemT w m ()
+     -- we don't allow setting the PaletteManager in the init to prevent infinite loops
+    { initManager :: forall w m. PaletteManagerConstraints w m => (Int -> SystemT w m ()) -> PaletteManager -> SystemT w m ()
+    , runManager  :: forall w m. PaletteManagerConstraints w m => (Int -> SystemT w m ()) -> (Identifier -> SystemT w m ()) -> PaletteManager -> SystemT w m ()
     }
 
 data AnimatedPaletteState = AnimatedPaletteState
@@ -178,7 +172,9 @@ staticManager idx = PaletteManager (\setIdx _ -> setIdx idx) (\_ _ _ -> pure ())
 
 animatedManager :: AnimatedPaletteState -> PaletteManager
 animatedManager conf@(AnimatedPaletteState AnimatedPalette {renderDelay = delay, cycleEnd = cycEnd} minIdx maxIdx isRev curPalette lastTime) = PaletteManager initi run
-    where initi changeFrame _ = changeFrame minIdx
+    where initi :: (Int -> SystemT w m ()) -> PaletteManager -> SystemT w m ()
+          initi changeFrame _ = changeFrame minIdx
+          run :: forall w m. PaletteManagerConstraints w m => (Int -> SystemT w m ()) -> (Identifier -> SystemT w m ()) -> PaletteManager -> SystemT w m ()
           run (changeFrame :: Int -> SystemT w m ()) changePalette _ = do
               RenderTime curTime <- get global
               when (curTime - lastTime >= fromIntegral delay) $ do

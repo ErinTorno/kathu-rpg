@@ -1,8 +1,5 @@
-{-# LANGUAGE BangPatterns #-}
-
 module Kathu.Util.Flow where
 
-import           Control.Monad.Fail  (MonadFail)
 import           Control.Monad.State
 import qualified Control.Monad.Fail  as Fail
 import           Text.Read           (readMaybe)

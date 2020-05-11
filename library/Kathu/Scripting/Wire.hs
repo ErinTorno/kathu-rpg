@@ -1,5 +1,3 @@
-{-# LANGUAGE TupleSections #-}
-
 module Kathu.Scripting.Wire where
 
 import           Control.Monad           (forM_)
