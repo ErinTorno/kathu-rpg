@@ -42,16 +42,15 @@ mkTileIcon path = do
 
     let fromJustElseMemError = fromJustElseError "No more memory could be allocated for Tile Pixbuf"
 
-    croppedPixBuf <-
-        if   width < 16 || height < 16
-        then error $ "Tile icon for path " ++ show path ++ " is too small (less than 16x16)"
-        else if width == 16 && height == 16
-            then pure fullImg
-            else do
-                -- take bottom left 16x16
-                pixbuf <- fromJustElseMemError <$> Gdk.pixbufNew Gdk.ColorspaceRgb True 8 16 16
-                Gdk.pixbufCopyArea fullImg 0 (height - 16) 16 16 pixbuf 0 0
-                pure pixbuf
+    croppedPixBuf <- if
+        | width  < 16 || height  < 16 -> error $ "Tile icon for path " ++ show path ++ " is too small (less than 16x16)"
+        | width == 16 && height == 16 -> pure fullImg
+        | otherwise -> do
+            -- take bottom left 16x16
+            pixbuf <- fromJustElseMemError <$> Gdk.pixbufNew Gdk.ColorspaceRgb True 8 16 16
+            Gdk.pixbufCopyArea fullImg 0 (height - 16) 16 16 pixbuf 0 0
+            pure pixbuf
+    
     finalPixbuf <- fromJustElseMemError <$> Gdk.pixbufScaleSimple croppedPixBuf 32 32 Gdk.InterpTypeNearest
     Gtk.imageNewFromPixbuf (Just finalPixbuf)
 

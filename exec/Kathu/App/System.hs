@@ -119,7 +119,7 @@ instance Component WireReceivers where type Storage WireReceivers = Global WireR
 makeWorld "EntityWorld"
     $ [''Physics]
    ++ [''Existance, ''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
-   ++ [''ShouldQuit, ''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Counter, ''Logger]
+   ++ [''ShouldQuit, ''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Logger]
    ++ [''Settings, ''CursorMotionState, ''ControlState, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
    ++ [''ToolMode, ''ToolModeUniversalState]
 

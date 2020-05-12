@@ -95,7 +95,6 @@ library
                     Kathu.Util.Collection
                     Kathu.Util.Dependency
                     Kathu.Util.Flow
-                    Kathu.Util.Numeric
                     Kathu.Util.Polygon
                     Kathu.Util.Types
   build-depends:    base                    ^>=4.13,

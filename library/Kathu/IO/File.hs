@@ -76,5 +76,8 @@ parseAllDP :: (s `CanStore` WorkingDirectory, FromJSON (Dependency s m a), Monad
 parseAllDP = parseAllWith loadFromFileDP
 
 parseExactlyNDP :: (s `CanStore` WorkingDirectory, FromJSON (Dependency s m a), Monad m) => Int -> String -> FilePath -> IO [Dependency s m a]
-parseExactlyNDP n s = fmap (\ls -> let len = length ls in if len /= n then failFor len else ls) . parseAllDP s
-    where failFor len = error . concat $ ["Attempted to parse ", show n, " for file type .", show s, ", but found ", show len]
+parseExactlyNDP n extension = fmap verifyExactlyN . parseAllDP extension
+    where verifyExactlyN ls
+              | len /= n  = error . concat $ ["Attempted to parse ", show n, " for file type .", show extension, ", but found ", show len]
+              | otherwise = ls
+              where len = length ls

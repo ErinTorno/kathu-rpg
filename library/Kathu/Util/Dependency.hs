@@ -86,10 +86,10 @@ dependencyMapLookupVec keys = do
     pure $ F.foldl' adder Vec.empty keys
 
 dependencyMapLookup :: (s `CanProvide` Map k a, Monad m, Ord k) => k -> Dependency s m (Maybe a)
-dependencyMapLookup key = Map.lookup key <$> provide
+dependencyMapLookup !key = Map.lookup key <$> provide
 
 dependencyMapLookupElseError :: (s `CanProvide` Map k a, Monad m, Ord k, Show k) => String -> k -> Dependency s m a
-dependencyMapLookupElseError category key = fromMaybe failMsg <$> dependencyMapLookup key
+dependencyMapLookupElseError category !key = fromMaybe failMsg <$> dependencyMapLookup key
     where failMsg = error . concat $ [ "Couldn't find element with key "
                                      , show key
                                      , " within "

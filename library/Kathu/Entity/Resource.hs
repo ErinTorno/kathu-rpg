@@ -1,17 +1,17 @@
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Kathu.Entity.Resource where
 
 import Data.Aeson
-import Data.Aeson.Types   (typeMismatch)
+import Data.Aeson.Types (typeMismatch)
 import Data.Serialize
-import Control.Lens       hiding ((.=))
+import Control.Lens     hiding ((.=))
 import GHC.Generics
 
-import Kathu.Util.Numeric (clampBetween, fromScientific)
+import Kathu.Util.Types (clampBetween)
 
 -- | A resource that is not expected to change frequently
-data Static a = Static {_stcBase :: a, _stcBonus :: a} deriving (Show, Eq, Functor, Generic)
+data Static a = Static {_stcBase :: !a, _stcBonus :: !a} deriving (Show, Eq, Functor, Generic)
 makeLenses ''Static
 
 instance Serialize a => Serialize (Static a)
@@ -21,13 +21,14 @@ instance ToJSON a => ToJSON (Static a) where
     toJSON (Static base bonus) = object ["base" .= base, "bonus" .= bonus]
 
     toEncoding (Static base bonus) = pairs ("base" .= base <> "bonus" .= bonus)
-instance (Fractional a, FromJSON a) => FromJSON (Static a) where
-    parseJSON (Object m) = Static <$> m .: "base" <*> m .: "bonus"
-    parseJSON (Number s) = pure $ Static (fromScientific s) 0
-    parseJSON e          = typeMismatch "Static" e
+
+instance (FromJSON a, Num a) => FromJSON (Static a) where
+    parseJSON (Object m)   = Static <$> m .: "base" <*> m .: "bonus"
+    parseJSON n@(Number _) = flip Static 0 <$> parseJSON n
+    parseJSON e            = typeMismatch "Static" e
 
 -- | A resource that has a current value that ranges between the maximm and zero
-data Dynamic a = Dynamic {_dynCur :: a, _dynMax :: a, _dynBonus :: a} deriving (Show, Eq, Functor, Generic)
+data Dynamic a = Dynamic {_dynCur :: !a, _dynMax :: !a, _dynBonus :: !a} deriving (Show, Eq, Functor, Generic)
 makeLenses ''Dynamic
 
 instance Serialize a => Serialize (Dynamic a)
@@ -36,10 +37,11 @@ instance ToJSON a => ToJSON (Dynamic a) where
     toJSON (Dynamic cur base bonus) = object ["cur" .= cur, "base" .= base, "bonus" .= bonus]
 
     toEncoding (Dynamic cur base bonus) = pairs ("cur" .= cur <> "base" .= base <> "bonus" .= bonus)
-instance (Fractional a, FromJSON a) => FromJSON (Dynamic a) where
-    parseJSON (Object m) = Dynamic <$> m .: "cur" <*> m .: "base" <*> m .: "bonus"
-    parseJSON (Number s) = let base = fromScientific s in pure $ Dynamic base base 0
-    parseJSON e          = typeMismatch "Dynamic" e
+
+instance (FromJSON a, Num a) => FromJSON (Dynamic a) where
+    parseJSON (Object m)   = Dynamic <$> m .: "cur" <*> m .: "base" <*> m .: "bonus"
+    parseJSON n@(Number _) = (\base -> Dynamic base base 0) <$> parseJSON n
+    parseJSON e            = typeMismatch "Dynamic" e
 
 -- Functions for working with these
 

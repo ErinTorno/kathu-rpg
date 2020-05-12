@@ -154,9 +154,6 @@ handleUseToolModeEvent newMode = do
         forM_ playerEty $ \(_ :: Local, ety) ->
             ety $= defaultCamera
 
-    when (isNoTool prevMode && not (isNoTool newMode)) $
-        pure ()
-
     finalizeToolMode prevMode
     initToolMode newMode
 

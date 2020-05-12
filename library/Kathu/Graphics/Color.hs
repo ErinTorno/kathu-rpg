@@ -52,7 +52,6 @@ import           Numeric                      (readHex)
 
 import           Kathu.Util.Collection        (padShowHex)
 import           Kathu.Util.Flow              (readElseFail)
-import           Kathu.Util.Numeric           (closestToZero)
 
 -----------
 -- Color --
@@ -275,3 +274,11 @@ cyan = mkColor 0 255 255 255
 
 purple :: Color
 purple = mkColor 255 0 255 255
+
+--------------------
+-- Util Functions --
+--------------------
+
+closestToZero :: (Num a, Ord a) => a -> a -> a
+closestToZero x y = if x' > y' then y else x
+    where (x', y') = (abs x, abs y)

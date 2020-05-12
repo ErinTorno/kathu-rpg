@@ -9,6 +9,8 @@ module Kathu.Util.Types
     , TimeStamped(..)
     , mkIdentifier
     , textIDLens
+    , clampBetween
+    , clampRange
     ) where
 
 import           Control.Lens
@@ -102,6 +104,15 @@ instance FromJSON a => FromJSON (Range a) where
     parseJSON e          = typeMismatch "Range" e
 
 instance Serialize a => Serialize (Range a)
+
+clampBetween :: Ord a => a -> a -> a -> a
+clampBetween rMin rMax cur
+    | cur > rMax = rMax
+    | cur < rMin = rMin
+    | otherwise  = cur
+
+clampRange :: Ord a => Range a -> a -> a
+clampRange (Range rMin rMax) = clampBetween rMin rMax
 
 -----------------
 -- TimeStamped --

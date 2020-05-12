@@ -21,7 +21,6 @@ import           Kathu.Entity.Logger
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Palette (PaletteManager, staticManager)
 import           Kathu.Scripting.Variables (Variables)
-import           Kathu.Util.Apecs
 import           Kathu.Util.Types (IDMap)
 import           Kathu.World.Stasis
 import           Kathu.World.Tile (Tile(..), TileID(..), tileID, TileState(..), tileTextID, unTileID)
@@ -70,12 +69,6 @@ instance Semigroup Variables where (<>) = mappend
 instance Monoid Variables where mempty = error "Attempted to access Variables global component before it has been initialized"
 instance Component Variables where type Storage Variables = Global Variables
 
--- | A generic counter that will increment to produce a unique number
-newtype  Counter = Counter {unCounter :: Int}
-instance Semigroup Counter where (<>) = mappend
-instance Monoid Counter where mempty  = Counter 0
-instance Component Counter where type Storage Counter = Global Counter
-
 instance Semigroup Logger where (<>) = mappend
 instance Monoid Logger where mempty = defaultLogger
 instance Component Logger where type Storage Logger = Global Logger
@@ -90,12 +83,6 @@ stepRenderTime !dT = modify global $ \(RenderTime t) -> RenderTime (t + dT)
 
 stepWorldTime :: forall w m. (Has w m WorldTime, MonadIO m) => Word32 -> SystemT w m ()
 stepWorldTime !dT = modify global $ \(WorldTime t) -> WorldTime (t + fromIntegral dT)
-
-getNextFromCounter :: forall w m. ReadWrite w m Counter => SystemT w m Int
-getNextFromCounter = do
-    Counter i <- get global
-    global    $= Counter (i + 1)
-    return i
 
 -------------
 -- Unsafe! --

@@ -35,7 +35,6 @@ instance ( s `CanProvide` WorkingDirectory
               adder = do url'       <- url
                          image      <- liftDependency . SDLI.load . T.unpack $ url'
                          images     <- readStore
-                         let imageID = Vec.length images
                          writeStore . Vec.snoc images $ image
-                         pure . Just $ imageID
+                         pure $ Vec.length images
     parseJSON v          = typeMismatch "ImageID" v

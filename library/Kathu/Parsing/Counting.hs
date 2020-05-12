@@ -1,9 +1,15 @@
-module Kathu.Parsing.Counting where
+module Kathu.Parsing.Counting
+    ( CountingIDs(..)
+    , parseAndLookupOrAddIncrementalID
+    , lookupOrAdd
+    , lookupOrExecAndVerify
+    ) where
 
+import           Control.Monad         (when)
 import           Data.Aeson
 import           Data.Aeson.Types      (Parser)
-import           Data.Map              (Map)
-import qualified Data.Map              as Map
+import           Data.Map.Strict       (Map)
+import qualified Data.Map.Strict       as Map
 import           Data.Text             (Text)
 import qualified Data.Text             as T
 import           Kathu.Util.Dependency
@@ -17,25 +23,25 @@ parseAndLookupOrAddIncrementalID constructor category = withText (T.unpack categ
     pure (constructor . fromIntegral <$> lookupOrAdd category s)
 
 lookupOrAdd :: (s `CanStore` CountingIDs, Monad m) => Text -> Text -> Dependency s m Int
-lookupOrAdd = lookupOrExecAndVerify (pure Nothing)
+lookupOrAdd = lookupOrExecAndAdd $ \_ -> pure ()
 
 -- | Will look up the stored number for the keys; if its not found, it will run the given action and verify the result matches then next ID to store
-lookupOrExecAndVerify :: (s `CanStore` CountingIDs, Monad m) => Dependency s m (Maybe Int) -> Text -> Text -> Dependency s m Int
-lookupOrExecAndVerify action category key = (getID <$> readStore) >>= storeIfNeeded False
-    where initialMap                   = Map.insert key 0 Map.empty
-          getID (CountingIDs ids)      = Map.lookup category ids >>= Map.lookup key
-          checkResult (Just i) nextID  = if i == nextID then i else error . concat $ ["Result from executing (", show i, ") did not match the next expected ID (", show nextID, ")"]
-          checkResult Nothing nextID   = nextID
-          storeIfNeeded _ (Just i)     = pure i
-          storeIfNeeded False Nothing  = action
-                                     >>= \result -> (unCounting <$> readStore)
-                                     >>= writeStore . CountingIDs . Map.insertWith (\_ old -> Map.insert key (checkResult result . Map.size $ old) old) category initialMap
-                                      >> (getID <$> readStore)
-                                     >>= storeIfNeeded True
-          storeIfNeeded True Nothing   = error . concat $
-              [ "lookupOrAdd failed to insert the new key "
-              , show key
-              , " with category "
-              , show category
-              , "; this should never happen, and marks some error in the function's logic, rather than input failure"
-              ]
+lookupOrExecAndVerify :: (s `CanStore` CountingIDs, Monad m) => Dependency s m Int -> Text -> Text -> Dependency s m Int
+lookupOrExecAndVerify action = lookupOrExecAndAdd $ \numIDMap -> do
+    nextID <- action
+    when (nextID /= Map.size numIDMap) $
+        error . concat $ ["Result from executing (", show nextID, ") did not match the next expected ID (", show (Map.size numIDMap), ")"]
+
+lookupOrExecAndAdd :: (s `CanStore` CountingIDs, Monad m) => (Map Text Int -> Dependency s m ()) -> Text -> Text -> Dependency s m Int
+lookupOrExecAndAdd action category key = do
+    CountingIDs countingIDs <- readStore
+    let numIDMap = Map.findWithDefault Map.empty category countingIDs
+
+    case Map.lookup key numIDMap of
+        Just i  -> pure i
+        Nothing -> do
+            action numIDMap
+            let nextID    = Map.size numIDMap
+                numIDMap' = Map.insert key nextID numIDMap
+            writeStore . CountingIDs . Map.insert category numIDMap' $ countingIDs
+            pure nextID
