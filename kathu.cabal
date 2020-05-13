@@ -122,7 +122,6 @@ executable kathu
   other-modules:    Kathu.App.Events
                     Kathu.App.Init
                     Kathu.App.Main
-                    Kathu.App.SDLCommon
                     Kathu.App.System
                     Kathu.App.World
                     -- Data

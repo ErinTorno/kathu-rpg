@@ -15,6 +15,8 @@ type EditableProperty a = a -> IO ()
 
 data SaveType = ForceSaveAs | SaveIfHasFile deriving Eq
 
+type DialogRunner a = a -> IO ()
+
 data WSEditState = WSEditState
     { worldspaceRef :: !(IORef (WorldSpace ImageID))
     , wsProperties  :: ![EditableProperty (WorldSpace ImageID)]

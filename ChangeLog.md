@@ -28,6 +28,9 @@
 * .world tile legends can now be auto-generated
 * Added module for serializing "pretty" yaml files
 
+### 0.1.11.4 -- Unreleased
+* Debug collision bounds are now colored according to their collision group
+
 ## 0.1.10.0 -- 2020-01-27
 * Lua scripts can now be loaded and ran from files
 * Scripts can be attached to entities and worldspaces

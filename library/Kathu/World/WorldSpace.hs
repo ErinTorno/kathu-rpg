@@ -49,6 +49,10 @@ data InstancedPrototype g = InstancedPrototype
     }
 makeLenses ''InstancedPrototype
 
+emptyInstancedPrototype :: InstancedPrototype g
+emptyInstancedPrototype = InstancedPrototype "" prototype (V2 0 0) Nothing Nothing Map.empty
+    where prototype = error "Attempted to use emptyInstancedPrototype basePrototype; no possible value exists for this"
+
 data InstancedItem g = InstancedItem
     { _baseItem     :: ItemStack g
     , _itemPosition :: !(V2 Double)
@@ -263,7 +267,7 @@ instance ( s `CanProvide` IDMap (EntityPrototype g)
         initPal    <- v .: "initial-palette"
         paletteIDs <- v .: "palettes"
         loadPnt    <- (*unitsPerTile) <$> v .: "load-point"
-        variables  <- v .:? "global-variables" .!= Map.empty
+        variables  <- v .:? "variables" .!= Map.empty
 
         shouldSerializePosition <- v .:? "should-save-exact-position" .!= False
         fieldConfigs :: Vector FieldConfig <- v .: "fields"
@@ -318,5 +322,7 @@ worldspaceFieldOrder = mkFieldOrderFromList
     , "file"
     , "events"
     , "is-singleton"
+    , "type"
+    , "value"
     , " "
     ]

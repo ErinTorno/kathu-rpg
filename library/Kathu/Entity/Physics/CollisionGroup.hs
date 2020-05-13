@@ -1,8 +1,10 @@
 module Kathu.Entity.Physics.CollisionGroup
     ( CollisionGroup(..)
-    , collisionGroupFromString
+    , collisionGroupFromText
     , mkGroupSensor
     , groupCollisionFilter
+    , collisionGroupDebugColor
+    , collisionFilterDebugColor
     , movementFilter
     , movementSensorFilter
     , floorEffectFilter
@@ -11,11 +13,13 @@ module Kathu.Entity.Physics.CollisionGroup
     , attackFilter
     ) where
 
-import           Apecs.Physics    (maskList, CollisionFilter(..), Sensor(..))
+import           Apecs.Physics        (maskList, CollisionFilter(..), Sensor(..))
 import           Data.Aeson
-import           Data.Text        (Text)
-import           Data.Vector      (Vector)
-import qualified Data.Vector      as Vec
+import           Data.Text            (Text)
+import           Data.Vector          (Vector)
+import qualified Data.Vector          as Vec
+
+import           Kathu.Graphics.Color
 
 -- movement is kept separate from hitboxes for all objects to maintain 3D effect (movement box at feet, hitbox in center of mass)
 data CollisionGroup
@@ -29,8 +33,8 @@ data CollisionGroup
     | EditorInfo -- Used by external editor to keep track of places object boundaries, etc.
     deriving (Show, Eq, Enum)
 
-collisionGroupFromString :: Text -> Maybe CollisionGroup
-collisionGroupFromString s = case s of
+collisionGroupFromText :: Text -> Maybe CollisionGroup
+collisionGroupFromText s = case s of
     "movement"        -> Just Movement
     "movement-sensor" -> Just MovementSensor
     "floor-effect"    -> Just FloorEffect
@@ -41,7 +45,7 @@ collisionGroupFromString s = case s of
     _                 -> Nothing
 
 instance FromJSON CollisionGroup where
-    parseJSON = withText "CollisionGroup" $ \s -> case collisionGroupFromString s of
+    parseJSON = withText "CollisionGroup" $ \s -> case collisionGroupFromText s of
         Just g  -> pure g
         Nothing -> fail $ "Unknown CollisionGroup " ++ show s
 
@@ -72,3 +76,18 @@ floorEffectFilter    = groupCollisionFilter FloorEffect
 interactFilter       = groupCollisionFilter Interact
 hitboxFilter         = groupCollisionFilter Hitbox
 attackFilter         = groupCollisionFilter Attack
+
+-- | Returns a unique color for drawing collisions of this group
+collisionGroupDebugColor :: CollisionGroup -> Color
+collisionGroupDebugColor group = case group of
+    Movement       -> mkColor  99 133 223 255
+    MovementSensor -> mkColor  55  81 150 255
+    FloorEffect    -> mkColor 133  82 156 255
+    Interact       -> mkColor  88 204  79 255
+    Hitbox         -> mkColor 223  58 108 255
+    Attack         -> mkColor 223 143  58 255
+    Intangible     -> mkColor  56  81  98 255
+    EditorInfo     -> mkColor   0   0   0 255
+
+collisionFilterDebugColor :: CollisionFilter -> Color
+collisionFilterDebugColor = collisionGroupDebugColor . toEnum . fromIntegral . filterGroup

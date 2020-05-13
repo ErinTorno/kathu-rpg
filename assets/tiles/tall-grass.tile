@@ -1,7 +1,6 @@
-tile-id:  tall-grass
-name:     tall grass
-
-should-choose-render-randomly: true
+tile-id:      tall-grass
+name:         tall grass
+render-flags: [choose-random-atlas]
 render:
 - atlas: "tall-grass.png"
   bounds: [16, 16]

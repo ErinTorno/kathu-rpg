@@ -5,6 +5,7 @@ import           Prelude               hiding (null)
 import           Control.Lens          (imap)
 import           Data.Aeson
 import           Data.ByteString       (ByteString)
+import           Data.Char             (isSpace)
 import           Data.Function         (on)
 import qualified Data.HashMap.Strict   as HashMap
 import           Data.List             (maximumBy, sortBy)
@@ -32,8 +33,10 @@ projectStringStyle :: Text -> Style
 projectStringStyle txt
     | "\n" `T.isInfixOf` txt        = Literal
     | YInternal.isSpecialString txt = DoubleQuoted
-    | T.length txt == 1             = DoubleQuoted -- If only one, likely Char and we should quote it, such as in tile legends
+    | T.length txt <= 1             = DoubleQuoted -- If only one, likely Char and we should quote it, such as in tile legends
+    | hasSurroundingSpace           = DoubleQuoted
     | otherwise                     = PlainNoTag
+    where hasSurroundingSpace = isSpace (T.head txt) || isSpace (T.last txt)
 
 projectStringScalar :: Style -> Text -> Event
 projectStringScalar _ ""     = EventScalar "" NoTag DoubleQuoted Nothing
@@ -52,7 +55,7 @@ listStyle :: Vector Value -> Style
 listStyle = maximumBy (compare `on` styleOrdVal) . map getStyle . Vec.toList
     where getStyle (String t) = projectStringStyle t
           getStyle _          = DoubleQuoted
-          styleOrdVal s = case s of {PlainNoTag -> 1:: Int; DoubleQuoted -> 2; Literal -> 3; _ -> 0}
+          styleOrdVal s = case s of {PlainNoTag -> 1 :: Int; DoubleQuoted -> 2; Literal -> 3; _ -> 0}
 
 -----------------------
 -- Pretty Formatters --

@@ -179,8 +179,8 @@ applyFieldConfig legend (FieldSet fieldMap) (FieldConfig pos fdata) = liftIO $ d
 -- When creating a tile legend, we choose symbols from associated groups;
 -- Once one of those groups run out, they can grab from the extra
 legendSolidTileKeys, legendNonSolidTileKeys, legendExtraTileKeys :: [Char]
-legendSolidTileKeys    = "#@=$%&/()0123456789" ++ ['A'..'B']
-legendNonSolidTileKeys = ".,-'\"`_~+*:;<>!?" ++ ['a'..'z']
+legendSolidTileKeys    = "#@=$%&/()0123456789£¢¥§©" ++ ['A'..'B']
+legendNonSolidTileKeys = ".,_-'`~+*:;<>!?¤°" ++ ['a'..'z']
 legendExtraTileKeys    = ['¿'..]
 
 mkLegend :: MonadIO m => Tiles g -> FieldSet -> m (MapLegend g)

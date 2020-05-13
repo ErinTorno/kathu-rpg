@@ -1,14 +1,19 @@
 module Kathu.App.Init
     ( entityWorld
     , system
+    , sdlWindowConfig
     ) where
 
 import           Apecs                           hiding (get)
 import           Apecs.Physics
 import           Control.Lens                    hiding (Identity)
+import           Control.Monad                   (void)
 import qualified Data.Map                        as Map
 import qualified Data.Text                       as T
+import           Foreign.C.String
 import qualified SDL
+import qualified SDL.Raw.Basic                   as SDLRaw
+import qualified SDL.Raw.Enum                    as SDLRaw
 import qualified SDL.Video                       as SDLV
 import qualified System.Random                   as R
 
@@ -101,3 +106,11 @@ system window renderer settings = do
     initPhysics
     
     pure ()
+
+sdlWindowConfig :: IO ()
+sdlWindowConfig =
+    -- very important if it editor mode, as we want to be able to click an option in the editor window,
+    -- and then immediately place it without needing to double-click in the game window
+    withCString "SDL_MOUSE_FOCUS_CLICKTHROUGH" $ \hintStr ->
+        withCString "1" $ \enabledStr ->
+            void $ SDLRaw.setHintWithPriority hintStr enabledStr SDLRaw.SDL_HINT_OVERRIDE

@@ -103,7 +103,7 @@ setCollisionCategory :: forall w. (Has w IO Physics, ReadWriteEach w IO [Collisi
 setCollisionCategory !world !ety colCategory (Optional tag) = liftIO . Apecs.runWith world $ do
     ShapeList shapes <- get ety
     
-    let maybeColGroup = collisionGroupFromString colCategory
+    let maybeColGroup = collisionGroupFromText colCategory
     case groupCollisionFilter <$> maybeColGroup of
         Nothing        -> lift . putStrLn $ "Couldn't find collision category " ++ show colCategory
         Just colFilter ->

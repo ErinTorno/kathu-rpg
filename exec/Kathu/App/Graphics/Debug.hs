@@ -13,37 +13,37 @@ import           Kathu.App.Graphics.Font         (defaultFont, renderText)
 import           Kathu.App.Graphics.Image        (ImageID)
 import           Kathu.App.Graphics.ImageManager (currentPalette)
 import           Kathu.App.System                (SystemT')
-import           Kathu.Entity.Components         (Identity(..))
+import           Kathu.App.Tools.ToolMode        (isNoTool)
+import           Kathu.Entity.Physics.CollisionGroup (collisionFilterDebugColor)
 import           Kathu.Graphics.Camera
 import           Kathu.Graphics.Color
 import           Kathu.World.WorldSpace
 import           Kathu.Util.Types                (unID)
 
-primaryCollisionBoxColor :: Color
-primaryCollisionBoxColor = mkColor 250 50 90 225
-
-attachedCollisionBoxColor :: Color
-attachedCollisionBoxColor = mkColor 45 170 225 225
-
 renderDebug :: SDL.Renderer -> (V2 Double -> V2 Double) -> SystemT' IO ()
 renderDebug renderer logicToRenderPos = do
-    let renderCollision _ _ []             = pure ()
-        renderCollision col pos vecs@(v:_) = do
-            SDL.rendererDrawColor renderer $= unColor col
-            let convPos vpoint = logicToRenderPos (pos + vpoint)
-                points = SVec.fromList (fmap floor . convPos <$> snoc vecs v)
-            -- we render in groups of 4 pixels to have thicker lines
-            SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 0 0)) points
-            SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 0 1)) points
-            SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 1 0)) points
-            SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 1 1)) points
+    -- in tool modes collision might be rapidly changing or out-of-date; don't bother to draw
+    shouldDrawCol <- isNoTool <$> get global
+    when shouldDrawCol $ do
+        let renderCollision _ _ []                = pure ()
+            renderCollision colFil pos vecs@(v:_) = do
+                let convPos vpoint = logicToRenderPos (pos + vpoint)
+                    points = SVec.fromList (fmap floor . convPos <$> snoc vecs v)
 
-    -- attached boxes don't have an identity or a position, as they exist on a separate entity with just a shape
-    cmapM_ $ \(Shape parentEty (Convex vecs _), _ :: Not Identity)   -> do
-        hasPos <- exists parentEty (Proxy :: Proxy Position)
-        when hasPos $
-            (\(Position pos) -> renderCollision attachedCollisionBoxColor pos vecs) =<< get parentEty
-    cmapM_ $ \(Position pos, Shape _ (Convex vecs _), _ :: Identity) -> renderCollision primaryCollisionBoxColor pos vecs
+                SDL.rendererDrawColor renderer $= unColor (collisionFilterDebugColor colFil)
+                -- we render in groups of 4 pixels to have thicker lines
+                SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 0 0)) points
+                SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 0 1)) points
+                SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 1 0)) points
+                SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 1 1)) points
+
+        cmapM_ $ \(Shape _ (Convex vecs _), colFil :: CollisionFilter, Position pos) ->
+            renderCollision colFil pos vecs
+        -- attached boxes don't have a position, as they exist on a separate entity with just a shape
+        cmapM_ $ \(Shape parentEty (Convex vecs _), colFil :: CollisionFilter, _ :: Not Position)   -> do
+            hasPos <- exists parentEty (Proxy :: Proxy Position)
+            when hasPos $ 
+                get parentEty >>= \(Position pos) -> renderCollision colFil pos vecs
     renderDebugText renderer
 
 renderDebugText :: SDL.Renderer -> SystemT' IO ()

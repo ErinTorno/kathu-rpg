@@ -34,7 +34,7 @@ instance ToJSON WorldVariable where
     toJSON (WorldBool b)   = object ["type" .= ("bool"   :: Text), "value" .= b]
     toJSON (WorldDouble d) = object ["type" .= ("double" :: Text), "value" .= d]
     toJSON (WorldInt i)    = object ["type" .= ("int"    :: Text), "value" .= i]
-    toJSON (WorldText t)   = object ["type" .= ("text"   :: Text),   "value" .= t]
+    toJSON (WorldText t)   = object ["type" .= ("text"   :: Text), "value" .= t]
     toJSON WorldUnit       = object ["type" .= ("unit"   :: Text)]
 
 instance FromJSON WorldVariable where

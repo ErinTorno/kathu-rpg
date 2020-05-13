@@ -48,12 +48,12 @@ isEventSet :: ScriptEvent -> EventFlag -> Bool
 isEventSet (ScriptEvent e) (EventFlag f) = 0 /= e .&. f
 
 onUpdate, onInit, onDestroy, onSignalChange, onSensorCollisionBegin, onSensorCollisionEnd :: ScriptEvent
-onUpdate               = ScriptEvent $ 2 ^ (0 :: Int)
-onInit                 = ScriptEvent $ 2 ^ (1 :: Int)
-onDestroy              = ScriptEvent $ 2 ^ (2 :: Int)
-onSignalChange         = ScriptEvent $ 2 ^ (3 :: Int)
-onSensorCollisionBegin = ScriptEvent $ 2 ^ (4 :: Int)
-onSensorCollisionEnd   = ScriptEvent $ 2 ^ (5 :: Int)
+onUpdate               = ScriptEvent $ bit 1
+onInit                 = ScriptEvent $ bit 2
+onDestroy              = ScriptEvent $ bit 3
+onSignalChange         = ScriptEvent $ bit 4
+onSensorCollisionBegin = ScriptEvent $ bit 5
+onSensorCollisionEnd   = ScriptEvent $ bit 6
 
 allEvents :: Map Text ScriptEvent
 allEvents = Map.fromList

@@ -14,10 +14,10 @@ import           Kathu.Scripting.Lua.Types          (Script)
 import           Kathu.Util.Collection              (fromJustElseError)
 import           Kathu.Util.Types                   (Identifier)
 
-defineData          "EntityPrototype" "" (SerializableComponent ''BodyConfig False [] : SerializableComponent ''Script True [] : serializableComponentConfigs)
-defineEntityCreator "newFromSimplePrototype" "" serializableComponentConfigs
+defineData          "EntityPrototype" (SerializableComponent ''BodyConfig False [] : SerializableComponent ''Script True [] : serializableComponentConfigs)
+defineEntityCreator "newFromSimplePrototype" serializableComponentConfigs
 
 getPrototypeID :: EntityPrototype g -> Identifier
 getPrototypeID = identifier . fromJustElseError "Attempted to load entity without Identity" . identity
 
-defineEntityFromJSON 'getPrototypeID ''EntityPrototype "" (SerializableComponent ''BodyConfig False [] : SerializableComponent ''Script True [] : serializableComponentConfigs)
+defineEntityFromJSON 'getPrototypeID ''EntityPrototype (SerializableComponent ''BodyConfig False [] : SerializableComponent ''Script True [] : serializableComponentConfigs)

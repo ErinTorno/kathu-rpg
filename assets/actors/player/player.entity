@@ -7,7 +7,7 @@ identity:
 tags: [player]
 life-time: persistant # we never let this entity get destroyed automatically
  # how many tiles you can cover per second
-moving-speed: 11
+moving-speed: 10
 body-config:
   type:       dynamic
   mass:       10

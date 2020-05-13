@@ -19,7 +19,7 @@ import qualified Kathu.Scripting.Lua        as Lua
 import           Kathu.Scripting.Event
 
 -- | Creates a dialog for editing a script, and returns an IO action that displays, saves, and then hides the dialog
-createEditScriptDialogRunner :: (Lua.Script -> IO ()) -> IO (Lua.Script -> IO ())
+createEditScriptDialogRunner :: (Lua.Script -> IO ()) -> IO (DialogRunner Lua.Script)
 createEditScriptDialogRunner onScriptChange = do
     dialog    <- new Gtk.Dialog [#title := "Edit Script", #modal := True]
     scriptRef <- newIORef Lua.blankScript

@@ -25,7 +25,6 @@ import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
 import           Kathu.App.Tools.ToolSystem      (runToolMode)
 import qualified Kathu.App.Init                  as Init
-import qualified Kathu.App.SDLCommon             as SDLC
 import           Kathu.App.System
 import           Kathu.Game                      (runGame, updateDelay)
 
@@ -42,10 +41,7 @@ createWindow :: IO RenderInfo
 createWindow = do
     SDL.initialize [SDL.InitVideo]
     SDL.HintRenderScaleQuality $= SDL.ScaleNearest
-    
-    -- very important if it editor mode, as we want to be able to click an option in the editor window,
-    -- and then immediately place it without needing to double-click in the game window
-    SDLC.setOnFocusMouseClickthrough True
+    Init.sdlWindowConfig
 
     settings <- loadSettings
 

@@ -65,18 +65,21 @@ renderToolMode renderer logicToRenderPos = do
     
     case toolmode of
         TilePlacer _ -> do
-            cursorSt         <- get global
-            maybeLastTilePos <- lastPlacedTilePos <$> get global
+            controlSt <- get global
+            shiftSt   <- getInputState controlSt $ fromScanCode SDL.ScancodeLShift
+            when (isPressedOrHeld shiftSt) $ do
+                cursorSt         <- get global
+                maybeLastTilePos <- lastPlacedTilePos <$> get global
 
-            forM_ maybeLastTilePos $ \lastPos ->
-                let hoveredTilePos :: V2 Int
-                    hoveredTilePos = floor <$> V2 0.5 1 + cursorPosition cursorSt
-                    -- we want to show lines originating from the center of tiles, so we adjust them
-                    shiftPos :: V2 Double
-                    shiftPos       = V2 0 (-0.5)
-                    mkPoint pos    = SDL.P . fmap floor . logicToRenderPos $ shiftPos + (fromIntegral <$> pos)
-                 in do SDL.rendererDrawColor renderer SDL.$= unColor placeLineColor
-                       SDL.drawLine renderer (mkPoint lastPos) (mkPoint hoveredTilePos)
+                forM_ maybeLastTilePos $ \lastPos ->
+                    let hoveredTilePos :: V2 Int
+                        hoveredTilePos = floor <$> V2 0.5 1 + cursorPosition cursorSt
+                        -- we want to show lines originating from the center of tiles, so we adjust them
+                        shiftPos :: V2 Double
+                        shiftPos       = V2 0 (-0.5)
+                        mkPoint pos    = SDL.P . fmap floor . logicToRenderPos $ shiftPos + (fromIntegral <$> pos)
+                     in do SDL.rendererDrawColor renderer SDL.$= unColor placeLineColor
+                           SDL.drawLine renderer (mkPoint lastPos) (mkPoint hoveredTilePos)
         _ -> pure ()
 
 -- | Updates tool mode after new frame's controls have been updated

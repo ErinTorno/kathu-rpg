@@ -9,7 +9,6 @@ import qualified SDL
 
 import           Kathu.App.Graphics.Image        (ImageID)
 import           Kathu.App.Graphics.ImageManager
-import qualified Kathu.App.SDLCommon             as SDLC
 import           Kathu.Graphics.Drawable
 import           Kathu.Util.Types                (clampBetween)
 
@@ -65,12 +64,12 @@ getImageID (RSStatic (StaticSprite !img _ _)) = img
 getImageID (RSAnimated !anim) = animAtlas . animation $ anim
 
 mkRenderRect :: (Floating a, RealFrac a) => a -> a -> V2 a -> SDL.Rectangle CInt -> SDL.Rectangle CInt
-mkRenderRect !bleed !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = SDLC.mkRectWith round x' y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
+mkRenderRect !bleed !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = mkRectWith round x' y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
     where x' = x - scale * 0.5 * fromIntegral w
           y' = y - scale * fromIntegral h
 
 mkRenderRectNoCenter :: (Floating a, RealFrac a) => a -> a -> V2 a -> SDL.Rectangle CInt -> SDL.Rectangle CInt
-mkRenderRectNoCenter !bleed !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = SDLC.mkRectWith round x y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
+mkRenderRectNoCenter !bleed !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = mkRectWith round x y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
     where y' = y - scale * fromIntegral h
 
 blitRenderSprite :: MonadIO m => SDL.Renderer -> ImageManager -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite ImageID -> m ()
@@ -80,3 +79,12 @@ blitRenderSprite !renderer !im !mkRect !ren = blit ren
           blit dyn@(RSAnimated AnimatedSprite {animation = anim}) = mapM_ (draw (Just bounds) bounds) $ fetchTextures (animAtlas anim) im
               where bounds = SDL.Rectangle (SDL.P boundsPos) boundsDim
                     (# boundsPos, boundsDim #) = currentBounds dyn
+
+-------------------------
+-- SDL Data Type Utils --
+-------------------------
+
+mkRectWith :: (a -> b) -> a -> a -> a -> a -> SDL.Rectangle b
+mkRectWith f x y w h = SDL.Rectangle topLeft size
+    where topLeft = SDL.P $ SDL.V2 (f x) (f y)
+          size    = SDL.V2 (f w) (f h)

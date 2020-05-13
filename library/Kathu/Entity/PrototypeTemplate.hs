@@ -2,19 +2,19 @@
 
 module Kathu.Entity.PrototypeTemplate (defineData, defineEntityCreator, defineEntityFromJSON) where
 
-import Apecs
-import Data.Aeson
-import Data.Char (toLower)
-import Data.Functor.Compose
-import Data.List (nub)
-import Language.Haskell.TH
+import           Apecs
+import           Data.Aeson
+import           Data.Char                          (toLower)
+import           Data.Functor.Compose
+import           Data.List                          (nub)
+import           Language.Haskell.TH
 
-import Kathu.Entity.Components (newExistingEntity)
-import Kathu.Entity.SerializableComponent
-import Kathu.Parsing.Aeson ((.:~?), (.:^?))
-import Kathu.Util.Dependency
-import Kathu.Util.Flow ((>>>=))
-import Kathu.Util.Types (IDMap)
+import           Kathu.Entity.Components            (newExistingEntity)
+import           Kathu.Entity.SerializableComponent
+import           Kathu.Parsing.Aeson                ((.:~?), (.:^?))
+import           Kathu.Util.Dependency
+import           Kathu.Util.Flow                    ((>>>=))
+import           Kathu.Util.Types                   (IDMap)
 
 -- This modules contains functions that generating helper functions for EntityPrototypes from a given list of components
 
@@ -34,26 +34,26 @@ applyParams :: Type -> [String] -> Type
 applyParams typ = ParensT . foldl (\acc cur -> AppT acc (VarT . mkName $ cur)) typ
 
 -- | Creates a record type for an entity prototype with the given components
-defineData :: String -> String -> [SerializableComponent] -> Q [Dec]
-defineData typename prefix components = pure . pure $ DataD [] (mkName typename) uniqueParams Nothing [construct] []
-    where mkField comp  = let name = compName comp in (fieldName prefix name, defaultBang, AppT (ConT ''Maybe) . applyParams (ConT name) . params $ comp)
+defineData :: String -> [SerializableComponent] -> Q [Dec]
+defineData typename components = pure . pure $ DataD [] (mkName typename) uniqueParams Nothing [construct] []
+    where mkField comp  = let name = compName comp in (fieldName "" name, defaultBang, AppT (ConT ''Maybe) . applyParams (ConT name) . params $ comp)
           uniqueParams  = map (PlainTV . mkName) . nub . concatMap params $ components
           construct     = RecC (mkName typename) . map mkField $ components
 
 -- | Creates a function that will create a new entity in the world from the given record type
-defineEntityCreator :: String -> String -> [SerializableComponent] -> Q [Dec]
-defineEntityCreator fnName prefix components = do
+defineEntityCreator :: String -> [SerializableComponent] -> Q [Dec]
+defineEntityCreator fnName components = do
     let param   = [VarP . mkName $ "proto"]
     lambdaExpr <- [| (maybe (pure ()) (set ety) . f $ proto) >> pure ety |]
     let lambdaSet         = LamE [VarP . mkName $ "f", VarP . mkName $ "ety"] lambdaExpr
-        applyFor acc name = UInfixE acc (VarE '(>>=)) $ AppE lambdaSet . VarE $ fieldName prefix name
+        applyFor acc name = UInfixE acc (VarE '(>>=)) $ AppE lambdaSet . VarE $ fieldName "" name
     newEnt     <- [| newExistingEntity () |]
     let body    = UInfixE (foldl applyFor newEnt . map compName $ components) (VarE '(>>=)) (VarE 'pure)
     pure . pure $ FunD (mkName fnName) [Clause param (NormalB body) []]
 
 -- | Defines FromJSON instances for a entity prototype
-defineEntityFromJSON :: Name -> Name -> String -> [SerializableComponent] -> Q [Dec]
-defineEntityFromJSON getID typename prefix components = pure . pure $ InstanceD Nothing contraints typeSignature [pJSON]
+defineEntityFromJSON :: Name -> Name -> [SerializableComponent] -> Q [Dec]
+defineEntityFromJSON getID typename components = pure . pure $ InstanceD Nothing contraints typeSignature [pJSON]
     where stateVar     = VarT . mkName $ "s"
           monadVar     = VarT . mkName $ "m"
           uniqueParams = nub . concatMap params $ components
@@ -74,7 +74,7 @@ defineEntityFromJSON getID typename prefix components = pure . pure $ InstanceD 
           varName      = mkName "v"
 
           indvParse (cName, isLinked) = UInfixE (VarE varName) (VarE (if isLinked then '(.:~?) else '(.:^?))) (LitE . StringL . camelTo2 '-' . show $ combinedName)
-              where combinedName = fieldName prefix cName
+              where combinedName = fieldName "" cName
           sucExpr      = foldl (\acc cur -> UInfixE acc (VarE '(<*>)) (indvParse cur)) (UInfixE (ConE . mkName . nameBase $ typename) (VarE '(<$>)) (indvParse $ head compDepPairs)) (tail compDepPairs)
 
           protoName    = mkName "inproto"
