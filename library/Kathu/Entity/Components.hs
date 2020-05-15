@@ -32,7 +32,7 @@ data SpecialEntity
     | EditorRefTo Entity
     deriving (Show, Eq)
 
-instance Component SpecialEntity where type Storage SpecialEntity = Map SpecialEntity
+instance Component SpecialEntity where type Storage SpecialEntity = Cache CacheSize (Map SpecialEntity)
 
 -- Not all can be parsed, as some are while-running only
 instance FromJSON SpecialEntity where

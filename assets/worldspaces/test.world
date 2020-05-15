@@ -92,21 +92,30 @@ fields:
   - "                                "
   - "                                "
 entities:
-- entity: powered-brick-door
-  position: [27.5, 25]
-  receiving-signal: button-huge1
-- entity: button-huge
-  position: [26, 22]
-  emitting-signal: button-huge1
-  config:
-    mass-threshold:
-      type: double
-      value: 80
+- entity: chest-locked
+  position: [6.5, 1]
+- entity: chest-odd
+  position: [25, 12]
+- entity: door-brick-wide
+  position: [4.5, 6]
+- entity: door-brick-wide
+  position: [2.5, 0]
+- entity: door-brick-wide-unlocked
+  position: [1.5, 15]
+- entity: door-stairs-down
+  position: [5.5, 19]
 - entity: block
-  position: [22, 22]
-- entity: powered-brick-door-cold
-  position: [27.5, 9]
-  receiving-signal: my-button1
+  position: [15, 12]
+- entity: block
+  position: [2, 12]
+- entity: block
+  position: [30, 4]
+- entity: orb-toggle
+  position: [34, 11]
+- entity: orb-toggle
+  position: [29, 11]
+- entity: pot-small
+  position: [32, 5]
 - entity: button
   position: [26, 14]
   emitting-signal: my-button1
@@ -114,52 +123,43 @@ entities:
     mass-threshold:
       type: double
       value: 5
-- entity: pot-small
-  position: [32, 5]
-- entity: orb-toggle
-  position: [29, 11]
-- entity: orb-toggle
-  position: [34, 11]
+- entity: powered-brick-door-cold
+  position: [27.5, 9]
+  receiving-signal: my-button1
 - entity: block
-  position: [30, 4]
-- entity: block
-  position: [2, 12]
-- entity: block
-  position: [15, 12]
-- entity: door-stairs-down
-  position: [5.5, 19]
-- entity: door-brick-wide-unlocked
-  position: [1.5, 15]
-- entity: door-brick-wide
-  position: [2.5, 0]
-- entity: door-brick-wide
-  position: [4.5, 6]
-- entity: chest-odd
-  position: [25, 12]
-- entity: chest-locked
-  position: [6.5, 1]
+  position: [22, 22]
+- entity: button-huge
+  position: [26, 22]
+  emitting-signal: button-huge1
+  config:
+    mass-threshold:
+      type: double
+      value: 80
+- entity: powered-brick-door
+  position: [27.5, 25]
+  receiving-signal: button-huge1
 items:
-- item: spirit-lantern
-  position: [12, 1]
-- item: pumpkin
-  position: [11, 6]
-- item: pumpkin
-  position: [21, 1]
-- item: bomb
-  position: [7, 4.5]
-- item: sword
-  position: [8, 7]
-- item: key-odd
-  position: [26.5, 12]
-- item: key-big
-  position: [4, 8]
-- item: key-small
-  position: [3, 7]
-- item: potion-mana
-  position: [2.5, 2]
-- item: potion-health
-  position: [1.5, 2]
-- item: apple
-  position: [15.5, 8.5]
 - item: apple
   position: [19, 2.5]
+- item: apple
+  position: [15.5, 8.5]
+- item: potion-health
+  position: [1.5, 2]
+- item: potion-mana
+  position: [2.5, 2]
+- item: key-small
+  position: [3, 7]
+- item: key-big
+  position: [4, 8]
+- item: key-odd
+  position: [26.5, 12]
+- item: sword
+  position: [8, 7]
+- item: bomb
+  position: [7, 4.5]
+- item: pumpkin
+  position: [21, 1]
+- item: pumpkin
+  position: [11, 6]
+- item: spirit-lantern
+  position: [12, 1]

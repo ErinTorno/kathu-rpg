@@ -131,11 +131,6 @@ emptyTile = Tile
     , _breakBehavior = Unbreakable
     }
 
--- | Uses randomIO to initialize metadata for tiles that make use of random properties through its metadata
-mkTileStateWithMetadata :: MonadIO m => Tile g -> m TileState
-mkTileStateWithMetadata t = TileState (t^.tileID) . restrictRandomMeta <$> liftIO (R.randomIO :: IO Word32)
-    where restrictRandomMeta = (`mod`(t^.tileRender.to (fromIntegral . Vec.length . unRender)))
-
 -- Target Size: 8 bytes (for better alignment)
 data TileState = TileState
     { _tile             :: {-# UNPACK #-} !TileID
@@ -153,9 +148,17 @@ mkTileState t = TileState (t^.tileID) 0
 emptyTileState :: TileState
 emptyTileState = mkTileState emptyTile
 
+-- | Uses randomIO to initialize metadata for tiles that make use of random properties through its metadata
+mkTileStateWithMetadata :: MonadIO m => Tile g -> m TileState
+mkTileStateWithMetadata t
+    | t^.tileDrawFlags.to (isDrawFlagSet RandomMode) =
+        let restrictRandomMeta = (`mod`(t^.tileRender.to (fromIntegral . Vec.length . unRender)))
+         in TileState (t^.tileID) . restrictRandomMeta <$> liftIO (R.randomIO :: IO Word32)
+    | otherwise = pure $ mkTileState t
+
 getTileRender :: TileState -> Tile g -> Render g
 getTileRender !tileState !tileInst
-    | isDrawFlagSet RandomMode (tileInst^.tileDrawFlags) =
+    | tileInst^.tileDrawFlags.to (isDrawFlagSet RandomMode) =
         let chooseFrame (Render layers) = Render (Vec.singleton $ layers Vec.! (tileState^.metadata.to fromIntegral))
          in chooseFrame (tileInst^.tileRender)
     | otherwise = tileInst^.tileRender

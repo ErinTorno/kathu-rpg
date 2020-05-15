@@ -40,9 +40,11 @@ saveWorldSpace EditorState{ editorWindow = window
         Just filePath -> do
             writeIORef wsEditStRef $ wsSt {wsFilePath = Just filePath}
 
-            worldspace <- readIORef wsRef
+            -- the fields might have been changed by the ToolSystem, so we take whatever the game screen is using for it
+            (allTiles, gameWS :: WorldSpace ImageID) <- runWithEntityWorld queue $
+                (,) <$> get global <*> get global
 
-            allTiles <- runWithEntityWorld queue $ get global
+            worldspace <- (worldFields .~ gameWS^.worldFields) <$> readIORef wsRef
             wsValue <- encodeValueForWorldSpace allTiles worldspace
 
             case fileFormatPrefix filePath of

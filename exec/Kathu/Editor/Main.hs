@@ -32,18 +32,21 @@ import           Kathu.Editor.Types
 import           Kathu.World.WorldSpace
 
 mkMenuBarDescription :: EditorState -> MenuBarDescription
-mkMenuBarDescription es@EditorState{editorApp = app, editorWindow = window, eventQueue = queue} =
+mkMenuBarDescription es@EditorState{editorWindow = window, eventQueue = queue} =
     [ ("_File", [ ("New Worldspace", onNewFile es)
                 , ("_Open",          onFileLoad es =<< showFileChooser window Gtk.FileChooserActionOpen "Open WorldSpace File" "WorldSpace files" "*.world")
                 , ("_Save",          saveWorldSpace es SaveIfHasFile)
                 , ("Save As",        saveWorldSpace es ForceSaveAs)
-                , ("_Quit",          void $ onApplicationClose app)])
+                , ("_Quit",          onApplicationClose es)])
     , ("_Game", [ ("Toggle _Debug",  pushAppEvent queue ToggleDebug)])
     , ("_Help", [ ("_About",         showAboutDialog)])]
 
 -- Later can include save unsaved work option
-onApplicationClose :: Gtk.Application -> IO Bool
-onApplicationClose app = Gio.applicationQuit app >> pure True
+onApplicationClose :: EditorState -> IO ()
+onApplicationClose EditorState{editorApp = app, eventQueue = queue} = do
+    Gio.applicationQuit app
+    -- We let the game close itself, as it is running on the main threat we forked from
+    pushAppEvent queue TryToQuitGame
 
 onNewFile :: EditorState -> IO ()
 onNewFile es@EditorState{wsEditState = wsEditStRef} = do
@@ -83,8 +86,8 @@ handleEditorEvents editorSt = do
     pure True
 
 handleEditorEvent :: EditorState -> EditorEvent -> IO ()
-handleEditorEvent EditorState{editorApp = app} event = case event of
-    TryToCloseEditor -> void $ onApplicationClose app
+handleEditorEvent _ event = case event of
+    DummyEditorEvent -> putStrLn "DummyEditorEvent"
 
 activateApp :: Gtk.Application -> EventQueue -> [String] -> Gio.ApplicationActivateCallback
 activateApp app queue args = do
@@ -105,9 +108,8 @@ activateApp app queue args = do
     wsEditSt  <- newIORef $ WSEditState wsRef [] Nothing
     let editorState = EditorState app window queue wsEditSt res
 
-    -- For some reason letting it close on its own can generate a lot of access violations that don't occur when applicationQuit is called
     on window #deleteEvent $ \_ ->
-        onApplicationClose app
+        onApplicationClose editorState >> pure True
 
     mainVBox <- new Gtk.Box [#orientation := Gtk.OrientationVertical]
 
@@ -140,10 +142,6 @@ getWorldFile (x:xs) | ".world" `isSuffixOf` x = Just x
 start :: [String] -> IO ()
 start args = do
     queue <- newEventQueue
-    app <- new Gtk.Application [ #applicationId := "haskell-gi.kathu"
-                               , #flags := [Gio.ApplicationFlagsFlagsNone]
-                               ]
-    on app #activate $ activateApp app queue args
 
     -- don't load any world yet, and force debug to be usable
     let updateSettings s = s {initialWorld = Nothing, canUseDebug = True}
@@ -151,11 +149,17 @@ start args = do
     curTime <- SDL.ticks
     commandState <- newCommandState
 
-    forkIO . Kathu.startWith updateSettings $ \(Kathu.RenderInfo _ renderer buffer settings) world -> do
+    forkIO $ do
+        app <- new Gtk.Application [ #applicationId := "haskell-gi.kathu"
+                                   , #flags := [Gio.ApplicationFlagsFlagsNone]
+                                   ]
+        on app #activate $ activateApp app queue args
+
+        void $ Gio.applicationRun app Nothing
+
+    Kathu.startWith updateSettings $ \(Kathu.RenderInfo _ renderer buffer settings) world -> do
         -- need to put this first or else it will get stuct waiting for the MVar to be filled
         putEntityWorld world queue
         Kathu.runForEventQueue queue commandState (Kathu.renderDelay settings) renderer buffer curTime curTime
-
-    Gio.applicationRun app Nothing
 
     pure ()

@@ -34,10 +34,17 @@ shouldShowGrid :: ToolMode -> Bool
 shouldShowGrid NoTool = False
 shouldShowGrid _      = True
 
+-- | Returns True if both modes are the same type, regardless of configuration
+isSameMode :: ToolMode -> ToolMode -> Bool
+isSameMode NoTool       NoTool       = True
+isSameMode TilePlacer{} TilePlacer{} = True
+isSameMode SignalWirer  SignalWirer  = True
+isSameMode _            _            = False
+
 data ToolModeUniversalState = ToolModeUniversalState
     { lastPlacedTilePos :: !(Maybe (V2 Int))
     , selectedTile      :: !(Tile ImageID)
-    , lastUndoRedoTime  :: !Word32 
+    , lastUndoRedoTime  :: !Word32
     }
 
 instance Semigroup ToolModeUniversalState where (<>) = mappend

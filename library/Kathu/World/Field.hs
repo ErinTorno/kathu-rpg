@@ -126,13 +126,19 @@ fieldFoldM f !acc (Field fgTiles) = go fgTiles 0 0 acc
 
 
 {-# INLINE fieldFoldWithEmptyM #-}
--- | Folds through all present tiles in the field monadically, with position; skips empty tiles
+-- | Folds through all present tiles in the field monadically, with position
 fieldFoldWithEmptyM :: MonadIO m => (a -> V2 Int -> TileState -> m a) -> a -> Field -> m a
 fieldFoldWithEmptyM f !acc (Field fgTiles) = go fgTiles 0 0 acc
     where go tiles !x !y !b
               | y == fieldDim     = pure b
               | x == fieldDim     = go tiles 0 (y + 1) b
               | otherwise         = liftIO (UMVec.unsafeRead tiles $ indexFromCoord x y) >>= f b (V2 x y) >>= go tiles (x + 1) y
+
+isFieldEmpty :: MonadIO m => Field -> m Bool
+isFieldEmpty = fieldFoldM (\_ _ _ -> pure False) True
+
+isFieldNotEmpty :: MonadIO m => Field -> m Bool
+isFieldNotEmpty = fieldFoldM (\_ _ _ -> pure True) False
 
 -- | Transforms a FieldSet into a list of V2 lists defining collision shapes
 mkCollisionPolygons :: MonadIO m => Tiles g -> FieldSet -> m (Vec.Vector [V2 Double])
@@ -168,11 +174,14 @@ applyFieldConfig :: MonadIO m => MapLegend g -> FieldSet -> FieldConfig -> m Fie
 applyFieldConfig legend (FieldSet fieldMap) (FieldConfig pos fdata) = liftIO $ do
     Field field <- mkField
 
-    let legendLookup k = mkTileState . fromJustElseError "Attempted to tile without a listing in the WorldSpace's legend" . Map.lookup k $ legend
+    let legendLookup k = mkTileStateWithMetadata
+                       . fromJustElseError "Attempted to tile without a listing in the WorldSpace's legend"
+                       . Map.lookup k
+                       $ legend
 
     iforM_ fdata $ \y rowStr ->
         iforM_ rowStr $ \x key ->
-            UMVec.write field (indexFromCoord x y) (legendLookup key)
+            UMVec.write field (indexFromCoord x y) =<< legendLookup key
 
     pure . FieldSet . flip (Map.insert pos) fieldMap . Field $ field
 
@@ -219,7 +228,9 @@ serializeFieldSetPairs allTiles fs@(FieldSet fieldMap) = do
         revLegend  = Map.fromList . map (\(k, v) -> (v, k)) . Map.assocs . fmap (view tileID) $ legend
         getKey ts  = revLegend Map.! (ts^.tile)
 
-    fieldLists <- liftIO . forM (Map.assocs fieldMap) $ \(pos, Field field) -> do
+    nonEmptyFields <- filterM (isFieldNotEmpty . snd) . Map.assocs $ fieldMap
+
+    fieldLists <- liftIO . forM nonEmptyFields $ \(pos, Field field) -> do
         fieldStr <- foldrMVec (\ts str -> getKey ts : str) "" field
 
         let rows = Vec.fromList . take fieldDim $ splitEveryN fieldDim fieldStr

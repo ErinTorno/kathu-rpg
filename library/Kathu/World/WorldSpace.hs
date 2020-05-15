@@ -83,7 +83,7 @@ fieldsSurrounding wx wy ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
     where fields    = unFieldSet $ ws^.worldFields
           (# ox, oy #) = fieldContainingCoord wx wy
           readFields !acc !x !y | y > oy + 1 = acc
-                                | x > ox + 1 = readFields acc 0 (y + 1)
+                                | x > ox + 1 = readFields acc (ox - 1) (y + 1)
                                 | otherwise  = readFields (((curV,) <$> Map.lookup curV fields):acc) (x + 1) y
               where curV = V2 x y -- only consider same z level right now
 
@@ -170,7 +170,6 @@ buildTileCollisions ws = do
 
     addWorldCollision colPolys
 
-
 -- | Loads in the new variables for the current world, and saves the previous to its Stasis
 saveWorldVariables :: forall w m g. (MonadIO m, ReadWriteEach w m '[Variables, WorldSpace g, WorldStases]) => WorldSpace g -> SystemT w m ()
 saveWorldVariables newWS = do
@@ -249,8 +248,8 @@ encodeValueForWorldSpace allTiles (WorldSpace wid wname initPal palettes loadPos
         , "load-point"                 .= (loadPos / unitsPerTile)
         , "should-save-exact-position" .= shouldSavePos
         , "variables"                  .= vars
-        , "entities"                   .= etys
-        , "items"                      .= items
+        , "entities"                   .= Vec.reverse etys  -- as part of loading this get reversed, so we un-reverse it once we save to ensure the same order
+        , "items"                      .= Vec.reverse items
         ]
         ++ fieldPairs
 

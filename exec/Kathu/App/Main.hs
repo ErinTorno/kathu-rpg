@@ -108,9 +108,8 @@ run !renDelay !renderer !renBuf !prevPhysTime !prevRendTime = do
     
     ShouldQuit isQuitting <- get global
     -- Physics steps back to ensure next update is on time; render goes whenever it can
-    if isQuitting
-    then pure ()
-    else run renDelay renderer renBuf (startTime - remainder) renderStartTime
+    unless isQuitting $
+        run renDelay renderer renBuf (startTime - remainder) renderStartTime
 
 runForEventQueue :: EventQueue -> CommandState -> Word32 -> SDL.Renderer -> RenderBuffer -> Word32 -> Word32 -> IO ()
 runForEventQueue !queue !commandState !renDelay !renderer !renBuf !prevPhysTime !prevRendTime = do
@@ -144,7 +143,5 @@ runForEventQueue !queue !commandState !renDelay !renderer !renBuf !prevPhysTime 
     putEntityWorld world queue
     
     ShouldQuit isQuitting <- runWith world $ get global
-    -- we ignore close events; only the editor should be closed, and when it closes this should close too
-    when isQuitting $
-        pushEditorEvent queue TryToCloseEditor
-    runForEventQueue queue commandState renDelay renderer renBuf (startTime - remainder) renderStartTime
+    unless isQuitting $
+        runForEventQueue queue commandState renDelay renderer renBuf (startTime - remainder) renderStartTime

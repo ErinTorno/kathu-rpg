@@ -86,11 +86,12 @@ initFloorProperty :: forall w m. (MonadIO m, Get w m EntityCounter, ReadWriteEac
                   => FloorProperty -> SystemT w m FloorPropEntity
 initFloorProperty = ((FloorPropEntity <$> newExistingEntity (StaticBody, Position $ V2 0 0, Persistant))<*>) . pure
 
-assignWorldFloor :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, ReadWriteEach w m '[Existance, WorldFloor])
+assignWorldFloor :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, ReadWriteEach w m '[Existance, LifeTime, WorldFloor])
                  => FloorPropEntity -> (WorldFloor, Entity) -> SystemT w m WorldFloor
 assignWorldFloor (FloorPropEntity fety (FloorProperty fid _ force)) (WorldFloor wid wety, ety) = do
     -- if wid isn't assignMe, then that means it has a valid constraint entity that needs to be removed first
     when (wid /= assignMeFloorID) $
         destroy wety (Proxy :: Proxy Constraint)
-    constraintEty <- newExistingEntity (Constraint fety ety $ PivotJoint2 (V2 0 0) (V2 0 0), MaxBias 0, MaxForce force)
+    lf :: Maybe LifeTime <- getIfExists ety
+    constraintEty <- newExistingEntity (Constraint fety ety $ PivotJoint2 (V2 0 0) (V2 0 0), MaxBias 0, MaxForce force, lf)
     pure (WorldFloor fid constraintEty)

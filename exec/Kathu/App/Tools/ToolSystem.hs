@@ -10,6 +10,7 @@ import           Control.Lens
 import           Control.Monad               (forM_, void, unless, when)
 import           Data.Maybe                  (fromJust, isJust)
 import qualified Data.Map                    as Map
+import           Data.Word
 import qualified SDL
 
 import           Kathu.App.Data.Controls
@@ -37,7 +38,10 @@ gridColor :: Color
 gridColor = mkColor 100 80 100 255
 
 placeLineColor :: Color
-placeLineColor = mkColor 140 120 140 255
+placeLineColor = mkColor 150 120 150 255
+
+timeBetweenUndoRedo :: Word32
+timeBetweenUndoRedo = 200 -- ms
 
 renderToolMode :: SDL.Renderer -> (V2 Double -> V2 Double) -> SystemT' IO ()
 renderToolMode renderer logicToRenderPos = do
@@ -50,7 +54,7 @@ renderToolMode renderer logicToRenderPos = do
                 unitHeightToDraw = maxUnitsPerHeight * camZoom + 2
                 unitWidthToDraw  = unitHeightToDraw * aspect
                 aspect           = fromIntegral resW / fromIntegral resH
-                floorF d         = fromIntegral (floor d :: Int)
+                floorF           = fromIntegral @Int . floor
 
             SDL.rendererDrawColor renderer SDL.$= unColor gridColor
             -- draws horizontal grid lines
@@ -75,7 +79,6 @@ renderToolMode renderer logicToRenderPos = do
                     let hoveredTilePos :: V2 Int
                         hoveredTilePos = floor <$> V2 0.5 1 + cursorPosition cursorSt
                         -- we want to show lines originating from the center of tiles, so we adjust them
-                        shiftPos :: V2 Double
                         shiftPos       = V2 0 (-0.5)
                         mkPoint pos    = SDL.P . fmap floor . logicToRenderPos $ shiftPos + (fromIntegral <$> pos)
                      in do SDL.rendererDrawColor renderer SDL.$= unColor placeLineColor
@@ -107,16 +110,14 @@ runToolMode commandSt = do
         ySt    <- getInputState controlSt $ fromScanCode SDL.ScancodeY
 
         when (isPressedOrHeld ctrlSt && lastUndoRedoTime univToolSt + timeBetweenUndoRedo <= time) $
-            -- ctrl can be held, but we only run on initial Z or Y press so we don't accidentally undo many commands in a few frames
-            if isPressedOrHeld zSt
-            then do
-                undoLastCommand commandSt
-                global $= univToolSt {lastUndoRedoTime = time}
-            else if isPressedOrHeld ySt
-                 then do
-                     redoNextCommand commandSt
-                     global $= univToolSt {lastUndoRedoTime = time}
-                 else pure ()
+            if | isPressedOrHeld zSt -> do
+                   undoLastCommand commandSt
+                   global $= univToolSt {lastUndoRedoTime = time}
+               | isPressedOrHeld ySt -> do
+                    redoNextCommand commandSt
+                    global $= univToolSt {lastUndoRedoTime = time}
+               | otherwise ->
+                   pure ()
 
         case toolmode of
             TilePlacer TilePlacerState{tileSelectorEty = selectorEty} -> do
@@ -157,8 +158,9 @@ handleUseToolModeEvent newMode = do
         forM_ playerEty $ \(_ :: Local, ety) ->
             ety $= defaultCamera
 
-    finalizeToolMode prevMode
-    initToolMode newMode
+    unless (newMode `isSameMode` prevMode) $ do
+        finalizeToolMode prevMode
+        initToolMode newMode
 
 -- Warning, after calling it is unsafe to make any more uses of these tool mode states
 finalizeToolMode :: ToolMode -> SystemT' IO ()
@@ -184,7 +186,7 @@ initToolMode mode = case mode of
             Nothing    -> logLine Warning "Entity config editor-tile-selector was not loaded"
             Just proto -> do
                 ety    <- newFromPrototype proto
-                ety    $= Position (V2 10000 10000) -- should be offscreen for first frame before it get's updated to follow camera
+                ety    $= Position (V2 10000 10000) -- should be offscreen for first frame before it gets updated to follow camera
                 global $= TilePlacer st {tileSelectorEty = Just ety}
     _ -> pure ()
 
@@ -200,7 +202,7 @@ runTilePlaceCommand commandSt sTile hoveredTilePos = do
     maybeLastPos <- lastPlacedTilePos <$> get global
     
     when (isPressedOrHeld leftMouseSt) $
-        if   BtnPressed == leftMouseSt && isPressedOrHeld shiftSt && isJust maybeLastPos
+        if   isPressedOrHeld shiftSt && isJust maybeLastPos && fromJust maybeLastPos /= hoveredTilePos
         then do
             command <- mkLineTilePlaceCommand (fromJust maybeLastPos) hoveredTilePos sTile
             runCommand commandSt command

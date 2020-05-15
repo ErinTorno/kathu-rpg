@@ -51,7 +51,7 @@ initPhysics = do
         , separateCB = Just separate
         }
 
-runPhysics :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, ReadWriteEach w m '[ActionSet, Existance, FloorProperties, Local, MovingSpeed, WorldFloor])
+runPhysics :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, ReadWriteEach w m '[ActionSet, Existance, FloorProperties, LifeTime, Local, MovingSpeed, WorldFloor])
            => SystemT w m ()
 runPhysics = do
     (FloorProperties defFloorPropEty _) <- get global

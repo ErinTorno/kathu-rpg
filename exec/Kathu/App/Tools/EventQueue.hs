@@ -22,11 +22,11 @@ data AppEvent
     | SetSelectedTile (Tile ImageID)
     | LoadWorldSpace  (WorldSpace ImageID)
     | ToggleDebug
-    | RunSystem (SystemT' IO ())
+    | TryToQuitGame
 
 -- Events that the editor receives
 data EditorEvent
-    = TryToCloseEditor
+    = DummyEditorEvent
 
 data EventQueue = EventQueue
     { entityWorld  :: !(MVar EntityWorld)
@@ -38,12 +38,13 @@ data EventQueue = EventQueue
 handleEvents :: EventQueue -> CommandState -> SystemT' IO ()
 handleEvents queue  _ = do
     events <- lift $ pollAppEvents queue
-    mapM_ handleEvent events
+    -- reverse so oldest events are processed first
+    mapM_ handleEvent . reverse $ events
 
 handleEvent :: AppEvent -> SystemT' IO ()
 handleEvent event = case event of
-    RunSystem action ->
-        action
+    TryToQuitGame ->
+        global $= ShouldQuit True
     ToggleDebug -> do
         Debug isDebug <- get global
         global        $= Debug (not isDebug)
@@ -68,14 +69,12 @@ newEventQueue = do
     pure $ EventQueue world appEvs toolEvs
     
 pushAppEvent :: EventQueue -> AppEvent -> IO ()
-pushAppEvent EventQueue{appEvents = appEvs} event = do
-    events <- takeMVar appEvs
-    putMVar appEvs $ events |> event
+pushAppEvent EventQueue{appEvents = appEvs} event =
+    modifyMVar_ appEvs $ pure . (event:)
 
 pushEditorEvent :: EventQueue -> EditorEvent -> IO ()
-pushEditorEvent EventQueue{editorEvents = toolEvs} event = do
-    events <- takeMVar toolEvs
-    putMVar toolEvs $ events |> event
+pushEditorEvent EventQueue{editorEvents = toolEvs} event =
+    modifyMVar_ toolEvs $ pure . (event:)
 
 pollAppEvents :: EventQueue -> IO [AppEvent]
 pollAppEvents = pollEvents . appEvents

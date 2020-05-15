@@ -5,18 +5,13 @@ module Kathu.App.Tools.Commands
     , runCommand
     , redoNextCommand
     , undoLastCommand
-    , timeBetweenUndoRedo
     ) where
 
 import           Apecs
 import           Control.Monad              (unless)
 import           Data.IORef
-import           Data.Word
 
 import           Kathu.App.System            (SystemT')
-
-timeBetweenUndoRedo :: Word32
-timeBetweenUndoRedo = 100 -- ms
 
 data Command = Command
     { applyCommand  :: !(SystemT' IO ())

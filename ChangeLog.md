@@ -29,7 +29,7 @@
 * Added module for serializing "pretty" yaml files
 
 ### 0.1.11.4 -- Unreleased
-* Debug collision bounds are now colored according to their collision group
+* Debug collision bounds are now colored according to their collision group, and circular collision shapes are now drawn
 
 ## 0.1.10.0 -- 2020-01-27
 * Lua scripts can now be loaded and ran from files

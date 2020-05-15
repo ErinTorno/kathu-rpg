@@ -55,6 +55,7 @@ type AllComponents =
     , (Identity, LifeTime, WorldFloor, Tags, Render', Body)
     , (MovingSpeed, ActorState, Inventory', ActionSet)
     , (Local, Camera)
+    , (Body, Shape, Constraint)
     )
     
 -- New Globals
