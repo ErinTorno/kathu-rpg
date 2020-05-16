@@ -29,6 +29,10 @@ infixr 1 =<<<
 (=<<<) :: (Monad m, Monad n) => (a -> n b) -> m (n a) -> m (n b)
 (=<<<) f v = v >>= \v' -> pure (v' >>= f)
 
+infixl 1 >>=/
+(>>=/) :: (Monad m) => m a -> (a -> m b) -> m a
+(>>=/) v f = v >>= \val -> f val >> pure val 
+
 partitionM :: Monad m => (a -> m Bool) -> [a] -> m ([a], [a])
 partitionM _ []      = pure ([], [])
 partitionM fn (x:xs) = fn x >>= app

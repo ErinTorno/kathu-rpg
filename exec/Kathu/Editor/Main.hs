@@ -25,10 +25,10 @@ import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
 import           Kathu.Editor.Dialogs
 import           Kathu.Editor.File
-import           Kathu.Editor.GtkUtil
 import           Kathu.Editor.Panels
 import           Kathu.Editor.Resources
 import           Kathu.Editor.Types
+import           Kathu.Editor.Util.GtkMisc
 import           Kathu.World.WorldSpace
 
 mkMenuBarDescription :: EditorState -> MenuBarDescription
@@ -113,7 +113,7 @@ activateApp app queue args = do
 
     mainVBox <- new Gtk.Box [#orientation := Gtk.OrientationVertical]
 
-    menuBar <- createMenuBar (mkMenuBarDescription editorState)
+    menuBar <- mkMenuBar (mkMenuBarDescription editorState)
     Gtk.containerAdd mainVBox menuBar
 
     worldspacePanel <- mkWorldSpacePanel editorState

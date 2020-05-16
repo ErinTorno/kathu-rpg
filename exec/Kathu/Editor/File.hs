@@ -11,7 +11,7 @@ import           Kathu.App.Data.Library
 import           Kathu.App.Graphics.Image   (ImageID)
 import           Kathu.App.Tools.EventQueue
 import           Kathu.Editor.Types
-import           Kathu.Editor.GtkUtil       (showFileChooser)
+import           Kathu.Editor.Util.GtkMisc
 import           Kathu.IO.Directory
 import           Kathu.IO.File
 import           Kathu.Util.Dependency

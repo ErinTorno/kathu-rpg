@@ -13,8 +13,8 @@ import qualified Data.Map                   as Map
 import qualified Data.Text                  as T
 import qualified GI.Gtk                     as Gtk
 
-import           Kathu.Editor.GtkUtil
 import           Kathu.Editor.Types
+import           Kathu.Editor.Util.PropertyGrid
 import qualified Kathu.Scripting.Lua        as Lua
 import           Kathu.Scripting.Event
 
@@ -25,8 +25,8 @@ createEditScriptDialogRunner onScriptChange = do
     scriptRef <- newIORef Lua.blankScript
 
     grid <- new Gtk.Grid []
-    editProps :: [EditableProperty Lua.Script] <- sequence
-        [ addPropertyRowBool grid scriptRef 0 "Is a singleton?" Lua.isSingleton      
+    editProps <- mkPropertyGrid grid scriptRef
+        [ mkRow "Is a singleton?" Lua.isSingleton      
         ]
 
     eventList  <- new Gtk.ListBox []
@@ -40,8 +40,11 @@ createEditScriptDialogRunner onScriptChange = do
         pure (btn, event)
 
     dialogContent <- Gtk.dialogGetContentArea dialog
+    eventFrame    <- new Gtk.Frame [#label := "Watched Events"]
+    Gtk.containerAdd eventFrame eventList
+
     Gtk.containerAdd dialogContent grid
-    Gtk.containerAdd dialogContent eventList
+    Gtk.containerAdd dialogContent eventFrame
     void $ Gtk.dialogAddButton dialog "Save" 1
     void $ Gtk.dialogAddButton dialog "Close" 2
 

@@ -6,7 +6,6 @@ import qualified Apecs
 import           Control.Lens               hiding (set)
 import           Control.Monad              (forM_, void, when)
 import           Data.GI.Base
-import           Data.Int
 import           Data.IORef
 import qualified Data.Map                   as Map
 import           Data.Maybe
@@ -23,9 +22,9 @@ import           Kathu.App.Graphics.Image   (ImageID(..))
 import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
 import           Kathu.Editor.Dialogs
-import           Kathu.Editor.GtkUtil
 import           Kathu.Editor.Resources
 import           Kathu.Editor.Types
+import           Kathu.Editor.Util.PropertyGrid
 import           Kathu.Graphics.Drawable    (getRenderGraphicsVector)
 import           Kathu.Parsing.Counting
 import qualified Kathu.Scripting.Lua        as Lua
@@ -142,9 +141,8 @@ mkWorldSpaceToolbar EditorState{eventQueue = queue, resources = res} = do
     pure toolbar
 
 -- | Creates a row that shows the script file, and has a button to edit or delete the script
-mkScriptPropertyRow :: EditorState -> Gtk.Grid -> Int32 -> IO (EditableProperty (WorldSpace ImageID))
-mkScriptPropertyRow EditorState{resources = res, wsEditState = wsEditStRef} grid rowNum = do
-    wsRef <- worldspaceRef <$> readIORef wsEditStRef
+mkScriptPropertyRow :: Resources -> PropertyRowAdder (WorldSpace ImageID)
+mkScriptPropertyRow res rowNum grid wsRef = do
     box <- new Gtk.Box [#orientation := Gtk.OrientationHorizontal]
 
     fileEntry <- new Gtk.Entry [#editable := False, #canFocus := False]
@@ -177,8 +175,8 @@ mkScriptPropertyRow EditorState{resources = res, wsEditState = wsEditStRef} grid
     Gtk.containerAdd box editBtn
     Gtk.containerAdd box deleteBtn
 
-    addPropertyRowReadOnly grid rowNum "Script" (pure box) $ \_ worldspace ->
-        onScriptChange (worldspace^.worldScript.to (fromMaybe Lua.blankScript))
+    let onRefChange _ worldspace = onScriptChange (worldspace^.worldScript.to (fromMaybe Lua.blankScript))
+    mkPropertyRowReadOnly "Script" (pure box) onRefChange rowNum grid wsRef
 
 -- | Makes a panel for editing a worldspace and its properties
 mkWorldSpacePanel :: EditorState -> IO Gtk.Widget
@@ -188,10 +186,10 @@ mkWorldSpacePanel es@EditorState{wsEditState = wsStateRef} = do
     wsState <- readIORef wsStateRef
     let wsRef = worldspaceRef wsState
 
-    editProps <- sequence
-        [ addPropertyRowText grid wsRef 0 "Worldspace ID" $ worldID . textIDLens
-        , addPropertyRowText grid wsRef 1 "Name"            worldName
-        , mkScriptPropertyRow es grid 3
+    editProps <- mkPropertyGrid grid wsRef
+        [ mkRow "Worldspace ID" $ worldID . textIDLens
+        , mkRow "Name"          $ worldName
+        , mkScriptPropertyRow   $ resources es
         ]
 
     writeIORef wsStateRef $ wsState {wsProperties = editProps}

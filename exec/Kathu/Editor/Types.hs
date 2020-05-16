@@ -2,6 +2,7 @@ module Kathu.Editor.Types where
 
 import           Data.IORef
 import           Data.Text                  (Text)
+import           Data.Vector                (Vector)
 import qualified GI.Gtk                     as Gtk
 
 import           Kathu.App.Graphics.Image
@@ -19,7 +20,7 @@ type DialogRunner a = a -> IO ()
 
 data WSEditState = WSEditState
     { worldspaceRef :: !(IORef (WorldSpace ImageID))
-    , wsProperties  :: ![EditableProperty (WorldSpace ImageID)]
+    , wsProperties  :: !(Vector (EditableProperty (WorldSpace ImageID)))
     , wsFilePath    :: !(Maybe FilePath)
     }
 
