@@ -60,14 +60,26 @@ instance Semigroup FloorProperties where (<>) = mappend
 instance Monoid FloorProperties where mempty  = error "Attempted to access the FloorProperties before it has been initialized"
 instance Component FloorProperties where type Storage FloorProperties = Global FloorProperties
 
+instance Semigroup Variables where (<>) = mappend
+instance Monoid Variables where mempty = error "Attempted to access Variables global component before it has been initialized"
+instance Component Variables where type Storage Variables = Global Variables
+
+---------------------------
+-- Debug-related globals --
+---------------------------
+
+-- | A general debug flag that prompts for additional game information to be visible by the user
 newtype  Debug = Debug {unDebug :: Bool}
 instance Semigroup Debug where (<>) = mappend
 instance Monoid Debug where mempty  = Debug False
 instance Component Debug where type Storage Debug = Global Debug
 
-instance Semigroup Variables where (<>) = mappend
-instance Monoid Variables where mempty = error "Attempted to access Variables global component before it has been initialized"
-instance Component Variables where type Storage Variables = Global Variables
+-- Similar to Debug, but not meant to be toggled frequently
+-- | Additional editor information should be added to entities when this is True
+newtype  IncludeEditorInfo = IncludeEditorInfo {unEditorInfo :: Bool}
+instance Semigroup IncludeEditorInfo where (<>) = mappend
+instance Monoid IncludeEditorInfo where mempty  = IncludeEditorInfo False
+instance Component IncludeEditorInfo where type Storage IncludeEditorInfo = Global IncludeEditorInfo
 
 instance Semigroup Logger where (<>) = mappend
 instance Monoid Logger where mempty = defaultLogger

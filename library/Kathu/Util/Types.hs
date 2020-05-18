@@ -49,7 +49,7 @@ data Identifier = Identifier
     } deriving (Eq, Generic, Ord)
 
 textIDLens :: Lens' Identifier Text
-textIDLens = lens unID (\atom newID -> atom {unID = newID})
+textIDLens = lens unID (const mkIdentifier)
 
 mkIdentifier :: Text -> Identifier
 mkIdentifier t = Identifier (hash t) t

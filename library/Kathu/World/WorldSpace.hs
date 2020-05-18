@@ -5,6 +5,7 @@
 module Kathu.World.WorldSpace where
 
 import           Apecs                     hiding (Map)
+import qualified Apecs
 import           Apecs.Physics             hiding (Map)
 import           Control.Lens              hiding ((.=), set)
 import           Control.Monad             (foldM, forM_, when)
@@ -23,7 +24,7 @@ import           Kathu.Entity.Item
 import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Prototype    (EntityPrototype, getPrototypeID)
-import           Kathu.Entity.System       (Tiles)
+import           Kathu.Entity.System       (IncludeEditorInfo(..), Tiles)
 import           Kathu.Graphics.Drawable   (Render)
 import           Kathu.Graphics.Palette
 import           Kathu.IO.Directory        (WorkingDirectory)
@@ -48,6 +49,11 @@ data InstancedPrototype g = InstancedPrototype
     , _instanceConfig     :: !(IDMap WorldVariable)
     }
 makeLenses ''InstancedPrototype
+
+-- | Marks an entity as having been created by an instance prototype specified by the loaded Worldspace; the Int is for the prototype's index
+newtype EditorInstancedFromWorld g = EditorInstancedFromWorld {unEditorInstancedFromWorld :: InstancedPrototype g}
+-- Should be just a map, and is expected to be entirely empty when running the game normally
+instance Component (EditorInstancedFromWorld g) where type Storage (EditorInstancedFromWorld g) = Apecs.Map (EditorInstancedFromWorld g)
 
 emptyInstancedPrototype :: InstancedPrototype g
 emptyInstancedPrototype = InstancedPrototype "" prototype (V2 0 0) Nothing Nothing Map.empty
@@ -106,7 +112,7 @@ mkFieldIfNotPresent _ fieldPos = do
 -- System Related --
 --------------------
 
-initWorldSpace :: forall w g. (Get w IO EntityCounter, Get w IO (Tiles g), Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[Existance, Local, LifeTime, Render g, SpecialEntity, Variables, WireReceivers, WorldSpace g, WorldStases])
+initWorldSpace :: forall w g. (Get w IO EntityCounter, Get w IO (Tiles g), Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[EditorInstancedFromWorld g, Existance, IncludeEditorInfo, LifeTime, Player, Render g, SpecialEntity, Variables, WireReceivers, WorldSpace g, WorldStases])
                => (Entity -> SystemT w IO ())
                -> ((Lua.ActiveScript -> Lua.ActiveScript) -> EntityPrototype g -> SystemT w IO Entity)
                -> (Entity -> Lua.Script -> SystemT w IO Lua.ActiveScript)
@@ -122,23 +128,12 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
 
     global $= ws
 
-    cmap $ \(Local _)   -> ws^.loadPoint.to Position
+    shouldIncludeInfo <- get global
+
+    cmap $ \(_ :: Player) -> ws^.loadPoint.to Position
     -- we place all items in the world as entities
     forM_ (ws^.worldItems) $ \(InstancedItem item pos) -> newEntityFromItem item pos
-    forM_ (ws^.worldEntities) $ \(InstancedPrototype _ proto pos sigOut sigIn config) -> do
-        ety <- mkEntity (\s -> s {Lua.instanceConfig = config}) proto
-        ety $= Position pos
-
-        initialScript <- getIfExists ety
-        forM_ initialScript $
-            set ety . Lua.setInstanceConfig config 
-
-        forM_ sigOut $ \sig -> modify ety (Lua.addWireController sig)
-
-        forM_ sigIn $ \sig -> do
-            maybeScript <- getIfExists ety
-            forM_ maybeScript $ \script ->
-                 when (Lua.shouldScriptRun onSignalChange script) $ Lua.addWireReceiver sig script
+    forM_ (ws^.worldEntities) $ placeInstancedPrototype shouldIncludeInfo mkEntity
 
     buildTileCollisions ws
 
@@ -149,6 +144,30 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
             active <- loadScript ety scr
             ety    $= active
 
+placeInstancedPrototype :: forall w g. (Get w IO EntityCounter, Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[EditorInstancedFromWorld g, Existance, Render g, SpecialEntity, WireReceivers])
+                        => IncludeEditorInfo
+                        -> ((Lua.ActiveScript -> Lua.ActiveScript) -> EntityPrototype g -> SystemT w IO Entity)
+                        -> InstancedPrototype g
+                        -> SystemT w IO ()
+placeInstancedPrototype (IncludeEditorInfo shouldIncludeInfo) mkEntity instancedProto@(InstancedPrototype _ proto pos sigOut sigIn config) = do
+    ety <- mkEntity (\s -> s {Lua.instanceConfig = config}) proto
+    ety $= Position pos
+    -- include the instance with the entity, as we are running in some form of editor mode
+    when shouldIncludeInfo $
+        ety $= EditorInstancedFromWorld instancedProto
+
+    initialScript <- getIfExists ety
+    forM_ initialScript $
+        set ety . Lua.setInstanceConfig config 
+
+    forM_ sigOut $ \sig -> modify ety (Lua.addWireController sig)
+
+    forM_ sigIn $ \sig -> do
+        maybeScript <- getIfExists ety
+        forM_ maybeScript $ \script ->
+                when (Lua.shouldScriptRun onSignalChange script) $ Lua.addWireReceiver sig script
+
+-- | Destroy all entities created for holding tile collisions
 destroyTileCollisions :: forall w. (ReadWrite w IO SpecialEntity) => (Entity -> SystemT w IO ()) -> SystemT w IO ()
 destroyTileCollisions destroyEty =
     cmapM_ $ \(specialEty, ety) -> when (specialEty == WorldCollision) $ destroyEty ety

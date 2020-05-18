@@ -21,6 +21,7 @@ import           Kathu.App.Events
 import           Kathu.App.Graphics.Render       (runRender)
 import           Kathu.App.Graphics.RenderBuffer (RenderBuffer, mkRenderBuffer)
 import           Kathu.App.Tools.Commands
+import           Kathu.App.Tools.EventHandler
 import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
 import           Kathu.App.Tools.ToolSystem      (runToolMode)
@@ -126,7 +127,7 @@ runForEventQueue !queue !commandState !renDelay !renderer !renBuf !prevPhysTime 
         replicateM_ (fromIntegral n) $ do
             runEvents
             -- this relies on keyboard on mouse events being processed above
-            runToolMode commandState
+            runToolMode queue commandState
             when shouldRunGame $ do
                 runGame destroyEntity updateDelay
                 stepPhysics (fromIntegral updateDelay / 1000)

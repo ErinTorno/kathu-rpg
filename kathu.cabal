@@ -140,11 +140,13 @@ executable kathu
                     Kathu.App.Graphics.UI
                     -- Tools
                     Kathu.App.Tools.Commands
+                    Kathu.App.Tools.EventHandler
                     Kathu.App.Tools.EventQueue
                     Kathu.App.Tools.ToolMode
                     Kathu.App.Tools.ToolSystem
                     -- Editor
                     Kathu.Editor.Dialogs
+                    Kathu.Editor.Dialogs.Entity
                     Kathu.Editor.File
                     Kathu.Editor.Main
                     Kathu.Editor.Panels
@@ -155,7 +157,7 @@ executable kathu
   other-modules:    Paths_kathu
   build-depends:    kathu,
                     base             ^>=4.13,
-                    aeson            >=1.4   && <1.5,
+                    aeson            ^>=1.4,
                     apecs            ^>=0.9.1,
                     apecs-physics    ^>=0.4.4,
                     containers       ^>=0.6.2,
@@ -165,6 +167,7 @@ executable kathu
                     gi-gdkpixbuf     ^>=2.0.23,
                     gi-gio           ^>=2.0.2,
                     gi-glib          ^>=2.0.23,
+                    gi-gobject       ^>=2.0.22,
                     gi-gtk           ^>=3.0.0,
                     haskell-gi       ^>=0.23.0,
                     haskell-gi-base  ^>=0.23.0,

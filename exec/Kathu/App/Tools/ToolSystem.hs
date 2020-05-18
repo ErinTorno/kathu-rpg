@@ -1,7 +1,10 @@
+{-# LANGUAGE UnboxedTuples #-}
+
 module Kathu.App.Tools.ToolSystem
     ( renderToolMode
     , runToolMode
     , handleUseToolModeEvent
+    , rebuildEntityInfoCollisions
     ) where
 
 import           Apecs
@@ -11,6 +14,7 @@ import           Control.Monad               (forM_, void, unless, when)
 import           Data.Maybe                  (fromJust, isJust)
 import qualified Data.Map                    as Map
 import           Data.Word
+import qualified Data.Vector                 as Vec
 import qualified SDL
 
 import           Kathu.App.Data.Controls
@@ -20,14 +24,17 @@ import           Kathu.App.Graphics.Drawing
 import           Kathu.App.Graphics.Image    (ImageID)
 import           Kathu.App.System
 import           Kathu.App.Tools.Commands
+import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
 import           Kathu.App.World
-import           Kathu.Entity.Components     (Local, SpecialEntity(..), simpleIdentity)
+import           Kathu.Entity.Components
 import           Kathu.Entity.Cursor
 import           Kathu.Entity.Logger
+import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
 import           Kathu.Graphics.Color
+import           Kathu.Graphics.Drawable
 import           Kathu.World.Field
 import           Kathu.World.Tile
 import           Kathu.World.WorldSpace
@@ -86,11 +93,12 @@ renderToolMode renderer logicToRenderPos = do
         _ -> pure ()
 
 -- | Updates tool mode after new frame's controls have been updated
-runToolMode :: CommandState -> SystemT' IO ()
-runToolMode commandSt = do
+runToolMode :: EventQueue -> CommandState -> SystemT' IO ()
+runToolMode queue commandSt = do
     cursorSt  <- get global
     toolmode  <- get global
     controlSt <- get global
+    RenderTime time <- get global
     when (usesFreeCam toolmode) $ do
         middleMouseSt <- getInputState controlSt (fromMouseButton SDL.ButtonMiddle)
         when (isPressedOrHeld middleMouseSt) $
@@ -102,9 +110,26 @@ runToolMode commandSt = do
             cmap $ \(Camera z) ->
                 Camera $ max 0 (z - 0.1 * scroll)
 
+    -- handles right-clicking to open an entity instance editor window
+    when (canEditEntities toolmode) $ do
+        rightClickSt <- getInputState controlSt $ fromMouseButton SDL.ButtonRight
+        univToolSt   <- get global
+        when (isPressedOrHeld rightClickSt && canEditEntityInstance univToolSt) $ do
+            maybeQueryRes <- pointQuery (cursorPosition cursorSt) 0.1 editorSensorFilter
+            forM_ maybeQueryRes $ \PointQueryResult{pqShape = ety} -> do
+                -- must exist, as we collided with its shape
+                Shape parentEty _ <- get ety
+                maybeProto <- getIfExists parentEty
+                case maybeProto of
+                    Nothing ->
+                        logLine Warning "Attempted to edit entity that was in the editorSensorFilter group, but was missing the EditorInstancedFromWorld component"
+                    Just (EditorInstancedFromWorld instancedProto) -> do
+                        -- update the last time since we successfully chose an entity to edit
+                        global $= univToolSt {canEditEntityInstance = False}
+                        lift $ pushEditorEvent queue (EditEntityInstance parentEty instancedProto)
+    
     unless (isNoTool toolmode) $ do
-        univToolSt      <- get global
-        RenderTime time <- get global
+        univToolSt <- get global
         ctrlSt <- getInputState controlSt $ fromScanCode SDL.ScancodeLCtrl
         zSt    <- getInputState controlSt $ fromScanCode SDL.ScancodeZ
         ySt    <- getInputState controlSt $ fromScanCode SDL.ScancodeY
@@ -157,6 +182,12 @@ handleUseToolModeEvent newMode = do
         -- Gives the camera to the player
         forM_ playerEty $ \(_ :: Local, ety) ->
             ety $= defaultCamera
+            
+    when (canEditEntities newMode && not (canEditEntities prevMode)) $
+        buildEntityInfoCollisions
+
+    when (canEditEntities prevMode && not (canEditEntities newMode)) $
+        destroyEntityInfoCollisions
 
     unless (newMode `isSameMode` prevMode) $ do
         finalizeToolMode prevMode
@@ -189,6 +220,31 @@ initToolMode mode = case mode of
                 ety    $= Position (V2 10000 10000) -- should be offscreen for first frame before it gets updated to follow camera
                 global $= TilePlacer st {tileSelectorEty = Just ety}
     _ -> pure ()
+
+--------------------
+-- Entity Editing --
+--------------------
+
+rebuildEntityInfoCollisions :: SystemT' IO ()
+rebuildEntityInfoCollisions = do
+    destroyEntityInfoCollisions
+    buildEntityInfoCollisions
+
+destroyEntityInfoCollisions :: SystemT' IO ()
+destroyEntityInfoCollisions =
+    cmapM_ $ \(colFil, ety) ->
+        when (colFil == editorInfoFilter) $
+            destroyEntity ety
+
+buildEntityInfoCollisions :: SystemT' IO ()
+buildEntityInfoCollisions = do
+    cmapM_ $ \(Render sprites :: Render ImageID, _ :: EditorInstancedFromWorld ImageID, ety) ->
+        let area (V2 x y) = x * y
+            foldMaxArea maxVec sprite = let (# _, bounds #) = currentBounds sprite in if area maxVec < area bounds then bounds else maxVec
+            (V2 mx my)       = (/pixelsPerUnit) . fromIntegral <$> Vec.foldl' foldMaxArea (V2 2 2) sprites
+            -- sprites are drawn centered above the logical coordinate, so we shift this new shape too
+            convex           = oRectangle (V2 (-(mx / 2)) (-my)) (V2 mx my)
+         in void $ newExistingEntity (Shape ety convex, editorInfoFilter, EditorRefTo ety)
 
 ----------------
 -- TilePlacer --

@@ -39,13 +39,15 @@ import           Kathu.Scripting.Wire
 import           Kathu.Util.Apecs
 import           Kathu.World.Stasis              (WorldStases)
 import           Kathu.World.Time                (WorldTime)
-import           Kathu.World.WorldSpace          (WorldSpace, emptyWorldSpace)
+import           Kathu.World.WorldSpace          (EditorInstancedFromWorld, WorldSpace, emptyWorldSpace)
 
 type Inventory' = Inventory ImageID
 instance Component Inventory' where type Storage Inventory' = Map Inventory'
 
 type Render' = Render ImageID
 instance Component Render' where type Storage Render' = Map Render'
+
+type EditorInstancedFromWorld' = EditorInstancedFromWorld ImageID
 
 -- ECS Util
 -- selects all unique and non-unique components that an individual entity might have
@@ -119,8 +121,9 @@ instance Component WireReceivers where type Storage WireReceivers = Global WireR
 
 makeWorld "EntityWorld"
     $ [''Physics]
-   ++ [''Existance, ''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''ActionSet, ''Local, ''Camera]
-   ++ [''ShouldQuit, ''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''Logger]
+   ++ [''Existance, ''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''EditorInstancedFromWorld', ''ActionSet]
+   ++ [''Local, ''Camera, ''Player]
+   ++ [''ShouldQuit, ''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''IncludeEditorInfo, ''Logger]
    ++ [''Settings, ''CursorMotionState, ''ControlState, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
    ++ [''ToolMode, ''ToolModeUniversalState]
 

@@ -26,8 +26,7 @@ newExistingEntity c = newEntity (Existance, c)
 
 -- | Mutually exclusive categories that mark special properties about a given entity
 data SpecialEntity
-    = Player
-    | WorldCollision
+    = WorldCollision
     | Spirit
     | EditorRefTo Entity
     deriving (Show, Eq)
@@ -67,6 +66,10 @@ newtype Tags = Tags (DSet.Set Text) deriving (Show, Eq, Generic, ToJSON, FromJSO
 instance Component Tags where type Storage Tags = Map Tags
 
 -- Uniques
+
+data Player = Player
+
+instance Component Player where type Storage Player = Unique Player
 
 newtype Local = Local {actionPressed :: ActionPressed}
 

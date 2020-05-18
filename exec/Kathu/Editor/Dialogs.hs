@@ -19,8 +19,8 @@ import qualified Kathu.Scripting.Lua        as Lua
 import           Kathu.Scripting.Event
 
 -- | Creates a dialog for editing a script, and returns an IO action that displays, saves, and then hides the dialog
-createEditScriptDialogRunner :: (Lua.Script -> IO ()) -> IO (DialogRunner Lua.Script)
-createEditScriptDialogRunner onScriptChange = do
+createEditScriptDialogRunner :: IO (DialogRunner Lua.Script)
+createEditScriptDialogRunner = do
     dialog    <- new Gtk.Dialog [#title := "Edit Script", #modal := True]
     scriptRef <- newIORef Lua.blankScript
 
@@ -50,7 +50,7 @@ createEditScriptDialogRunner onScriptChange = do
 
     -- this dialog crashes when destroyed, due to the callback handlers on the buttons inside of it
     -- removing the callback handlers also crash, so instead we use this style to show and hide it instead, never destroying it
-    let runUntilClose prevScript = do
+    let runUntilClose onScriptChange prevScript = do
             writeIORef scriptRef prevScript
 
             mapM_ ($prevScript) editProps
@@ -65,7 +65,7 @@ createEditScriptDialogRunner onScriptChange = do
                     finalScript <- readIORef scriptRef
                     when (finalScript /= prevScript) $
                         onScriptChange finalScript
-                    runUntilClose finalScript
+                    runUntilClose onScriptChange finalScript
                 _ -> do
                     Gtk.widgetHide dialogContent
                     Gtk.widgetHide dialog

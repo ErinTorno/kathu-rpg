@@ -29,7 +29,6 @@ import           Kathu.Graphics.Drawable    (getRenderGraphicsVector)
 import           Kathu.Parsing.Counting
 import qualified Kathu.Scripting.Lua        as Lua
 import           Kathu.Util.Collection      (fromJustElseError)
-import           Kathu.Util.Types
 import           Kathu.World.WorldSpace
 import           Kathu.World.Tile           (emptyTile, emptyTileID, tileID, tileName, tileRender)
 
@@ -157,14 +156,14 @@ mkScriptPropertyRow res rowNum grid wsRef = do
                 worldScript ?~ script
 
     prevScript   <- view worldScript <$> readIORef wsRef
-    dialogRunner <- createEditScriptDialogRunner onScriptChange
+    dialogRunner <- createEditScriptDialogRunner
 
     editBtn   <- new Gtk.Button [#image := iconEdit res,   #tooltipText := "Edit Script"]
     deleteBtn <- new Gtk.Button [#image := iconDelete res, #tooltipText := "Remove Script"]
 
     void $ on editBtn #clicked $ do
         script <- view worldScript <$> readIORef wsRef
-        dialogRunner $ fromMaybe Lua.blankScript script
+        dialogRunner onScriptChange $ fromMaybe Lua.blankScript script
     void $ on deleteBtn #clicked onDelete
 
     case prevScript of
@@ -187,9 +186,12 @@ mkWorldSpacePanel es@EditorState{wsEditState = wsStateRef} = do
     let wsRef = worldspaceRef wsState
 
     editProps <- mkPropertyGrid grid wsRef
-        [ mkRow "Worldspace ID" $ worldID . textIDLens
-        , mkRow "Name"          $ worldName
-        , mkScriptPropertyRow   $ resources es
+        [ mkRow "Worldspace ID"       worldID
+        , mkRow "Name"                worldName
+        , mkScriptPropertyRow         $ resources es
+        , mkRow "Player Load Point"   loadPoint
+        , mkRow "Save Exact Position" shouldSavePosition
+        , mkRow "Initial Palette"     initialPalette
         ]
 
     writeIORef wsStateRef $ wsState {wsProperties = editProps}

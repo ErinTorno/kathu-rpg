@@ -30,6 +30,8 @@
 
 ### 0.1.11.4 -- Unreleased
 * Debug collision bounds are now colored according to their collision group, and circular collision shapes are now drawn
+* Entities can be right clicked with tool modes to make property-editor dialog appear
+* Player Load Point, Save Exact Position, and Initial Palette added to editable worldspace properties
 
 ## 0.1.10.0 -- 2020-01-27
 * Lua scripts can now be loaded and ran from files

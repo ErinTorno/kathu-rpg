@@ -31,7 +31,7 @@ renderDebug :: SDL.Renderer -> (V2 Double -> V2 Double) -> SystemT' IO ()
 renderDebug renderer logicToRenderPos = do
     -- in tool modes collision might be rapidly changing or out-of-date; don't bother to draw
     shouldDrawCol <- isNoTool <$> get global
-    when shouldDrawCol $ do
+    when (shouldDrawCol || not shouldDrawCol) $ do
         let drawPoints colFil points = do
                 SDL.rendererDrawColor renderer $= unColor (collisionFilterDebugColor colFil)
                 -- we render in groups of 4 pixels to have thicker lines

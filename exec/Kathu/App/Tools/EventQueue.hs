@@ -2,62 +2,33 @@ module Kathu.App.Tools.EventQueue where
 
 import           Apecs
 import           Control.Concurrent.MVar
-import           Control.Lens
-import qualified Data.Map                    as Map
 
-import           Kathu.App.Data.Library
 import           Kathu.App.Graphics.Image
 import           Kathu.App.System
-import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.ToolMode
-import           Kathu.App.Tools.ToolSystem
-import           Kathu.App.World             (loadWorldSpace)
-import           Kathu.Entity.System         (Debug(..))
 import           Kathu.World.Tile            (Tile)
-import           Kathu.World.WorldSpace      (WorldSpace, worldID)
+import           Kathu.World.WorldSpace      (InstancedPrototype, WorldSpace)
 
 -- Events that the app receives
 data AppEvent
-    = UseToolMode ToolMode
+    = TryToQuitGame
+    | UseToolMode ToolMode
     | SetSelectedTile (Tile ImageID)
     | LoadWorldSpace  (WorldSpace ImageID)
     | ToggleDebug
-    | TryToQuitGame
+    | DestroyEntity Entity
+    | PlaceEntity (InstancedPrototype ImageID)
+    | FinishEditingEntityInstance
 
 -- Events that the editor receives
 data EditorEvent
-    = DummyEditorEvent
+    = EditEntityInstance Entity (InstancedPrototype ImageID)
 
 data EventQueue = EventQueue
     { entityWorld  :: !(MVar EntityWorld)
     , appEvents    :: !(MVar [AppEvent])
     , editorEvents :: !(MVar [EditorEvent])
     }
-
--- Polls for all events in the EventQueue, and returns True if the normal game runner should run after this
-handleEvents :: EventQueue -> CommandState -> SystemT' IO ()
-handleEvents queue  _ = do
-    events <- lift $ pollAppEvents queue
-    -- reverse so oldest events are processed first
-    mapM_ handleEvent . reverse $ events
-
-handleEvent :: AppEvent -> SystemT' IO ()
-handleEvent event = case event of
-    TryToQuitGame ->
-        global $= ShouldQuit True
-    ToggleDebug -> do
-        Debug isDebug <- get global
-        global        $= Debug (not isDebug)
-    UseToolMode newMode ->
-        handleUseToolModeEvent newMode
-    SetSelectedTile sTile -> do
-        toolUnivSt <- get global
-        global $= toolUnivSt {selectedTile = sTile}
-    LoadWorldSpace worldspace -> do
-        -- Update it in the library
-        library <- get global
-        global  $= over worldSpaces (Map.insert (worldspace^.worldID) worldspace) library
-        loadWorldSpace worldspace
 
 -- EventQueue manipulation
 

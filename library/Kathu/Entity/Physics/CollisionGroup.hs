@@ -11,6 +11,8 @@ module Kathu.Entity.Physics.CollisionGroup
     , interactFilter
     , hitboxFilter
     , attackFilter
+    , editorInfoFilter
+    , editorSensorFilter
     ) where
 
 import           Apecs.Physics        (maskList, CollisionFilter(..), Sensor(..))
@@ -31,6 +33,7 @@ data CollisionGroup
     | Attack
     | Intangible
     | EditorInfo -- Used by external editor to keep track of places object boundaries, etc.
+    | EditorSensor
     deriving (Show, Eq, Enum)
 
 collisionGroupFromText :: Text -> Maybe CollisionGroup
@@ -62,20 +65,23 @@ collisionGroups = Vec.fromList
     , mkFilter Hitbox         [Attack]
     , mkFilter Attack         [Hitbox]
     , mkFilter Intangible     ([] :: [CollisionGroup])
-    , mkFilter EditorInfo     ([] :: [CollisionGroup])
+    , mkFilter EditorInfo     [EditorSensor]
+    , mkFilter EditorSensor   [EditorInfo]
     ]
     where mkFilter g = CollisionFilter (fromIntegral . fromEnum $ g) (maskList [fromEnum g]) . maskList . map fromEnum
 
 groupCollisionFilter :: CollisionGroup -> CollisionFilter
 groupCollisionFilter = (collisionGroups Vec.!) . fromEnum
 
-movementFilter, movementSensorFilter, floorEffectFilter, interactFilter, hitboxFilter, attackFilter :: CollisionFilter
+movementFilter, movementSensorFilter, floorEffectFilter, interactFilter, hitboxFilter, attackFilter, editorInfoFilter, editorSensorFilter :: CollisionFilter
 movementFilter       = groupCollisionFilter Movement
 movementSensorFilter = groupCollisionFilter MovementSensor
 floorEffectFilter    = groupCollisionFilter FloorEffect
 interactFilter       = groupCollisionFilter Interact
 hitboxFilter         = groupCollisionFilter Hitbox
 attackFilter         = groupCollisionFilter Attack
+editorInfoFilter     = groupCollisionFilter EditorInfo
+editorSensorFilter   = groupCollisionFilter EditorSensor
 
 -- | Returns a unique color for drawing collisions of this group
 collisionGroupDebugColor :: CollisionGroup -> Color
@@ -88,6 +94,7 @@ collisionGroupDebugColor group = case group of
     Attack         -> mkColor 223 143  58 255
     Intangible     -> mkColor  56  81  98 255
     EditorInfo     -> mkColor   0   0   0 255
+    EditorSensor   -> mkColor   0   0   0 255
 
 collisionFilterDebugColor :: CollisionFilter -> Color
 collisionFilterDebugColor = collisionGroupDebugColor . toEnum . fromIntegral . filterGroup

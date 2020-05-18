@@ -5,7 +5,9 @@
 
 module Kathu.Editor.Main (shouldRunEditor, start) where
 
+import qualified Apecs
 import           Control.Concurrent         (forkIO)
+import           Control.Lens               hiding (set)
 import           Control.Monad              (forM_, void)
 import           Data.GI.Base
 import           Data.IORef
@@ -24,11 +26,13 @@ import           Kathu.App.Graphics.Image
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
 import           Kathu.Editor.Dialogs
+import           Kathu.Editor.Dialogs.Entity
 import           Kathu.Editor.File
 import           Kathu.Editor.Panels
 import           Kathu.Editor.Resources
 import           Kathu.Editor.Types
 import           Kathu.Editor.Util.GtkMisc
+import           Kathu.Entity.System        (IncludeEditorInfo(..))
 import           Kathu.World.WorldSpace
 
 mkMenuBarDescription :: EditorState -> MenuBarDescription
@@ -86,8 +90,19 @@ handleEditorEvents editorSt = do
     pure True
 
 handleEditorEvent :: EditorState -> EditorEvent -> IO ()
-handleEditorEvent _ event = case event of
-    DummyEditorEvent -> putStrLn "DummyEditorEvent"
+handleEditorEvent EditorState{eventQueue = queue, heldDialogRunners = dialogs} event = case event of
+    EditEntityInstance ety instanced ->
+        let runDialog = runInstancedPrototype dialogs
+            config    = mkInstancedEntityConfig ety instanced
+            onSaveEty newEty = do
+                forM_ (newEty^.iecOriginalEntity) $ \origEty ->
+                    pushAppEvent queue (DestroyEntity origEty)
+                pushAppEvent queue (PlaceEntity (newEty^.iecInstancedPrototype))
+         in runDialog onSaveEty config
+
+newDialogRunners :: EventQueue -> IO HeldDialogRunners
+newDialogRunners queue = HeldDialogRunners
+                     <$> newInstancedPrototypeDialogRunner queue
 
 activateApp :: Gtk.Application -> EventQueue -> [String] -> Gio.ApplicationActivateCallback
 activateApp app queue args = do
@@ -98,7 +113,7 @@ activateApp app queue args = do
     window <- new Gtk.ApplicationWindow
         [ #application   := app
         , #title         := Kathu.appName
-        , #defaultHeight := 300
+        , #defaultHeight := 420
         , #defaultWidth  := 340
         ]
     Gtk.windowSetIconFromFile window appIconPath
@@ -106,7 +121,8 @@ activateApp app queue args = do
     res       <- loadResources 
     wsRef     <- newIORef emptyWorldSpace
     wsEditSt  <- newIORef $ WSEditState wsRef [] Nothing
-    let editorState = EditorState app window queue wsEditSt res
+    dialogRunners <- newDialogRunners queue
+    let editorState = EditorState app window queue wsEditSt res dialogRunners
 
     on window #deleteEvent $ \_ ->
         onApplicationClose editorState >> pure True
@@ -158,6 +174,8 @@ start args = do
         void $ Gio.applicationRun app Nothing
 
     Kathu.startWith updateSettings $ \(Kathu.RenderInfo _ renderer buffer settings) world -> do
+        Apecs.runWith world $
+            Apecs.set Apecs.global (IncludeEditorInfo True)
         -- need to put this first or else it will get stuct waiting for the MVar to be filled
         putEntityWorld world queue
         Kathu.runForEventQueue queue commandState (Kathu.renderDelay settings) renderer buffer curTime curTime
