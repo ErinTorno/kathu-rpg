@@ -17,9 +17,9 @@ import Kathu.Entity.System
 import Kathu.Entity.Time
 import Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua as Lua
-import Kathu.Util.Apecs
-import Kathu.Util.Types
+import Verda.Util.Types
 import Kathu.World.Time (WorldTime)
+import           Verda.Util.Apecs
 
 updateDelay :: Word32
 updateDelay = floor $ 1000 / (60 :: Double) -- 60 ticks per second is ideal

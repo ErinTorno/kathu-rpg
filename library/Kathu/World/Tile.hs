@@ -19,11 +19,11 @@ import qualified System.Random                as R
 
 import           Kathu.Entity.Resource
 import           Kathu.Graphics.Drawable      (Render(..))
-import           Kathu.Parsing.Aeson
-import           Kathu.Parsing.Counting
-import           Kathu.Util.Dependency
-import           Kathu.Util.Flow              ((>>>=))
-import           Kathu.Util.Types             (Identifier, IDMap)
+import           Verda.Parsing.Aeson
+import           Verda.Parsing.Counting
+import           Verda.Util.Dependency
+import           Verda.Util.Flow              ((>>>=))
+import           Verda.Util.Types             (Identifier, IDMap)
 
 -----------------------
 -- Tile Config Types --
@@ -58,7 +58,7 @@ makeLenses ''BreakBehavior
 
 instance (FromJSON (Dependency s m ToolType), Monad m) => FromJSON (Dependency s m BreakBehavior) where
     parseJSON (String "unbreakable") = pure . pure $ Unbreakable
-    parseJSON (Object v) = getCompose $ Breakable <$> v .:~ "toolType" <*> v .:^ "minimumPower" <*> v .:^ "durability"
+    parseJSON (Object v) = getCompose $ Breakable <$> v .:- "toolType" <*> v .:^ "minimumPower" <*> v .:^ "durability"
     parseJSON v          = typeMismatch "BreakBehavior" v
 
 newtype TileDrawFlag = TileDrawFlag Word32 deriving (Show, Eq)
@@ -111,13 +111,13 @@ instance ( s `CanStore` (IDMap (Tile g))
          ) => FromJSON (Dependency s m (Tile g)) where
     parseJSON (Object v) = tilePar >>>= storeWithKeyFn (view tileTextID)
         where tilePar = getCompose $ Tile
-                  <$> v .:~ "tile-id" -- this uses the id to parse Dependency s m TileID
+                  <$> v .:- "tile-id" -- this uses the id to parse Dependency s m TileID
                   <*> v .:^ "tile-id" -- this is used for the text name
                   <*> v .:^ "name"
-                  <*> v .:~ "render"
-                  <*> v .:^? "render-flags" .!=~ noTileDrawFlags
+                  <*> v .:- "render"
+                  <*> v .:^? "render-flags" .!=- noTileDrawFlags
                   <*> v .:^ "is-solid"
-                  <*> v .:~ "break-behavior"
+                  <*> v .:- "break-behavior"
     parseJSON v          = typeMismatch "Tile" v
 
 emptyTile :: Tile g

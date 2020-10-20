@@ -12,9 +12,9 @@ import           Kathu.App.Graphics.Image   (ImageID)
 import           Kathu.App.Tools.EventQueue
 import           Kathu.Editor.Types
 import           Kathu.Editor.Util.GtkMisc
-import           Kathu.IO.Directory
+import           Verda.IO.Directory
 import           Kathu.IO.File
-import           Kathu.Util.Dependency
+import           Verda.Util.Dependency
 import           Kathu.World.WorldSpace
 
 toAssetRelativePath :: FilePath -> FilePath -> Either String FilePath

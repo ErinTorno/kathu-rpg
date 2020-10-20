@@ -5,7 +5,7 @@ import Data.Aeson.Types (typeMismatch)
 import Data.Word
 import GHC.Generics
 
-import Kathu.Parsing.Aeson (standardProjectOptions)
+import Verda.Parsing.Aeson (standardProjectOptions)
 
 -- our world time advances by one day for every (24 hours / timeScale) pass in the real world
 timeScale :: Num a => a

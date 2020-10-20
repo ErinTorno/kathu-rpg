@@ -1,4 +1,4 @@
-module Kathu.Util.Containers where
+module Verda.Util.Containers where
 
 import           Control.Monad.Primitive     (PrimMonad, PrimState)
 import           Data.Map                    (Map)
@@ -13,12 +13,6 @@ fromJustElseError _ (Just a) = a
 fromJustElseError errMsg _   = error errMsg
 
 -- List functions
-
--- | Drops the first element if it equals the given value
-dropInitial :: Eq a => a -> [a] -> [a]
-dropInitial _ [] = []
-dropInitial p st@(x:xs) | p == x    = xs
-                        | otherwise = st
 
 -- | Breaks a list into all item before a given element, and all items after that element
 splitAtFirst :: Eq a => a -> [a] -> ([a], [a])

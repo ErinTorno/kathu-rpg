@@ -32,8 +32,8 @@ import           Data.Word
 
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Color
-import           Kathu.Util.Dependency
-import           Kathu.Util.Types
+import           Verda.Util.Dependency
+import           Verda.Util.Types
     
 data StaticPalette = StaticPalette
     { background :: Color

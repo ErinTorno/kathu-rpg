@@ -13,8 +13,8 @@ import           Kathu.App.Graphics.Image
 import           Kathu.App.Tools.EventQueue
 import           Kathu.Editor.Resources     (Resources)
 import           Kathu.Entity.Prototype     (getPrototypeID)
-import           Kathu.Util.Types
 import           Kathu.World.WorldSpace
+import           Verda.Util.Types
 
 type MenuBarDescription = [(Text, [(Text, Gtk.MenuItemActivateCallback)])]
 

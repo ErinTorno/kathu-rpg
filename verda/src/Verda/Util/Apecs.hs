@@ -1,4 +1,4 @@
-module Kathu.Util.Apecs where
+module Verda.Util.Apecs where
 
 import           Apecs
 import           Apecs.Core            (explGet, explMembers, explSet)

@@ -22,9 +22,9 @@ import qualified SDL
 import qualified SDL.Font                as SDLF
 
 import           Kathu.Graphics.Color
-import           Kathu.IO.Directory
-import           Kathu.Util.Dependency
-import           Kathu.Util.Types        (Identifier, IDMap)
+import           Verda.IO.Directory
+import           Verda.Util.Dependency
+import           Verda.Util.Types        (Identifier, IDMap)
 
 type Font = SDLF.Font
 

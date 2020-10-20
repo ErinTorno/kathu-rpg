@@ -15,11 +15,11 @@ import Kathu.Entity.Physics.Floor (FloorProperty, reservedFloorIDMap)
 import Kathu.Entity.Prototype
 import Kathu.Graphics.Drawable
 import Kathu.Graphics.Palette
-import Kathu.IO.Directory (WorkingDirectory)
-import Kathu.Parsing.Counting (CountingIDs(..))
-import Kathu.Util.Dependency
-import Kathu.Util.Types (IDMap)
+import Verda.IO.Directory (WorkingDirectory)
+import Verda.Parsing.Counting (CountingIDs(..))
+import Verda.Util.Dependency
 import Kathu.World.Tile (emptyTile, reservedTileIDMap, Tile)
+import           Verda.Util.Types (IDMap)
 
 data KathuStore = KathuStore
     { _plImages         :: !(Vector Image)

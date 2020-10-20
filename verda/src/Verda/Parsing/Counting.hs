@@ -1,8 +1,9 @@
-module Kathu.Parsing.Counting
+module Verda.Parsing.Counting
     ( CountingIDs(..)
-    , parseAndLookupOrAddIncrementalID
     , lookupOrAdd
     , lookupOrExecAndVerify
+    , nextCountingID
+    , parseAndLookupOrAddIncrementalID
     ) where
 
 import           Control.Monad         (when)
@@ -12,7 +13,8 @@ import           Data.Map.Strict       (Map)
 import qualified Data.Map.Strict       as Map
 import           Data.Text             (Text)
 import qualified Data.Text             as T
-import           Kathu.Util.Dependency
+
+import           Verda.Util.Dependency
 
 newtype CountingIDs = CountingIDs {unCounting :: Map Text (Map Text Int)}
 
@@ -21,6 +23,15 @@ newtype CountingIDs = CountingIDs {unCounting :: Map Text (Map Text Int)}
 parseAndLookupOrAddIncrementalID :: (Integral a, s `CanStore` CountingIDs, Monad m) => (a -> b) -> Text -> Value -> Parser (Dependency s m b)
 parseAndLookupOrAddIncrementalID constructor category = withText (T.unpack category) $ \s ->
     pure (constructor . fromIntegral <$> lookupOrAdd category s)
+
+nextCountingID :: (s `CanStore` CountingIDs, Monad m) => Text -> Dependency s m Int
+nextCountingID category = do
+    CountingIDs countingIDs <- readStore
+    let numIDMap  = Map.findWithDefault Map.empty category countingIDs
+        nextID    = Map.size numIDMap
+        numIDMap' = Map.insert (T.pack $ "$AUTOGEN-ID-" ++ show nextID) nextID numIDMap
+    writeStore . CountingIDs . Map.insert category numIDMap' $ countingIDs
+    pure nextID
 
 lookupOrAdd :: (s `CanStore` CountingIDs, Monad m) => Text -> Text -> Dependency s m Int
 lookupOrAdd = lookupOrExecAndAdd $ \_ -> pure ()

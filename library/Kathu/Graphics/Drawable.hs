@@ -13,10 +13,10 @@ import qualified Data.Vector as Vec
 import Foreign.C.Types (CInt)
 import Linear.V2 (V2(..))
 
-import Kathu.Parsing.Aeson
-import Kathu.Util.Dependency
-import Kathu.Util.Flow ((<<$>>))
-import Kathu.Util.Types
+import Verda.Parsing.Aeson
+import Verda.Util.Dependency
+import Verda.Util.Flow ((<<$>>))
+import Verda.Util.Types
 
 -- | A newtype wrapper around a function that can grab image dimension information as a Dependency
 newtype ImageBounds m g = ImageBounds {unImageBounds :: g -> m (V2 CInt)}
@@ -46,7 +46,7 @@ data Animation g = Animation
 
 instance (FromJSON (Dependency s m g), Monad m) => FromJSON (Dependency s m (Animation g)) where
     parseJSON (Object v) = getCompose $ Animation
-        <$> v .:~ "atlas"
+        <$> v .:- "atlas"
         <*> v .:^ "strips"
         <*> v .:^ "bounds"
     parseJSON v = typeMismatch "Animation" v

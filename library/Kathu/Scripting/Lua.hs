@@ -40,8 +40,8 @@ import           Kathu.Scripting.Lua.Global
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
 import           Kathu.Scripting.Wire
-import           Kathu.Util.Apecs
-import           Kathu.Util.Types
+import           Verda.Util.Types
+import           Verda.Util.Apecs
 
 type HasScripting w m = ReadWriteEach w m [ActiveScript, RunningScriptEntity, ScriptBank, ScriptEventBuffer, WireReceivers]
 

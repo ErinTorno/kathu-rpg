@@ -2,7 +2,7 @@
 
 module Kathu.Entity.Physics.Floor where
 
-import           Apecs                   hiding (get, Map)
+import           Apecs                   hiding (Map)
 import qualified Apecs
 import           Apecs.Physics           hiding (Map)
 import           Control.Monad           (when)
@@ -17,11 +17,11 @@ import           Data.Word
 
 import           Kathu.Entity.Components (CacheSize, Existance, newExistingEntity)
 import           Kathu.Entity.LifeTime
-import           Kathu.Parsing.Aeson
-import           Kathu.Parsing.Counting
-import           Kathu.Util.Apecs
-import           Kathu.Util.Dependency
-import           Kathu.Util.Types        (Identifier)
+import           Verda.Parsing.Aeson
+import           Verda.Parsing.Counting
+import           Verda.Util.Dependency
+import           Verda.Util.Types        (Identifier)
+import           Verda.Util.Apecs
 
 -------------
 -- FloorID --
@@ -76,7 +76,7 @@ data FloorPropEntity = FloorPropEntity
 
 instance (FromJSON (Dependency s m FloorID), Monad m) => FromJSON (Dependency s m FloorProperty) where
     parseJSON (Object v) = getCompose $ FloorProperty
-        <$> v .:~ "floor-id"
+        <$> v .:- "floor-id"
         <*> v .:^ "floor-id"
         <*> v .:^ "max-force"
     parseJSON v          = typeMismatch "FloorProperty" v

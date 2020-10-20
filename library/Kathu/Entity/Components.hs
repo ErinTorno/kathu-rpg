@@ -9,7 +9,7 @@ import qualified Data.Set     as DSet
 import GHC.Generics
 
 import Kathu.Entity.Action
-import Kathu.Util.Types       (Identifier, mkIdentifier)
+import Verda.Util.Types       (Identifier, mkIdentifier)
 
 type CacheSize = 4096
 

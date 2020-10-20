@@ -1,4 +1,4 @@
-module Kathu.Util.Flow where
+module Verda.Util.Flow where
 
 import           Control.Monad.State
 import qualified Control.Monad.Fail  as Fail

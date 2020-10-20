@@ -27,18 +27,18 @@ import           Kathu.Entity.Prototype    (EntityPrototype, getPrototypeID)
 import           Kathu.Entity.System       (IncludeEditorInfo(..), Tiles)
 import           Kathu.Graphics.Drawable   (Render)
 import           Kathu.Graphics.Palette
-import           Kathu.IO.Directory        (WorkingDirectory)
+import           Verda.IO.Directory        (WorkingDirectory)
 import           Kathu.Parsing.Yaml        (FieldOrder, mkFieldOrderFromList)
 import           Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua       as Lua
 import           Kathu.Scripting.Variables
 import           Kathu.Scripting.Wire
-import           Kathu.Util.Apecs
-import           Kathu.Util.Dependency
-import           Kathu.Util.Types          (Identifier, IDMap)
+import           Verda.Util.Dependency
+import           Verda.Util.Types          (Identifier, IDMap)
 import           Kathu.World.Field
 import           Kathu.World.Stasis
 import           Kathu.World.Tile          (Tile)
+import           Verda.Util.Apecs
 
 data InstancedPrototype g = InstancedPrototype
     { _instanceID         :: !Identifier

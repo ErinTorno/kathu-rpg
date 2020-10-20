@@ -8,8 +8,8 @@ import           Data.Word
 import           GHC.Generics
 import qualified SDL
 
-import           Kathu.Parsing.Aeson         (standardProjectOptions)
-import           Kathu.Util.Containers       (forMVec)
+import           Verda.Parsing.Aeson         (standardProjectOptions)
+import           Verda.Util.Containers       (forMVec)
 
 type InputState = Word8
 

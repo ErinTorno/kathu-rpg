@@ -11,8 +11,8 @@ import           Linear.V2
 
 import           Kathu.App.Data.Controls
 import           Kathu.IO.File
-import           Kathu.Parsing.Aeson
-import           Kathu.Util.Types        (Identifier)
+import           Verda.Parsing.Aeson
+import           Verda.Util.Types        (Identifier)
 
 data Settings = Settings
     { targetFPS      :: !Float

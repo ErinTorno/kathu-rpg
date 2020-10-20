@@ -75,11 +75,8 @@ library
                     Kathu.World.Time
                     Kathu.World.WorldSpace
                     -- IO / File
-                    Kathu.IO.Directory
                     Kathu.IO.File
                     -- Parsing
-                    Kathu.Parsing.Aeson
-                    Kathu.Parsing.Counting
                     Kathu.Parsing.Yaml
                     -- Scripting
                     Kathu.Scripting.Event
@@ -91,13 +88,9 @@ library
                     Kathu.Scripting.Variables
                     Kathu.Scripting.Wire
                     -- Utility
-                    Kathu.Util.Apecs
-                    Kathu.Util.Containers
-                    Kathu.Util.Dependency
-                    Kathu.Util.Flow
                     Kathu.Util.Polygon
-                    Kathu.Util.Types
   build-depends:    base                    ^>=4.13,
+                    verda,
                     apecs                   ^>=0.9.1,
                     apecs-physics           ^>=0.4.4,
                     containers              ^>=0.6.2,
@@ -155,8 +148,9 @@ executable kathu
                     Kathu.Editor.Util.GtkMisc
                     Kathu.Editor.Util.PropertyGrid
   other-modules:    Paths_kathu
-  build-depends:    kathu,
-                    base             ^>=4.13,
+  build-depends:    base             ^>=4.13,
+                    kathu,
+                    verda,
                     aeson            ^>=1.4,
                     apecs            ^>=0.9.1,
                     apecs-physics    ^>=0.4.4,

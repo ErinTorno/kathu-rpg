@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- We provide some instances for common typeclasses in here for other library types
 
-module Kathu.Util.Types
+module Verda.Util.Types
     ( Identifier(..)
     , IDMap
     , IDHashTable

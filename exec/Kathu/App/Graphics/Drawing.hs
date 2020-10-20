@@ -10,7 +10,7 @@ import qualified SDL
 import           Kathu.App.Graphics.Image        (ImageID)
 import           Kathu.App.Graphics.ImageManager
 import           Kathu.Graphics.Drawable
-import           Kathu.Util.Types                (clampBetween)
+import           Verda.Util.Types                (clampBetween)
 
 -- the height of the screen in units; depending on screen size, more or less is included
 

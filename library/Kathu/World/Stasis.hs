@@ -7,7 +7,7 @@ import qualified Data.Vector.Unboxed       as UVec
 import           Linear.V2                 (V2(..))
 
 import           Kathu.Scripting.Variables
-import           Kathu.Util.Types          (Identifier, IDMap)
+import           Verda.Util.Types          (Identifier, IDMap)
 
 ------------
 -- Stasis --

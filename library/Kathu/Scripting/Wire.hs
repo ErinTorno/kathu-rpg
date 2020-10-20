@@ -7,7 +7,7 @@ import qualified Data.HashTable.ST.Basic as HT
 import           Data.IntMap             (IntMap)
 import qualified Data.IntMap             as IntMap
 
-import           Kathu.Util.Types
+import           Verda.Util.Types
 
 type OnSignalChange = Int -> IO ()
 

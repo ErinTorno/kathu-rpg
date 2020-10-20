@@ -11,8 +11,8 @@ import           Kathu.Entity.Physics.BodyConfig    (BodyConfig)
 import           Kathu.Entity.PrototypeTemplate
 import           Kathu.Entity.SerializableComponent
 import           Kathu.Scripting.Lua.Types          (Script)
-import           Kathu.Util.Containers              (fromJustElseError)
-import           Kathu.Util.Types                   (Identifier)
+import           Verda.Util.Containers              (fromJustElseError)
+import           Verda.Util.Types                   (Identifier)
 
 defineData          "EntityPrototype" (SerializableComponent ''BodyConfig False [] : SerializableComponent ''Script True [] : serializableComponentConfigs)
 defineEntityCreator "newFromSimplePrototype" serializableComponentConfigs

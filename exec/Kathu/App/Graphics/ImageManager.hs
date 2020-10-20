@@ -46,8 +46,8 @@ import           Kathu.App.Graphics.Image     (ImageID(..))
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Color
 import           Kathu.Graphics.Palette
-import           Kathu.Util.Apecs
-import           Kathu.Util.Types             (Identifier, IDMap)
+import           Verda.Util.Apecs
+import           Verda.Util.Types             (Identifier, IDMap)
 
 -- Warning: most things in this class are private, and as it makes use of rather unsafe operations and mutability
 

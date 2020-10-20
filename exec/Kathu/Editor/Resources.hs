@@ -2,7 +2,7 @@ module Kathu.Editor.Resources where
 
 import qualified GI.Gtk                     as Gtk
 
-import           Kathu.IO.Directory         (assetPath)
+import           Verda.IO.Directory         (assetPath)
 
 editorAssetPath :: String
 editorAssetPath = assetPath ++ "/editor/"

@@ -36,10 +36,10 @@ import qualified Kathu.Scripting.Lua             as Lua
 import           Kathu.Scripting.Lua.Types       (ActiveScript, RunningScriptEntity(..), ScriptBank, ScriptEventBuffer(..))
 import           Kathu.Scripting.Variables       (Variables)
 import           Kathu.Scripting.Wire
-import           Kathu.Util.Apecs
 import           Kathu.World.Stasis              (WorldStases)
 import           Kathu.World.Time                (WorldTime)
 import           Kathu.World.WorldSpace          (EditorInstancedFromWorld, WorldSpace, emptyWorldSpace)
+import           Verda.Util.Apecs
 
 type Inventory' = Inventory ImageID
 instance Component Inventory' where type Storage Inventory' = Map Inventory'

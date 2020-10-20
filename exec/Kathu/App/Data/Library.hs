@@ -23,10 +23,10 @@ import Kathu.Entity.Physics.Floor (FloorProperty(..))
 import Kathu.Entity.Prototype
 import Kathu.Graphics.Palette
 import Kathu.IO.File (parseAllDP, parseExactlyNDP)
-import Kathu.Util.Dependency
-import Kathu.Util.Types (Identifier, IDMap)
+import Verda.Util.Dependency
 import Kathu.World.Tile hiding (Vector, MVector)
 import Kathu.World.WorldSpace
+import Verda.Util.Types (Identifier, IDMap)
 
 -- | This data type plays the role as a collection of named values for the game to read from when loading a level
 data Library = Library

@@ -3,7 +3,7 @@ module Kathu.Scripting.ExternalFunctions where
 import           Apecs
 
 import           Kathu.Entity.Prototype
-import           Kathu.Util.Types
+import           Verda.Util.Types
 
 -- | A collection of functions that are not currently possible to implement with just the library project, but are required for scripts to run
 data ExternalFunctions w g = ExternalFunctions

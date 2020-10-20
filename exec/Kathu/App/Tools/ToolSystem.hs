@@ -38,8 +38,8 @@ import           Kathu.Graphics.Drawable
 import           Kathu.World.Field
 import           Kathu.World.Tile
 import           Kathu.World.WorldSpace
-import           Kathu.Util.Apecs
-import           Kathu.Util.Flow             (ireplicateM_)
+import           Verda.Util.Flow             (ireplicateM_)
+import           Verda.Util.Apecs
 
 gridColor :: Color
 gridColor = mkColor 100 80 100 255

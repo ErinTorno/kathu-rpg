@@ -16,8 +16,8 @@ import           Kathu.App.Tools.EventQueue
 import           Kathu.Editor.Util.GtkMisc
 import           Kathu.Editor.Types
 import           Kathu.Editor.Util.PropertyGrid
-import           Kathu.Util.Types
 import           Kathu.World.WorldSpace
+import           Verda.Util.Types
 
 newInstancedPrototypeDialogRunner :: EventQueue -> IO (DialogRunner InstancedEntityConfig)
 newInstancedPrototypeDialogRunner queue = do

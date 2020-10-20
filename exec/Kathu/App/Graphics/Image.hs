@@ -13,9 +13,9 @@ import qualified Data.Vector            as Vec
 import qualified SDL
 import qualified SDL.Image              as SDLI
 
-import           Kathu.IO.Directory
-import           Kathu.Parsing.Counting
-import           Kathu.Util.Dependency
+import           Verda.IO.Directory
+import           Verda.Parsing.Counting
+import           Verda.Util.Dependency
 
 type Image = SDL.Surface
 

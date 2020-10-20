@@ -21,7 +21,7 @@ import           Kathu.Entity.Logger
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Palette (PaletteManager, staticManager)
 import           Kathu.Scripting.Variables (Variables)
-import           Kathu.Util.Types (IDMap)
+import           Verda.Util.Types (IDMap)
 import           Kathu.World.Stasis
 import           Kathu.World.Tile (Tile(..), TileID(..), tileID, TileState(..), tileTextID, unTileID)
 import           Kathu.World.Time (WorldTime(..))

@@ -15,8 +15,8 @@ import           GHC.Generics
 
 import           Kathu.Entity.Damage
 import           Kathu.Entity.Resource
-import           Kathu.Parsing.Aeson
-import           Kathu.Util.Dependency
+import           Verda.Parsing.Aeson
+import           Verda.Util.Dependency
 
 newtype Team = Team Int deriving (Show, Eq, Generic)
 

@@ -19,8 +19,8 @@ import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
 import           Kathu.Scripting.Wire
-import           Kathu.Util.Apecs
-import           Kathu.Util.Types
+import           Verda.Util.Types
+import           Verda.Util.Apecs
 
 -- ExternalFunctions is unused in this, but is included here since it might be in the future, mirrors the Global's function signature, and acts as a Proxy for g
 registerComponentFunctions :: forall w g. (Has w IO Physics, Members w IO (Render g), ReadWriteEach w IO '[ActiveScript, Force, Identity, Logger, Mass, MovingSpeed, Position, Render g, RunningScriptEntity, ScriptEventBuffer, Tags, Velocity, WireReceivers])

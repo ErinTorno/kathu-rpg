@@ -15,10 +15,10 @@ import           Data.Vector            (Vector)
 import qualified Data.Vector            as Vec
 
 import           Kathu.IO.File          (parseAll)
-import           Kathu.IO.Directory
-import           Kathu.Parsing.Aeson
-import           Kathu.Util.Dependency
-import           Kathu.Util.Types
+import           Verda.IO.Directory
+import           Verda.Parsing.Aeson
+import           Verda.Util.Dependency
+import           Verda.Util.Types
 
 data LangUnit = LangUnit
     { luValue :: !Text            -- the default value for this part of speech

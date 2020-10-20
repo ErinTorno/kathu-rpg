@@ -17,8 +17,8 @@ import           Text.Read                  (readMaybe)
 
 import           Kathu.Editor.Types
 import           Kathu.Editor.Util.GtkMisc
-import           Kathu.Util.Flow            ((>>=/))
-import           Kathu.Util.Types
+import           Verda.Util.Flow            ((>>=/))
+import           Verda.Util.Types
 
 type PropertyRowAdder a = Int32 -> Gtk.Grid -> IORef a -> IO (EditableProperty a)
 

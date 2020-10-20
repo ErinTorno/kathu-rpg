@@ -3,7 +3,7 @@
 
 {-# LANGUAGE UndecidableInstances #-}
 
-module Kathu.Util.Dependency where
+module Verda.Util.Dependency where
 
 import           Control.Lens
 import           Control.Monad.State

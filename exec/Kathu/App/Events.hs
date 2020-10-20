@@ -19,8 +19,8 @@ import           Kathu.Entity.Cursor
 import           Kathu.Entity.System
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
-import           Kathu.Util.Apecs
-import           Kathu.Util.Types
+import           Verda.Util.Apecs
+import           Verda.Util.Types
 
 runEvents :: System' ()
 runEvents = do

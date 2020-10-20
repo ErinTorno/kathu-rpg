@@ -2,7 +2,7 @@
 -- We make use of orphaned instances in here to provide quick generation of JSON instances
 -- making use of common types like V2, V3, V4, etc.
 
-module Kathu.Parsing.Aeson where
+module Verda.Parsing.Aeson where
 
 import           Control.Monad         (foldM, liftM2)
 import           Data.Aeson
@@ -21,36 +21,46 @@ import           Linear.V2             (V2(..))
 import           Linear.V3             (V3(..))
 import           Linear.V4             (V4(..))
 
-import           Kathu.Util.Containers (dropInitial)
-import           Kathu.Util.Flow       ((>>>=))
-import           Kathu.Util.Dependency
+import           Verda.Util.Flow       ((>>>=))
+import           Verda.Util.Dependency
 
--- We drop the starting _ so that fields for lenses don't keep it
 standardProjectOptions :: Options
-standardProjectOptions = defaultOptions {fieldLabelModifier = camelTo2 '-' . dropInitial '_', omitNothingFields = True}
+standardProjectOptions = defaultOptions {constructorTagModifier = camelTo2 '-', fieldLabelModifier = camelTo2 '-' . dropInitial '_', omitNothingFields = True}
+    where dropInitial _ [] = []
+          dropInitial t str@(c:cs) | t == c    = cs
+                                   | otherwise = str
 
 ----------------------------
 -- Parsing Util Functions --
 ----------------------------
+
+composeParser :: Compose Parser m a -> Parser (m a)
+composeParser = getCompose
+
+composeAndStoreWith :: (s `CanStore` Map k a, Monad m, Ord k) => (a -> k) -> Compose Parser (Dependency s m) a -> Parser (Dependency s m a)
+composeAndStoreWith f depV = getCompose depV >>>= storeWithKeyFn f
+
+composeDepParser :: Dependency s m a -> Compose Parser (Dependency s m) a
+composeDepParser = Compose . pure
 
 -- gets a normal type from Parser and raises it to a Compose
 (.:^) :: (Monad m, FromJSON a) => Object -> Text -> Compose Parser m a
 (.:^) v = Compose . fmap return . (.:) v
 
 -- gets a type encased in a monad from a Parser and Composes it
-(.:~) :: (FromJSON (m a)) => Object -> Text -> Compose Parser m a
-(.:~) v = Compose . (.:) v
+(.:-) :: (FromJSON (m a)) => Object -> Text -> Compose Parser m a
+(.:-) v = Compose . (.:) v
 
 -- same as .:^, but returns a Maybe
 (.:^?) :: (Monad m, FromJSON a) => Object -> Text -> Compose Parser m (Maybe a)
 (.:^?) v = Compose . fmap return . (.:?) v
 
--- same as .:~, but returns a Maybe
-(.:~?) :: (Monad m, FromJSON (m a)) => Object -> Text -> Compose Parser m (Maybe a)
-(.:~?) obj t = Compose (maybe (pure Nothing) (fmap Just) <$> obj .:? t)
+-- same as .:-, but returns a Maybe
+(.:-?) :: (Monad m, FromJSON (m a)) => Object -> Text -> Compose Parser m (Maybe a)
+(.:-?) obj t = Compose (maybe (pure Nothing) (fmap Just) <$> obj .:? t)
 
-(.!=~) :: Monad m => Compose Parser m (Maybe a) -> a -> Compose Parser m a
-(.!=~) p def = fromMaybe def <$> p
+(.!=-) :: Monad m => Compose Parser m (Maybe a) -> a -> Compose Parser m a
+(.!=-) p def = fromMaybe def <$> p
 
 parseListDPWith :: Monad m => (Value -> Parser (Dependency s m a)) -> Value -> Parser (Dependency s m [a])
 parseListDPWith parser (Array a) = foldM append (pure []) a

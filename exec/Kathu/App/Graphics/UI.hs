@@ -19,8 +19,8 @@ import           Kathu.App.Graphics.ImageManager
 import           Kathu.Entity.ActorState
 import           Kathu.Entity.Resource
 import           Kathu.Graphics.Drawable
-import           Kathu.Parsing.Aeson
-import           Kathu.Util.Dependency
+import           Verda.Parsing.Aeson
+import           Verda.Util.Dependency
 
 data DisplayBar = DisplayBar
     { startsAt        :: V2 Double
@@ -51,12 +51,12 @@ instance (FromJSON (Dependency s m (RenderSprite ImageID)), Monad m) => FromJSON
     parseJSON (Object v) = getCompose $ DisplayBar
         <$> v .:^ "starts-at"
         <*> v .:^ "points-per-part"
-        <*> v .:~? "cap-beginning"
-        <*> v .:~? "cap-ending"
-        <*> (v .:^? "cap-width" .!=~ 0)
+        <*> v .:-? "cap-beginning"
+        <*> v .:-? "cap-ending"
+        <*> (v .:^? "cap-width" .!=- 0)
         <*> v .:^ "primary-width" <*> v .:^ "secondary-width"
-        <*> v .:~ "primary-full" <*> v .:~ "primary-3q" <*> v .:~ "primary-half" <*> v .:~ "primary-1q"
-        <*> v .:~ "secondary-full" <*> v .:~ "secondary-empty"
+        <*> v .:- "primary-full" <*> v .:- "primary-3q" <*> v .:- "primary-half" <*> v .:- "primary-1q"
+        <*> v .:- "secondary-full" <*> v .:- "secondary-empty"
     parseJSON v = typeMismatch "DisplayBar" v
 
 instance ( FromJSON (Dependency s m (RenderSprite ImageID))
@@ -65,9 +65,9 @@ instance ( FromJSON (Dependency s m (RenderSprite ImageID))
          , Monad m
          ) => FromJSON (Dependency s m UIConfig) where
     parseJSON (Object v) = getCompose $ UIConfig True
-        <$> v .:~ "game-icon"
-        <*> v .:~ "health-bar"
-        <*> v .:~ "mana-bar"
+        <$> v .:- "game-icon"
+        <*> v .:- "health-bar"
+        <*> v .:- "mana-bar"
     parseJSON v = typeMismatch "UIConfig" v
 
 ---------------

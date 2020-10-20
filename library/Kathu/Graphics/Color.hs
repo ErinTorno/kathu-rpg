@@ -49,7 +49,7 @@ import           Data.Word
 import           GHC.Generics
 import           Linear.V4                    (V4(..))
 import           Numeric                      (readHex, showHex)
-import           Kathu.Util.Flow              (readElseFail)
+import           Verda.Util.Flow              (readElseFail)
 
 -----------
 -- Color --

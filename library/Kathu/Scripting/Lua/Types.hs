@@ -26,15 +26,13 @@ import qualified Foreign.Lua                 as Lua
 import           Data.Vector                 (Vector)
 import           Linear.V2                   (V2(..))
 
-import           Kathu.IO.Directory
-import           Kathu.Parsing.Aeson
+import           Verda.IO.Directory
+import           Verda.Parsing.Aeson
 import           Kathu.Scripting.Event
 import           Kathu.Scripting.Variables   (WatchedVariable, WorldVariable)
-import           Kathu.Util.Apecs
-import           Kathu.Util.Dependency
-import           Kathu.Util.Types
-
-import qualified Debug.Trace as DT
+import           Verda.Util.Dependency
+import           Verda.Util.Types
+import           Verda.Util.Apecs
 
 data Script = Script
     { _scriptID         :: !Identifier -- a unique identifier to refer to this script (usually its file path)
@@ -54,7 +52,7 @@ sanitizedScriptID Script{_scriptID = sID} = fromMaybe txtID . T.stripPrefix asse
 instance ToJSON Script where
     toJSON script@(Script _ _ flags isSingle)
         -- If everything else can be blank, just serialize this to a string
-        | flags == noEventFlags && not isSingle = toJSON (DT.traceShowId sanitizedFile)
+        | flags == noEventFlags && not isSingle = toJSON sanitizedFile
         | otherwise = object
             [ "file"         .= sanitizedFile
             , "events"       .= nothingUnless (flags /= noEventFlags) flags
@@ -71,8 +69,8 @@ instance (s `CanProvide` WorkingDirectory, MonadIO m) => FromJSON (Dependency s 
                    in case e of
         (String s) -> pure $ readF s <*> pure noEventFlags <*> pure False
         (Object v) -> getCompose $ Compose (readF <$> v .: "file")
-                  <*> v .:^? "events" .!=~ noEventFlags
-                  <*> v .:^? "is-singleton" .!=~ False
+                  <*> v .:^? "events" .!=- noEventFlags
+                  <*> v .:^? "is-singleton" .!=- False
         v          -> typeMismatch "Script" v
 
 data SingletonStatus

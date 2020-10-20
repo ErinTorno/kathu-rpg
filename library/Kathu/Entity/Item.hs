@@ -10,10 +10,10 @@ import Data.Text               (Text)
 import GHC.Generics
 
 import Kathu.Graphics.Drawable (Render)
-import Kathu.Parsing.Aeson
-import Kathu.Util.Dependency
-import Kathu.Util.Flow         ((>>>=))
-import Kathu.Util.Types        (Identifier, IDMap, Range)
+import Verda.Parsing.Aeson
+import Verda.Util.Dependency
+import Verda.Util.Flow         ((>>>=))
+import Verda.Util.Types        (Identifier, IDMap, Range)
 
 data ItemSlot = UseItem | Weapon | Body | SpiritCharm | Accessory | NoSlot deriving (Show, Eq, Ord, Enum, Generic)
 
@@ -100,16 +100,16 @@ instance (s `CanStore` IDMap (Item g), FromJSON (Dependency s m (Render g)), Mon
                   <*> v .:^ "name"
                   <*> v .:^ "description"
                   <*> v .:^ "slot"
-                  <*> v .:~ "icon"
+                  <*> v .:- "icon"
                   <*> v .:^ "max-stack-size"
                   <*> v .:^ "price"
-                  <*> v .:^? "special-category" .!=~ NonUnique
+                  <*> v .:^? "special-category" .!=- NonUnique
     parseJSON v = typeMismatch "Item" v
 
 -- ItemStack
 
 instance (s `CanProvide` IDMap (Item g), Monad m) => FromJSON (Dependency s m (ItemStack g)) where
-    parseJSON (Object v) = getCompose $ ItemStack <$> item <*> v .:^? "count" .!=~ 1
+    parseJSON (Object v) = getCompose $ ItemStack <$> item <*> v .:^? "count" .!=- 1
         where item    = Compose (fmap (fromMaybe failMsg) . dependencyMapLookup <$> (v .: "item" :: Parser Identifier))
               failMsg = error "Couldn't find item referenced by ItemStack"
     parseJSON v          = typeMismatch "ItemStack" v

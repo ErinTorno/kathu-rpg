@@ -15,7 +15,7 @@ import           Data.Text               (Text)
 import qualified Foreign.Lua             as Lua
 import           GHC.Generics
 
-import           Kathu.Util.Types        (Identifier, IDHashTable, IDMap)
+import           Verda.Util.Types        (Identifier, IDHashTable, IDMap)
 
 data VariableType = WorldVar | GlobalVar
 

@@ -6,7 +6,7 @@ import Apecs (Component, Map, Storage)
 import Control.Lens
 import Linear.V2 (V2(..))
 
-import Kathu.Util.Types
+import Verda.Util.Types
 
 getDiagonal :: Fractional a => a -> a
 getDiagonal v = v * 0.707106781187 -- a constant so that we don't need to call the trigonometric functions each time

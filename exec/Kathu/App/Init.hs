@@ -29,15 +29,15 @@ import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.Floor
 import           Kathu.Entity.System
-import           Kathu.IO.Directory              (assetPath)
+import           Verda.IO.Directory              (assetPath)
 import           Kathu.Game                      (initPhysics)
 import           Kathu.Graphics.Camera
 import           Kathu.Language
 import           Kathu.Scripting.Lua             (initScripting)
 import           Kathu.Scripting.Variables       (initVariables)
-import           Kathu.Util.Containers           (fromJustElseError)
-import           Kathu.Util.Types                (unID)
+import           Verda.Util.Containers           (fromJustElseError)
 import           Kathu.World.WorldSpace          (emptyWorldSpace)
+import           Verda.Util.Types                (unID)
 
 entityWorld :: IO EntityWorld
 entityWorld = initEntityWorld

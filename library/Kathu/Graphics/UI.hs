@@ -11,9 +11,9 @@ import           Linear.V2               (V2)
 import qualified Kathu.Entity.Item       as Item
 import           Kathu.Graphics.Drawable (Render, RenderSprite)
 import           Kathu.Graphics.Color
-import           Kathu.Parsing.Aeson
-import           Kathu.Util.Dependency
-import           Kathu.Util.Types        (Identifier, mkIdentifier)
+import           Verda.Parsing.Aeson
+import           Verda.Util.Dependency
+import           Verda.Util.Types        (Identifier, mkIdentifier)
 
 -- These two need to have some space for the default attributes and resources, as well as user defined
 
@@ -82,8 +82,8 @@ instance ( FromJSON (Dependency s m g)
         "attribute-label"   -> getCompose $ UIAttribute   <$> v .:^ "title" <*> v .:^ "attribute" <*> v .:^ "color" <*> v .:^ "bonus-color"
         "resource-label"    -> getCompose $ UIResource    <$> v .:^ "title" <*> v .:^ "resource" <*> v .:^ "color" <*> v .:^ "max-color" <*> v .:^ "bonus-color"
         "resource-bar"      -> getCompose $ UIResourceBar <$> v .:^ "resource" <*> Compose (parseJSON obj)
-        "image"             -> getCompose $ UIImage       <$> v .:~ "render"
-        "item-box"          -> getCompose $ UIItemBox     <$> v .:~ "background" <*> (flip Item.ContainerSlot Nothing <$> v .:^ "slot")
+        "image"             -> getCompose $ UIImage       <$> v .:- "render"
+        "item-box"          -> getCompose $ UIItemBox     <$> v .:- "background" <*> (flip Item.ContainerSlot Nothing <$> v .:^ "slot")
         e                   -> fail $ "Unknown UI element type " ++ show e
     parseJSON e              = typeMismatch "UIElementConfig" e
     
@@ -112,9 +112,9 @@ instance FromJSON UIAttributeType where
 instance (FromJSON (Dependency s m (RenderSprite g)), Monad m) => FromJSON (Dependency s m (DisplayBar g)) where
     parseJSON (Object v) = getCompose $ DisplayBar
         <$> v .:^ "points-per-part"
-        <*> v .:~? "cap-beginning"
-        <*> v .:~? "cap-ending"
-        <*> (v .:^? "cap-width" .!=~ 0) <*> v .:^ "primary-width" <*> v .:^ "secondary-width"
-        <*> v .:~ "primary-4q" <*> v .:~ "primary-3q" <*> v .:~ "primary-2q" <*> v .:~ "primary-1q"
-        <*> v .:~ "secondary-full" <*> v .:~ "secondary-empty"
+        <*> v .:-? "cap-beginning"
+        <*> v .:-? "cap-ending"
+        <*> (v .:^? "cap-width" .!=- 0) <*> v .:^ "primary-width" <*> v .:^ "secondary-width"
+        <*> v .:- "primary-4q" <*> v .:- "primary-3q" <*> v .:- "primary-2q" <*> v .:- "primary-1q"
+        <*> v .:- "secondary-full" <*> v .:- "secondary-empty"
     parseJSON v = typeMismatch "DisplayBar" v

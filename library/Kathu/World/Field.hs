@@ -19,10 +19,10 @@ import qualified Data.Vector.Unboxed.Mutable as UMVec
 import           Linear.V2                   (V2(..))
 
 import           Kathu.Entity.System         (Tiles, fromTiles, fromTilesID)
-import           Kathu.Parsing.Aeson         ()
-import           Kathu.Util.Containers       (foldlMVec, foldrMVec, fromJustElseError, splitEveryN)
+import           Verda.Parsing.Aeson         ()
+import           Verda.Util.Containers       (foldlMVec, foldrMVec, fromJustElseError, splitEveryN)
 import           Kathu.Util.Polygon
-import           Kathu.Util.Types
+import           Verda.Util.Types
 import           Kathu.World.Tile
 
 unitsPerTile :: Num a => a

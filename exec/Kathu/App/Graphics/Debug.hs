@@ -18,7 +18,7 @@ import           Kathu.Entity.Physics.CollisionGroup (collisionFilterDebugColor)
 import           Kathu.Graphics.Camera
 import           Kathu.Graphics.Color
 import           Kathu.World.WorldSpace
-import           Kathu.Util.Types                (unID)
+import           Verda.Util.Types                (unID)
 
 -- | A circular shape composed of many vertices; when collisions are drawn, the radius and origin of this can be shifted to match each collision
 circleVertices :: SVec.Vector (V2 Double)

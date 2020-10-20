@@ -10,11 +10,11 @@ import Data.Word
 
 import GHC.Generics
 import Kathu.Graphics.Color   (Color)
-import Kathu.Parsing.Aeson
-import Kathu.Parsing.Counting
-import Kathu.Util.Dependency
-import Kathu.Util.Flow        ((>>>=))
-import Kathu.Util.Types       (Identifier, IDMap)
+import Verda.Parsing.Aeson
+import Verda.Parsing.Counting
+import Verda.Util.Dependency
+import Verda.Util.Flow        ((>>>=))
+import Verda.Util.Types       (Identifier, IDMap)
 
 --------------
 -- DamageID --
@@ -72,13 +72,13 @@ instance ( s `CanStore` IDMap (DamageProfile g)
          ) => FromJSON (Dependency s m (DamageProfile g)) where
     parseJSON (Object v) = damagePar >>>= (\dam -> dependencyMapInsert (dmgTextID dam) dam) >> damagePar
         where damagePar = getCompose $ DamageProfile
-                  <$> v .:~ "damage-id"
+                  <$> v .:- "damage-id"
                   <*> v .:^ "damage-id"
                   <*> v .:^ "name"
-                  <*> v .:~ "icon"
+                  <*> v .:- "icon"
                   <*> v .:^ "color"
                   <*> v .:^ "defense"
-                  <*> v .:^? "default-resist" .!=~ 1.0
+                  <*> v .:^? "default-resist" .!=- 1.0
     parseJSON v          = typeMismatch "DamageProfile" v
 
 data DamagePacket g = DamagePacket

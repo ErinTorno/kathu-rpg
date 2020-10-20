@@ -35,16 +35,11 @@ resolver: lts-16.19
 #  - wai
 packages:
 - .
-- ./verda
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 # extra-deps: []
-extra-deps:
-- hgeometry-0.10.0.0@sha256:89e059de02bfd2d4556e156fefda765700e4f9305c862c5da6af06af5349ec67,10263
-- hgeometry-combinatorial-0.10.0.0@sha256:b3c306bc3f3444ba21850a2af279d3461b27c0d19b7ce62940aeb6fcca5d8dcf,7425
-- hslua-1.3.0@sha256:d9b758f6234286a7df267cae15332507a1d3be56baf03ff7ae073269bc55c4e8,11023
-- vinyl-0.12.2@sha256:cefc269fd137841861c13f28a3f20f5973ef24e9f1e6245b77b688f1cbd979de,3717
+extra-deps: []
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

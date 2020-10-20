@@ -11,10 +11,10 @@ import           Language.Haskell.TH
 
 import           Kathu.Entity.Components            (newExistingEntity)
 import           Kathu.Entity.SerializableComponent
-import           Kathu.Parsing.Aeson                ((.:~?), (.:^?))
-import           Kathu.Util.Dependency
-import           Kathu.Util.Flow                    ((>>>=))
-import           Kathu.Util.Types                   (IDMap)
+import           Verda.Parsing.Aeson                ((.:-?), (.:^?))
+import           Verda.Util.Dependency
+import           Verda.Util.Flow                    ((>>>=))
+import           Verda.Util.Types                   (IDMap)
 
 -- This modules contains functions that generating helper functions for EntityPrototypes from a given list of components
 
@@ -73,7 +73,7 @@ defineEntityFromJSON getID typename components = pure . pure $ InstanceD Nothing
           compDepPairs = (\c -> (compName c, requiresDependencies c)) <$> components
           varName      = mkName "v"
 
-          indvParse (cName, isLinked) = UInfixE (VarE varName) (VarE (if isLinked then '(.:~?) else '(.:^?))) (LitE . StringL . camelTo2 '-' . show $ combinedName)
+          indvParse (cName, isLinked) = UInfixE (VarE varName) (VarE (if isLinked then '(.:-?) else '(.:^?))) (LitE . StringL . camelTo2 '-' . show $ combinedName)
               where combinedName = fieldName "" cName
           sucExpr      = foldl (\acc cur -> UInfixE acc (VarE '(<*>)) (indvParse cur)) (UInfixE (ConE . mkName . nameBase $ typename) (VarE '(<$>)) (indvParse $ head compDepPairs)) (tail compDepPairs)
 

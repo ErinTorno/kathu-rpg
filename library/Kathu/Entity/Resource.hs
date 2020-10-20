@@ -8,7 +8,7 @@ import Data.Serialize
 import Control.Lens     hiding ((.=))
 import GHC.Generics
 
-import Kathu.Util.Types (clampBetween)
+import Verda.Util.Types (clampBetween)
 
 -- | A resource that is not expected to change frequently
 data Static a = Static {_stcBase :: !a, _stcBonus :: !a} deriving (Show, Eq, Functor, Generic)

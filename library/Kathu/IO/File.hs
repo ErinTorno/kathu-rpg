@@ -12,10 +12,10 @@ import qualified Data.Yaml                  as Y
 import           System.Directory
 import           System.FilePath
 
-import           Kathu.IO.Directory
+import           Verda.IO.Directory
 import qualified Kathu.Parsing.Yaml         as Yaml
-import           Kathu.Util.Dependency
-import           Kathu.Util.Flow            (partitionM)
+import           Verda.Util.Dependency
+import           Verda.Util.Flow            (partitionM)
 
 toStrict :: BL.ByteString -> B.ByteString
 toStrict = B.concat . BL.toChunks

@@ -18,8 +18,8 @@ import Kathu.Entity.Components (Existance, Tags(..), newExistingEntity)
 import Kathu.Entity.LifeTime
 import Kathu.Entity.Physics.CollisionGroup
 import Kathu.Entity.Physics.Floor (assignMeWorldFloor, WorldFloor)
-import Kathu.Parsing.Aeson ()
-import Kathu.Util.Apecs
+import Verda.Parsing.Aeson ()
+import           Verda.Util.Apecs
 
 data BodyShape = BodyShape
     { shapeConvex :: !Convex
