@@ -92,7 +92,7 @@ library
                     Kathu.Scripting.Wire
                     -- Utility
                     Kathu.Util.Apecs
-                    Kathu.Util.Collection
+                    Kathu.Util.Containers
                     Kathu.Util.Dependency
                     Kathu.Util.Flow
                     Kathu.Util.Polygon
@@ -105,7 +105,7 @@ library
                     hgeometry-combinatorial >=0.10    && <0.11,
                     hashable                >=1.3     && <1.4,
                     hashtables              >=1.2.0   && <1.3.0,
-                    hslua                   >=1.0.0.0 && <1.1.0.0,
+                    hslua                   >=1.3.0   && <1.4.0,
                     yaml                    ^>=0.11.3,
                     libyaml                 ^>=0.1.2,
                     text, bytestring,
@@ -113,7 +113,7 @@ library
                     directory, filepath,
                     aeson, cereal
   hs-source-dirs:   library
-  ghc-options:      -Wall -Werror -Wincomplete-record-updates -Wredundant-constraints -Wincomplete-uni-patterns -optl-mconsole
+  ghc-options:      -Wall -Werror -Wincomplete-record-updates -Wredundant-constraints -Wincomplete-uni-patterns
   default-language: Haskell2010
 
 executable kathu
@@ -174,15 +174,20 @@ executable kathu
                     sdl2             ^>=2.5,
                     filepath, lens, linear, random, sdl2-image, sdl2-ttf, text, vector, vector-algorithms
   hs-source-dirs:   exec
-  ghc-options:      -threaded -Wall -Werror -Wincomplete-record-updates -Wredundant-constraints -Wincomplete-uni-patterns -optl-mconsole
+  ghc-options:      -threaded -Wall -Werror -Wincomplete-record-updates -Wredundant-constraints -Wincomplete-uni-patterns
   default-language: Haskell2010
 
 test-suite kathu-test
   import:           kathu-extensions
   type:             exitcode-stdio-1.0 
-  build-depends:    base >=4.12 && <4.13, kathu-lib, HUnit, containers, linear, vector
+  build-depends:    base                    ^>=4.13,
+                    kathu,
+                    HUnit,
+                    containers,
+                    linear,
+                    vector
   hs-source-dirs:   test
-  ghc-options:      -Wall -Werror -Wincomplete-record-updates -Wredundant-constraints -Wincomplete-uni-patterns -optl-mconsole
+  ghc-options:      -Wall -Werror -Wincomplete-record-updates -Wredundant-constraints -Wincomplete-uni-patterns
   default-language: Haskell2010
   main-is:          Test.hs
   other-modules:    Kathu.Test.Entity,

@@ -1,11 +1,10 @@
-module Kathu.Util.Collection where
+module Kathu.Util.Containers where
 
 import           Control.Monad.Primitive     (PrimMonad, PrimState)
 import           Data.Map                    (Map)
 import qualified Data.Map                    as Map
 import           Data.Vector.Generic.Mutable (MVector)
 import qualified Data.Vector.Generic.Mutable as MVec
-import           Numeric                     (showHex)
 
 -- Maybe functions
 
@@ -71,9 +70,3 @@ foldrMVec !accFn !initAcc !vec = go (MVec.length vec - 1) initAcc
     where go !i !acc
               | i < 0     = pure acc
               | otherwise = MVec.unsafeRead vec i >>= pure . flip accFn acc >>= go (i - 1)
-
--- Specialized List functions
-
-padShowHex :: (Integral a, Show a) => Int -> a -> ShowS
-padShowHex l a = (++) . pad . showHex a $ ""
-    where pad s = let len = length s in if len <= l then replicate (l - len) '0' ++ s else s

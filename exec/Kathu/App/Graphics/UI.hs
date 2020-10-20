@@ -2,26 +2,25 @@
 
 module Kathu.App.Graphics.UI where
 
-import Apecs
-import Control.Lens
-import Control.Monad.IO.Class (MonadIO)
-import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
-import Data.Fixed (divMod')
-import Data.Functor.Compose (getCompose)
-import Linear.V2 (V2(..))
+import           Apecs
+import           Control.Lens
+import           Control.Monad.IO.Class (MonadIO)
+import           Data.Aeson
+import           Data.Aeson.Types (typeMismatch)
+import           Data.Bifunctor              as Bi
+import           Data.Fixed (divMod')
+import           Data.Functor.Compose (getCompose)
+import           Linear.V2 (V2(..))
 import qualified SDL
 
-import Kathu.App.Graphics.Drawing
-import Kathu.App.Graphics.Image
-import Kathu.App.Graphics.ImageManager
-import Kathu.Entity.ActorState
-import Kathu.Entity.Resource
-import Kathu.Graphics.Drawable
-import Kathu.Parsing.Aeson
-import Kathu.Util.Flow (mapSnd)
-import Kathu.Parsing.Aeson ()
-import Kathu.Util.Dependency
+import           Kathu.App.Graphics.Drawing
+import           Kathu.App.Graphics.Image
+import           Kathu.App.Graphics.ImageManager
+import           Kathu.Entity.ActorState
+import           Kathu.Entity.Resource
+import           Kathu.Graphics.Drawable
+import           Kathu.Parsing.Aeson
+import           Kathu.Util.Dependency
 
 data DisplayBar = DisplayBar
     { startsAt        :: V2 Double
@@ -97,7 +96,7 @@ drawBar renderer scale im dyn (DisplayBar startingPos ppu capBegin capEnd capw p
           unitCount :: Int
           unitCount  = ceiling $ totalMaximum dyn / ppu
           fullUnits, partialRem :: Int
-          (fullUnits, partialRem) = fixPartial . mapSnd (ceiling . (*4) . (/ppu)) $ (dyn ^. dynCur) `divMod'` ppu
+          (fullUnits, partialRem) = fixPartial . Bi.second (ceiling . (*4) . (/ppu)) $ (dyn ^. dynCur) `divMod'` ppu
           -- if we have perfectly rounded, we drop the full units by one to draw a large one of four quarters
           fixPartial (n, 0) = (n - 1, 4)
           fixPartial p = p

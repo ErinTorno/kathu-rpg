@@ -9,7 +9,7 @@ import           GHC.Generics
 import qualified SDL
 
 import           Kathu.Parsing.Aeson         (standardProjectOptions)
-import           Kathu.Util.Collection       (forMVec)
+import           Kathu.Util.Containers       (forMVec)
 
 type InputState = Word8
 

@@ -6,8 +6,6 @@ import           Control.Monad         (when)
 import           Data.Kind             (Constraint)
 import qualified Data.Vector.Unboxed   as U
 
-import           Kathu.Util.Collection (fromJustElseError)
-
 type family ReadWrite w m c :: Constraint where
     ReadWrite w m c = (Get w m c, Has w m c, Set w m c)
 
@@ -15,23 +13,13 @@ type family ReadWriteEach w m cs :: Constraint where
     ReadWriteEach w m '[]       = ()
     ReadWriteEach w m (c ': cs) = (Get w m c, Has w m c, Set w m c, ReadWriteEach w m cs)
 
-type family HasEach w m cs :: Constraint where
-    HasEach w m '[]       = ()
-    HasEach w m (c ': cs) = (Has w m c, HasEach w m cs)
-
-type family GetEach w m cs :: Constraint where
-    GetEach w m '[]       = ()
-    GetEach w m (c ': cs) = (Get w m c, GetEach w m cs)
-
-type family SetEach w m cs :: Constraint where
-    SetEach w m '[]       = ()
-    SetEach w m (c ': cs) = (Set w m c, SetEach w m cs)
-
 getUnique :: forall w m c. (Members w m c, Get w m c) => SystemT w m (Maybe c)
 getUnique = cfold (\_ c -> Just c) Nothing
 
 getUniqueElseError :: forall w m c. (Members w m c, Get w m c) => String -> SystemT w m c
-getUniqueElseError errMsg = fromJustElseError errMsg <$> getUnique
+getUniqueElseError errMsg = errIfNothing <$> getUnique
+    where errIfNothing Nothing  = error errMsg
+          errIfNothing (Just v) = v
 
 getIfExists :: forall w m c. (Members w m c, Get w m c) => Entity -> SystemT w m (Maybe c)
 getIfExists !ety = do

@@ -15,7 +15,7 @@ import Linear.V2 (V2(..))
 
 import Kathu.Parsing.Aeson
 import Kathu.Util.Dependency
-import Kathu.Util.Flow ((<$$>))
+import Kathu.Util.Flow ((<<$>>))
 import Kathu.Util.Types
 
 -- | A newtype wrapper around a function that can grab image dimension information as a Dependency
@@ -109,8 +109,8 @@ instance ( s `CanProvide` ImageBounds (Dependency s m) g
 newtype Render g = Render {unRender :: Vector (RenderSprite g)}
 
 instance (FromJSON (Dependency s m (RenderSprite g)), Monad m) => FromJSON (Dependency s m (Render g)) where
-    parseJSON obj@(Object _) = Render . Vec.singleton <$$> parseJSON obj
-    parseJSON str@(String _) = Render . Vec.singleton <$$> parseJSON str
+    parseJSON obj@(Object _) = Render . Vec.singleton <<$>> parseJSON obj
+    parseJSON str@(String _) = Render . Vec.singleton <<$>> parseJSON str
     parseJSON (Array a)      = toRender <$> Vec.foldM run (pure []) a
         where run acc cur = (>>=(\inner -> (inner:) <$> acc)) <$> parseJSON cur
               toRender ls = Render <$> (Vec.fromList <$> ls)

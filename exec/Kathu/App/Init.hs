@@ -35,7 +35,7 @@ import           Kathu.Graphics.Camera
 import           Kathu.Language
 import           Kathu.Scripting.Lua             (initScripting)
 import           Kathu.Scripting.Variables       (initVariables)
-import           Kathu.Util.Collection           (fromJustElseError)
+import           Kathu.Util.Containers           (fromJustElseError)
 import           Kathu.Util.Types                (unID)
 import           Kathu.World.WorldSpace          (emptyWorldSpace)
 

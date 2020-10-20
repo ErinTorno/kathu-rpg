@@ -1,4 +1,4 @@
-palette-id: default
+palette-id: rainbow
 cycle-duration: 6000
 frames-per-second: 15
 cycle-end-behavior: restart

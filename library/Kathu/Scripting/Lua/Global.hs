@@ -18,7 +18,7 @@ import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
 import           Kathu.Util.Apecs
-import           Kathu.Util.Collection     (fromJustElseError)
+import           Kathu.Util.Containers     (fromJustElseError)
 import           Kathu.Util.Types
 
 registerGlobalFunctions :: forall w g. (ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Debug, Local, Logger, LogicTime, Random, RenderTime, RunningScriptEntity, ScriptEventBuffer, Variables]) => w -> ExternalFunctions w g -> Lua ()

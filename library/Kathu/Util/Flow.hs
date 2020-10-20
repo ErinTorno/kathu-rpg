@@ -6,18 +6,9 @@ import           Text.Read           (readMaybe)
 
 -- Functor and similar
 
-mapPair :: (a -> b) -> (a, a) -> (b, b)
-mapPair f (v1, v2) = (f v1, f v2)
-
-mapFst :: (a -> c) -> (a, b) -> (c, b)
-mapFst f (a, b) = (f a, b)
-
-mapSnd :: (b -> c) -> (a, b) -> (a, c)
-mapSnd f (a, b) = (a, f b)
-
-infixl 4 <$$>
-(<$$>) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
-fn <$$> f = fmap fn <$> f
+infixl 4 <<$>>
+(<<$>>) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
+fn <<$>> f = fmap fn <$> f
 
 -- Monad
 

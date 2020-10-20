@@ -2,12 +2,13 @@
 
 module Kathu.World.Field where
 
-import           Data.Aeson
-import           Data.Aeson.Types            (Pair)
 import           Control.Lens                hiding ((.=))
 import           Control.Monad
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Control.Monad.ST            (RealWorld)
+import           Data.Aeson
+import           Data.Aeson.Types            (Pair)
+import           Data.Bifunctor              as Bi
 import qualified Data.Foldable               as F
 import           Data.Map.Strict             (Map)
 import qualified Data.Map.Strict             as Map
@@ -19,8 +20,7 @@ import           Linear.V2                   (V2(..))
 
 import           Kathu.Entity.System         (Tiles, fromTiles, fromTilesID)
 import           Kathu.Parsing.Aeson         ()
-import           Kathu.Util.Collection       (foldlMVec, foldrMVec, fromJustElseError, splitEveryN)
-import           Kathu.Util.Flow             (mapPair, mapFst, mapSnd)
+import           Kathu.Util.Containers       (foldlMVec, foldrMVec, fromJustElseError, splitEveryN)
 import           Kathu.Util.Polygon
 import           Kathu.Util.Types
 import           Kathu.World.Tile
@@ -149,10 +149,12 @@ mkCollisionPolygons tiles = fmap (Vec.concat . fmap mkTriangles) . mapM isSolidV
           isSolidVec :: MonadIO m => (V2 Int, Field) -> m (V2 Int, UVec.Vector Bool)
           isSolidVec (pos, f) = fmap ((pos,) . UVec.fromList . reverse) . fieldFoldWithEmptyM (\acc _ ts -> (:acc) <$> isSolidTS ts) [] $ f
           
+          mapPair f (a, b) = (f a, f b)
+
           mkTriangles :: (V2 Int, UVec.Vector Bool) -> Vec.Vector [V2 Double]
           mkTriangles (V2 wx wy, v) = uncurry (Vec.++)
-                                    . mapFst  (Vec.map polyBorder)
-                                    . mapSnd  (Vec.concat . Vec.toList . Vec.map (Vec.fromList . triangulate))
+                                    . Bi.first  (Vec.map polyBorder)
+                                    . Bi.second (Vec.concat . Vec.toList . Vec.map (Vec.fromList . triangulate))
                                     . mapPair (Vec.map (mapPolyVertices ((+ V2 (-0.5) (-1)) . fmap fromIntegral . (+ V2 (wx * fieldDim) (wy * fieldDim)))))
                                     $ convexAndConcaveFromBinaryGrid v fieldDim fieldDim
 

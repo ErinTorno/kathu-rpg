@@ -28,7 +28,7 @@ import           Kathu.Editor.Util.PropertyGrid
 import           Kathu.Graphics.Drawable    (getRenderGraphicsVector)
 import           Kathu.Parsing.Counting
 import qualified Kathu.Scripting.Lua        as Lua
-import           Kathu.Util.Collection      (fromJustElseError)
+import           Kathu.Util.Containers      (fromJustElseError)
 import           Kathu.World.WorldSpace
 import           Kathu.World.Tile           (emptyTile, emptyTileID, tileID, tileName, tileRender)
 

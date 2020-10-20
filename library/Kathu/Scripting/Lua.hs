@@ -22,7 +22,7 @@ import           Control.Lens                      ((^.))
 import qualified Data.HashTable.ST.Basic           as HT
 import qualified Data.Map                          as Map
 import qualified Data.Vector                       as Vec
-import           Foreign.Lua                       hiding (call, error, runWith)
+import           Foreign.Lua                       hiding (call, error)
 import qualified Foreign.Lua.Core                  as Lua
 import qualified Foreign.Lua.FunctionCalling       as Lua
 
@@ -82,7 +82,7 @@ mkActiveScript mapper !ety !singStatus !initLua (Script _ mainScr flags _) = do
     mvar' <- liftIO $ do
         st  <- Lua.newstate
         -- for some reason Lua exception logging doesn't actually get caught here, unlike in execFor...
-        st' <- Lua.runWith st (initLua >> handleLuaOp (Lua.dostring mainScr) >> Lua.state)
+        st' <- Foreign.Lua.runWith st (initLua >> handleLuaOp (Lua.dostring mainScr) >> Lua.state)
         newMVar st'
     pure $ baseAS {activeState = mvar'}
 

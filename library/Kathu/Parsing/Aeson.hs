@@ -21,7 +21,7 @@ import           Linear.V2             (V2(..))
 import           Linear.V3             (V3(..))
 import           Linear.V4             (V4(..))
 
-import           Kathu.Util.Collection (dropInitial)
+import           Kathu.Util.Containers (dropInitial)
 import           Kathu.Util.Flow       ((>>>=))
 import           Kathu.Util.Dependency
 

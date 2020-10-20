@@ -48,9 +48,7 @@ import           Data.Vector.Unboxed.Deriving
 import           Data.Word
 import           GHC.Generics
 import           Linear.V4                    (V4(..))
-import           Numeric                      (readHex)
-
-import           Kathu.Util.Collection        (padShowHex)
+import           Numeric                      (readHex, showHex)
 import           Kathu.Util.Flow              (readElseFail)
 
 -----------
@@ -64,7 +62,9 @@ derivingUnbox "Color"
     [| Color              |]
 
 instance Show Color where
-    show (Color (V4 r g b a)) = ('#':) . padShowHex 2 r . padShowHex 2 g . padShowHex 2 b . padShowHex 2 a $ ""
+    show (Color (V4 r g b a)) = ('#':) . padHex r . padHex g . padHex b . padHex a $ ""
+        where padHex n = (++) . pad . showHex n $ ""
+              pad s    = let len = length s in if len <= 2 then replicate (2 - len) '0' ++ s else s
 instance Read Color where
     readsPrec _ = parseWithAlpha
         where pair a b = (\case {[] -> Nothing; ((x, _):_) -> Just x}) . readHex $ [a, b]

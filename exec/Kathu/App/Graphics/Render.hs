@@ -30,7 +30,7 @@ import           Kathu.World.Field
 import           Kathu.World.Tile                hiding (Vector, MVector)
 import           Kathu.World.WorldSpace
 import           Kathu.Util.Apecs
-import           Kathu.Util.Collection           (forMVec)
+import           Kathu.Util.Containers           (forMVec)
 
 -- if sprite position is more than this many units from left or right, or from bottom, we don't draw
 -- we don't draw anything above the top of the screen, however, since sprites draw out and upwards
