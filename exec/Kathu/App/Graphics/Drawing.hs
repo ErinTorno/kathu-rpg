@@ -6,8 +6,8 @@ import           Control.Monad.IO.Class          (MonadIO)
 import           Foreign.C.Types                 (CInt)
 import           Linear.V2                       (V2(..))
 import qualified SDL
+import           Verda.Graphics.Sprites          (SpriteID)
 
-import           Kathu.App.Graphics.Image        (ImageID)
 import           Kathu.App.Graphics.ImageManager
 import           Kathu.Graphics.Drawable
 import           Verda.Util.Types                (clampBetween)
@@ -59,9 +59,9 @@ screenToWorldScale screenDim scale camX camY = \pos -> ((/logicScale) <$> (pos -
           shiftedCamera = V2 camX (camY - cameraShiftUp)
           halfScreenDim = (*0.5) <$> screenDim
 
-getImageID :: RenderSprite ImageID -> ImageID
-getImageID (RSStatic (StaticSprite !img _ _)) = img
-getImageID (RSAnimated !anim) = animAtlas . animation $ anim
+getSpriteID :: RenderSprite SpriteID -> SpriteID
+getSpriteID (RSStatic (StaticSprite !img _ _)) = img
+getSpriteID (RSAnimated !anim) = animAtlas . animation $ anim
 
 mkRenderRect :: (Floating a, RealFrac a) => a -> a -> V2 a -> SDL.Rectangle CInt -> SDL.Rectangle CInt
 mkRenderRect !bleed !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = mkRectWith round x' y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
@@ -72,7 +72,7 @@ mkRenderRectNoCenter :: (Floating a, RealFrac a) => a -> a -> V2 a -> SDL.Rectan
 mkRenderRectNoCenter !bleed !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = mkRectWith round x y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
     where y' = y - scale * fromIntegral h
 
-blitRenderSprite :: MonadIO m => SDL.Renderer -> ImageManager -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite ImageID -> m ()
+blitRenderSprite :: MonadIO m => SDL.Renderer -> ImageManager -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite SpriteID -> m ()
 blitRenderSprite !renderer !im !mkRect !ren = blit ren
     where draw !srcBnd !destBnd tex = SDL.copy renderer tex srcBnd (Just . mkRect $ destBnd)
           blit (RSStatic (StaticSprite !iid !bnd _)) = mapM_ (draw Nothing (SDL.Rectangle (SDL.P (V2 0 0)) bnd)) $ fetchTextures iid im

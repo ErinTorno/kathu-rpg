@@ -17,7 +17,6 @@ module Kathu.App.Graphics.ImageManager
     , loadPalettes
     , currentPalette
     , availablePaletteCount
-    , setWindowIcon
     ) where
 
 import           Apecs                       (SystemT, global)
@@ -38,16 +37,14 @@ import           Linear.V3                    (V3(..))
 import           Linear.V4                    (V4(..))
 import           SDL                          (($=))
 import qualified SDL
-import qualified SDL.Internal.Types           as SDLInternal
-import qualified SDL.Raw.Video                as SDLVRaw
 import qualified SDL.Raw.Types                as SDLRaw
-
-import           Kathu.App.Graphics.Image     (ImageID(..))
-import           Kathu.Entity.Time
 import           Verda.Graphics.Color
-import           Kathu.Graphics.Palette
+import           Verda.Graphics.Sprites       (SpriteID(..))
 import           Verda.Util.Apecs
 import           Verda.Util.Types             (Identifier, IDMap)
+
+import           Kathu.Entity.Time
+import           Kathu.Graphics.Palette
 
 -- Warning: most things in this class are private, and as it makes use of rather unsafe operations and mutability
 
@@ -154,8 +151,8 @@ currentPalette im = im^.currentSetIdx
 availablePaletteCount :: ImageManager -> Int
 availablePaletteCount im = im^.paletteSetCount
 
-fetchTextures :: ImageID -> ImageManager -> Vec.Vector SDL.Texture
-fetchTextures (ImageID iid) = textures . (Vec.!iid) . view textureSets
+fetchTextures :: SpriteID -> ImageManager -> Vec.Vector SDL.Texture
+fetchTextures (SpriteID iid) = textures . (Vec.!iid) . view textureSets
 
 loadPalettes :: MonadIO m => IDMap Palette -> ImageManager -> m ImageManager
 loadPalettes newPalettes im = liftIO (mapM updateSet . view textureSets $ im)
@@ -201,10 +198,6 @@ loadPalettes newPalettes im = liftIO (mapM updateSet . view textureSets $ im)
                               | otherwise          = pure pals -- just good friends :)
               where reqSlots = n * (paletteCount + 1)
                     palsLen  = UMVec.length pals
-
--- Not strictly ImageManager related, but this module is filled with almost all of the ugly dangerous SDL rendering functions
-setWindowIcon :: MonadIO m => SDL.Window -> SDL.Surface -> m ()
-setWindowIcon (SDLInternal.Window window) (SDL.Surface surPtr _) = SDLVRaw.setWindowIcon window surPtr
 
 -------------
 -- Warning --

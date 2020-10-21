@@ -2,8 +2,8 @@ module Kathu.App.Tools.EventQueue where
 
 import           Apecs
 import           Control.Concurrent.MVar
+import           Verda.Graphics.Sprites      (SpriteID)
 
-import           Kathu.App.Graphics.Image
 import           Kathu.App.System
 import           Kathu.App.Tools.ToolMode
 import           Kathu.World.Tile            (Tile)
@@ -13,16 +13,16 @@ import           Kathu.World.WorldSpace      (InstancedPrototype, WorldSpace)
 data AppEvent
     = TryToQuitGame
     | UseToolMode ToolMode
-    | SetSelectedTile (Tile ImageID)
-    | LoadWorldSpace  (WorldSpace ImageID)
+    | SetSelectedTile (Tile SpriteID)
+    | LoadWorldSpace  (WorldSpace SpriteID)
     | ToggleDebug
     | DestroyEntity Entity
-    | PlaceEntity (InstancedPrototype ImageID)
+    | PlaceEntity (InstancedPrototype SpriteID)
     | FinishEditingEntityInstance
 
 -- Events that the editor receives
 data EditorEvent
-    = EditEntityInstance Entity (InstancedPrototype ImageID)
+    = EditEntityInstance Entity (InstancedPrototype SpriteID)
 
 data EventQueue = EventQueue
     { entityWorld  :: !(MVar EntityWorld)

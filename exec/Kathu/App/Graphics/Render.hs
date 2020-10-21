@@ -11,11 +11,11 @@ import qualified Data.Vector.Mutable             as MVec
 import           Data.Word
 import           SDL                             (($=))
 import qualified SDL
+import           Verda.Graphics.Sprites          (SpriteID)
 
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Debug        (renderDebug)
 import           Kathu.App.Graphics.Drawing
-import           Kathu.App.Graphics.Image        (ImageID)
 import           Kathu.App.Graphics.ImageManager
 import           Kathu.App.Graphics.RenderBuffer
 import           Kathu.App.Graphics.UI
@@ -46,10 +46,10 @@ updateAnimations dT = do
     let updateFramesIfAnim (RSAnimated !anim) = RSAnimated $ updateFrames dT anim
         updateFramesIfAnim s                  = s
         -- just advances to next frame, no special animation-switching is needed
-        updateWithoutController :: (Render ImageID, Not ActionSet) -> Render ImageID
+        updateWithoutController :: (Render SpriteID, Not ActionSet) -> Render SpriteID
         updateWithoutController (Render sprites, _) = Render $ updateFramesIfAnim <$> sprites
         -- since this has actions, we also need to check and see if it should change animation states
-        updateAnimated :: (Render ImageID, ActionSet) -> Render ImageID
+        updateAnimated :: (Render SpriteID, ActionSet) -> Render SpriteID
         updateAnimated (Render sprites, ActionSet {_moving = m, _facingDirection = fac}) = Render $ updateEach <$> sprites
             where updateEach (RSAnimated anim)  = RSAnimated $ update m anim
                   updateEach s                  = s
@@ -67,7 +67,7 @@ updateAnimations dT = do
     cmap updateAnimated
 
     -- since tile graphics information isn't stored as entities, we instead just grab all tiles and update their animations
-    Tiles tileVector <- get global :: SystemT' IO (Tiles ImageID)
+    Tiles tileVector <- get global :: SystemT' IO (Tiles SpriteID)
     lift . forMVec tileVector $ over tileRender (\(Render frames) -> Render (updateFramesIfAnim <$> frames))
 
 ----------------------
@@ -84,10 +84,10 @@ runRender !renderer !renderBuffer !dT = do
     settings         <- get global
     Debug isDebug    <- get global
     Tiles tileVector <- get global
-    let getTile :: TileState -> SystemT' IO (Tile ImageID)
+    let getTile :: TileState -> SystemT' IO (Tile SpriteID)
         getTile = lift . MVec.read tileVector . fromIntegral .  unTileID . view tile
 
-    world :: WorldSpace ImageID <- get global
+    world :: WorldSpace SpriteID <- get global
     (Position (V2 camX camY), Camera zoomScale) <- fromMaybe (Position (V2 0 0), Camera 1) <$> getUnique
 
     -- clears background
@@ -112,7 +112,7 @@ runRender !renderer !renderBuffer !dT = do
         maxX = camX' + (0.5    * zoomScale * unitsPerWidth  + renderBorderUnits)
 
         -- adds to RenderBuffer and increments if judged to be drawable; expands the buffer if needed
-        addToBuffer :: Int -> Vector (RenderSprite ImageID) -> V2 Double -> SystemT' IO Int
+        addToBuffer :: Int -> Vector (RenderSprite SpriteID) -> V2 Double -> SystemT' IO Int
         addToBuffer !idx render !pos
             | isOffScreen pos = pure idx
             | otherwise       = lift $ do
@@ -132,7 +132,7 @@ runRender !renderer !renderBuffer !dT = do
             let (Render layers) = getTileRender t tileInst
              in addToBuffer i layers (worldCoordFromTileCoord fpos pos)
 
-        gatherEntityRender :: Int -> (Render ImageID, Position) -> SystemT' IO Int
+        gatherEntityRender :: Int -> (Render SpriteID, Position) -> SystemT' IO Int
         gatherEntityRender i (Render render, Position pos) = addToBuffer i render pos
 
         gatherTileRender :: Int -> SystemT' IO Int

@@ -6,11 +6,14 @@ import           Control.Lens
 import qualified Data.Map                   as Map
 import           Data.Maybe
 import qualified SDL
+import           Verda.Graphics.Sprites     (SpriteID)
+import           Verda.IO.Dictionary
+import           Verda.IO.Directory         (assetPath)
+import           Verda.Util.Types
 
 import           Kathu.Language
 import           Kathu.App.Data.KathuStore
 import           Kathu.App.Graphics.Font    (Font)
-import           Kathu.App.Graphics.Image   (ImageID)
 import           Kathu.App.Graphics.ImageManager (ImageManager, mkImageManager)
 import           Kathu.App.Graphics.UI
 import           Kathu.Entity.Item
@@ -19,20 +22,17 @@ import           Kathu.Entity.Prototype
 import           Kathu.Graphics.Palette     (Palette, paletteID)
 import           Kathu.World.Tile           hiding (Vector, MVector)
 import           Kathu.World.WorldSpace
-import           Verda.IO.Dictionary
-import           Verda.IO.Directory         (assetPath)
-import           Verda.Util.Types
 
 data Dictionary = Dictionary
     { _dictParsingStore    :: !KathuStore
-    , _dictItems           :: !(IDMap (Item ImageID))
+    , _dictItems           :: !(IDMap (Item SpriteID))
     , _dictFloorProperties :: !(IDMap FloorProperty)
     , _dictLanguages       :: !(IDMap (Language Font))
     , _dictPalettes        :: !(IDMap Palette)
-    , _dictPrototypes      :: !(IDMap (EntityPrototype ImageID))
-    , _dictTiles           :: !(IDMap (Tile ImageID))
+    , _dictPrototypes      :: !(IDMap (EntityPrototype SpriteID))
+    , _dictTiles           :: !(IDMap (Tile SpriteID))
     , _dictUIConfig        :: UIConfig
-    , _dictWorldSpaces     :: !(IDMap (WorldSpace ImageID))
+    , _dictWorldSpaces     :: !(IDMap (WorldSpace SpriteID))
     }
 makeLenses ''Dictionary
 
@@ -70,7 +70,7 @@ loadDictionary !renderer = do
         ]
     
     -- Construct SpriteManager for all loaded Surfaces
-    manager <- mkImageManager renderer (store^.psImages)
+    manager <- mkImageManager renderer (store^.psSurfaces)
     let dict' = dict
             { _dictParsingStore = store
             , _dictTiles = Map.insert "empty" emptyTile (dict^.dictTiles)

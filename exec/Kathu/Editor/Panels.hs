@@ -15,10 +15,10 @@ import           Data.Vector                (Vector)
 import qualified Data.Vector                as Vec
 import qualified GI.Gtk                     as Gtk
 import qualified GI.GdkPixbuf               as Gdk
+import           Verda.Graphics.Sprites     (SpriteID(..))
 
 import           Kathu.App.Data.Dictionary  (dictParsingStore, dictTiles)
 import           Kathu.App.Data.KathuStore  (psCountingIDs)
-import           Kathu.App.Graphics.Image   (ImageID(..))
 import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
 import           Kathu.Editor.Dialogs
@@ -59,23 +59,23 @@ mkTileSelectorPanel EditorState{eventQueue = queue} = do
     dictionary <- runWithEntityWorld queue $ Apecs.get Apecs.global
     let -- remove emptyTile, since it has no graphics and will error if we try to use them
         libTiles          = dictionary^.dictTiles.to (filter (\t -> t^.tileID /= emptyTileID) . Map.elems)
-        libTilesByImageID = Map.fromList . map (\t -> (getImageID t, t)) $ libTiles
+        libTilesBySpriteID = Map.fromList . map (\t -> (getSpriteID t, t)) $ libTiles
         
-        getImageID t      = t^.tileRender.to (Vec.head . getRenderGraphicsVector)
-        isTileImage imgID  = Map.member imgID libTilesByImageID
+        getSpriteID t      = t^.tileRender.to (Vec.head . getRenderGraphicsVector)
+        isTileImage imgID  = Map.member imgID libTilesBySpriteID
 
-        tileImageCounting = dictionary^.dictParsingStore.psCountingIDs.to ((Map.! "ImageID") . unCounting)
+        tileImageCounting = dictionary^.dictParsingStore.psCountingIDs.to ((Map.! "SpriteID") . unCounting)
 
         tileImagePaths    = Map.fromList $ Map.foldlWithKey' appendIfTileImage [] tileImageCounting
         appendIfTileImage acc path idx
             | isTileImage imgID = (imgID, path):acc
             | otherwise         = acc
-            where imgID = ImageID $ fromIntegral idx
+            where imgID = SpriteID $ fromIntegral idx
 
     emptyTileIcon <- mkTileIcon "./assets/editor/empty-tile-icon.png"
     tileIcons     <- mapM mkTileIcon tileImagePaths
 
-    let tileIconPairs = (emptyTile, emptyTileIcon) : Map.foldlWithKey' addPair [] libTilesByImageID
+    let tileIconPairs = (emptyTile, emptyTileIcon) : Map.foldlWithKey' addPair [] libTilesBySpriteID
         -- don't add tiles without any found sprites
         addPair acc imgID tile = case Map.lookup imgID tileIcons of
             Just icon -> (tile, icon):acc
@@ -140,7 +140,7 @@ mkWorldSpaceToolbar EditorState{eventQueue = queue, resources = res} = do
     pure toolbar
 
 -- | Creates a row that shows the script file, and has a button to edit or delete the script
-mkScriptPropertyRow :: Resources -> PropertyRowAdder (WorldSpace ImageID)
+mkScriptPropertyRow :: Resources -> PropertyRowAdder (WorldSpace SpriteID)
 mkScriptPropertyRow res rowNum grid wsRef = do
     box <- new Gtk.Box [#orientation := Gtk.OrientationHorizontal]
 

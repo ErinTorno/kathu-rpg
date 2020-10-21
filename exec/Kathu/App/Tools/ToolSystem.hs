@@ -17,11 +17,11 @@ import           Data.Word
 import qualified Data.Vector                 as Vec
 import qualified SDL
 import           Verda.Event.Controls
+import           Verda.Graphics.Sprites      (SpriteID)
 
 import           Kathu.App.Data.Dictionary
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Drawing
-import           Kathu.App.Graphics.Image    (ImageID)
 import           Kathu.App.System
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
@@ -237,7 +237,7 @@ destroyEntityInfoCollisions =
 
 buildEntityInfoCollisions :: SystemT' IO ()
 buildEntityInfoCollisions = do
-    cmapM_ $ \(Render sprites :: Render ImageID, _ :: EditorInstancedFromWorld ImageID, ety) ->
+    cmapM_ $ \(Render sprites :: Render SpriteID, _ :: EditorInstancedFromWorld SpriteID, ety) ->
         let area (V2 x y) = x * y
             foldMaxArea maxVec sprite = let (# _, bounds #) = currentBounds sprite in if area maxVec < area bounds then bounds else maxVec
             (V2 mx my)       = (/pixelsPerUnit) . fromIntegral <$> Vec.foldl' foldMaxArea (V2 2 2) sprites
@@ -249,7 +249,7 @@ buildEntityInfoCollisions = do
 -- TilePlacer --
 ----------------
 
-runTilePlaceCommand :: CommandState -> Tile ImageID -> V2 Int -> SystemT' IO ()
+runTilePlaceCommand :: CommandState -> Tile SpriteID -> V2 Int -> SystemT' IO ()
 runTilePlaceCommand commandSt sTile hoveredTilePos = do
     controlSt    <- get global
     shiftSt      <- getInputState controlSt $ fromScanCode SDL.ScancodeLShift
@@ -272,7 +272,7 @@ runTilePlaceCommand commandSt sTile hoveredTilePos = do
                 command <- mkSingleTilePlaceCommand hoveredTilePos sTile prevTileSt
                 runCommand commandSt command
 
-mkSingleTilePlaceCommand :: V2 Int -> Tile ImageID -> TileState -> SystemT' IO Command
+mkSingleTilePlaceCommand :: V2 Int -> Tile SpriteID -> TileState -> SystemT' IO Command
 mkSingleTilePlaceCommand hoveredTilePos sTile prevTileSt = do
     maybeLastPos <- lastPlacedTilePos <$> get global
 
@@ -287,7 +287,7 @@ mkSingleTilePlaceCommand hoveredTilePos sTile prevTileSt = do
             global     $= univToolSt {lastPlacedTilePos = maybeLastPos}
         }
 
-mkLineTilePlaceCommand :: V2 Int -> V2 Int -> Tile ImageID -> SystemT' IO Command
+mkLineTilePlaceCommand :: V2 Int -> V2 Int -> Tile SpriteID -> SystemT' IO Command
 mkLineTilePlaceCommand lastPos hoveredTilePos sTile = do
     worldspace <- get global
     prevTileSt <- replicateLineM lastPos hoveredTilePos (\pos -> (,pos) <$> getTileState worldspace pos)
@@ -340,10 +340,10 @@ placeTileState :: TileState -> V2 Int -> SystemT' IO ()
 placeTileState tilest pos = do
     let fieldPos    = fieldContainingCoordV2 ((fromIntegral <$> pos) :: V2 Double)
         relativePos = localCoordFromGlobalV2 pos
-    field    <- mkFieldIfNotPresent (Proxy :: Proxy ImageID) fieldPos
+    field    <- mkFieldIfNotPresent (Proxy :: Proxy SpriteID) fieldPos
     setTileStateV2 relativePos tilest field
 
-getTileState :: WorldSpace ImageID -> V2 Int -> SystemT' IO TileState
+getTileState :: WorldSpace SpriteID -> V2 Int -> SystemT' IO TileState
 getTileState worldspace pos =
     let fieldPos    = fieldContainingCoordV2 ((fromIntegral <$> pos) :: V2 Double)
         relativePos = localCoordFromGlobalV2 pos

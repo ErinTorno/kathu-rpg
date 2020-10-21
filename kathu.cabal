@@ -120,7 +120,6 @@ executable kathu
                     Kathu.App.Graphics.Debug
                     Kathu.App.Graphics.Drawing
                     Kathu.App.Graphics.Font
-                    Kathu.App.Graphics.Image
                     Kathu.App.Graphics.ImageManager
                     Kathu.App.Graphics.Render
                     Kathu.App.Graphics.RenderBuffer

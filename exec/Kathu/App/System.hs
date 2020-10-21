@@ -9,11 +9,11 @@ import           Apecs
 import           Apecs.Physics
 import           Control.Monad                   (void)
 import           Verda.Event.Controls
+import           Verda.Graphics.Sprites          (SpriteID)
 
 import           Kathu.App.Data.Dictionary       (Dictionary, emptyDictionary)
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Font
-import           Kathu.App.Graphics.Image        (ImageID)
 import           Kathu.App.Graphics.ImageManager
 import           Kathu.App.Graphics.UI
 import           Kathu.App.Tools.ToolMode
@@ -40,13 +40,13 @@ import           Kathu.World.Time                (WorldTime)
 import           Kathu.World.WorldSpace          (EditorInstancedFromWorld, WorldSpace, emptyWorldSpace)
 import           Verda.Util.Apecs
 
-type Inventory' = Inventory ImageID
+type Inventory' = Inventory SpriteID
 instance Component Inventory' where type Storage Inventory' = Map Inventory'
 
-type Render' = Render ImageID
+type Render' = Render SpriteID
 instance Component Render' where type Storage Render' = Map Render'
 
-type EditorInstancedFromWorld' = EditorInstancedFromWorld ImageID
+type EditorInstancedFromWorld' = EditorInstancedFromWorld SpriteID
 
 -- ECS Util
 -- selects all unique and non-unique components that an individual entity might have
@@ -66,7 +66,7 @@ instance Semigroup ShouldQuit where (<>) = mappend
 instance Monoid ShouldQuit where mempty = ShouldQuit False
 instance Component ShouldQuit where type Storage ShouldQuit = Global ShouldQuit
 
-type Tiles' = Tiles ImageID
+type Tiles' = Tiles SpriteID
 instance Semigroup Tiles' where (<>) = mappend
 instance Monoid Tiles' where mempty  = error "Attempted to use Tiles before it has been loaded"
 instance Component Tiles' where type Storage Tiles' = Global Tiles'
@@ -87,7 +87,7 @@ instance Semigroup UIConfig where (<>) = mappend
 instance Monoid UIConfig where mempty = error "Attempted to use UIConfig before it has been loaded"
 instance Component UIConfig where type Storage UIConfig = Global UIConfig
 
-type WorldSpace' = WorldSpace ImageID
+type WorldSpace' = WorldSpace SpriteID
 instance Semigroup WorldSpace'  where (<>) = mappend
 instance Monoid WorldSpace'  where mempty = emptyWorldSpace
 instance Component WorldSpace'  where type Storage WorldSpace'  = Global WorldSpace'
@@ -127,7 +127,7 @@ type SystemT' m a = SystemT EntityWorld m a
 
 -- Entity functions
 
-externalFunctions :: Lua.ExternalFunctions EntityWorld ImageID
+externalFunctions :: Lua.ExternalFunctions EntityWorld SpriteID
 externalFunctions = Lua.ExternalFunctions
     { Lua.setPalette         = setPaletteManager
     , Lua.getEntityPrototype = error "getEntityPrototype not implemented"
@@ -141,7 +141,7 @@ destroyEntity ety = do
     
     destroy ety (Proxy @AllComponents)
 
-newFromPrototypeWithScriptMapping :: (ActiveScript -> ActiveScript) -> EntityPrototype ImageID -> SystemT' IO Entity
+newFromPrototypeWithScriptMapping :: (ActiveScript -> ActiveScript) -> EntityPrototype SpriteID -> SystemT' IO Entity
 newFromPrototypeWithScriptMapping f proto = do
     ety <- newFromSimplePrototype proto
 
@@ -152,5 +152,5 @@ newFromPrototypeWithScriptMapping f proto = do
 
     return ety
 
-newFromPrototype :: EntityPrototype ImageID -> SystemT' IO Entity
+newFromPrototype :: EntityPrototype SpriteID -> SystemT' IO Entity
 newFromPrototype = newFromPrototypeWithScriptMapping id

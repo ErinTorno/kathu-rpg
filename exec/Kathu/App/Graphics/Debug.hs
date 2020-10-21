@@ -8,9 +8,9 @@ import qualified Data.Text                       as T
 import qualified Data.Vector.Storable            as SVec
 import           SDL                             (($=))
 import qualified SDL
+import           Verda.Graphics.Sprites          (SpriteID)
 
 import           Kathu.App.Graphics.Font         (defaultFont, renderText)
-import           Kathu.App.Graphics.Image        (ImageID)
 import           Kathu.App.Graphics.ImageManager (currentPalette)
 import           Kathu.App.System                (SystemT')
 import           Kathu.App.Tools.ToolMode        (isNoTool)
@@ -60,7 +60,7 @@ renderDebug renderer logicToRenderPos = do
 
 renderDebugText :: SDL.Renderer -> SystemT' IO ()
 renderDebugText renderer = do
-    world :: WorldSpace ImageID <- get global
+    world :: WorldSpace SpriteID <- get global
     manager <- get global
     (V2 camX camY, cZoom) <- cfold (\_ (Position pos, Camera z) -> (pos, z)) (V2 0 0, 1)
 

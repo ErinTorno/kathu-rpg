@@ -17,13 +17,13 @@ import qualified SDL.Raw.Enum                    as SDLRaw
 import qualified SDL.Video                       as SDLV
 import qualified System.Random                   as R
 import           Verda.Event.Controls            (mkControlState)
+import           Verda.Graphics.Icons            (setWindowIcon)
 import           Verda.Util.Containers           (fromJustElseError)
 import           Verda.Util.Types                (unID)
 
 import           Kathu.App.Data.Dictionary
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Font         (initFontCache)
-import           Kathu.App.Graphics.ImageManager
 import           Kathu.App.Graphics.UI
 import           Kathu.App.System
 import           Kathu.App.World                 (loadWorldSpace)

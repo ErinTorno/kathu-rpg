@@ -16,6 +16,7 @@ library
   exposed-modules:  Verda.Event.Controls
                     -- Graphics
                     Verda.Graphics.Color
+                    Verda.Graphics.Icons
                     Verda.Graphics.Sprites
                     -- IO
                     Verda.IO.Dictionary

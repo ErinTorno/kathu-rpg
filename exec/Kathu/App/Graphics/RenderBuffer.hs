@@ -6,11 +6,11 @@ import           Data.Vector.Algorithms.Intro (sortByBounds)
 import           Data.Vector.Mutable          (IOVector)
 import qualified Data.Vector.Mutable          as MVec
 import           Linear.V2                    (V2(..))
+import           Verda.Graphics.Sprites       (SpriteID)
 
-import           Kathu.App.Graphics.Image     (ImageID)
 import           Kathu.Graphics.Drawable      (RenderSprite, spriteLayer)
 
-type RenderBufferElement = (V2 Double, RenderSprite ImageID)
+type RenderBufferElement = (V2 Double, RenderSprite SpriteID)
 
 -- | This stores each sprite to draw and its properties, which will be sorted before drawing for y depth
 type RenderBuffer = IORef (IOVector RenderBufferElement)

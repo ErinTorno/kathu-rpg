@@ -8,8 +8,8 @@ import           Data.IORef
 import           Data.Text                  (Text)
 import           Data.Vector                (Vector)
 import qualified GI.Gtk                     as Gtk
+import           Verda.Graphics.Sprites     (SpriteID)
 
-import           Kathu.App.Graphics.Image
 import           Kathu.App.Tools.EventQueue
 import           Kathu.Editor.Resources     (Resources)
 import           Kathu.Entity.Prototype     (getPrototypeID)
@@ -29,20 +29,20 @@ type DialogRunner a = (a -> IO ()) -- result consumer
 data InstancedEntityConfig = InstancedEntityConfig
     { _iecOriginalEntity     :: !(Maybe Entity)
     , _iecPrototypeID        :: !Identifier
-    , _iecInstancedPrototype :: !(InstancedPrototype ImageID)
+    , _iecInstancedPrototype :: !(InstancedPrototype SpriteID)
     }
 makeLenses ''InstancedEntityConfig
 
 emptyInstancedEntityConfig :: InstancedEntityConfig
 emptyInstancedEntityConfig = InstancedEntityConfig Nothing "" emptyInstancedPrototype
 
-mkInstancedEntityConfig :: Entity -> InstancedPrototype ImageID -> InstancedEntityConfig
+mkInstancedEntityConfig :: Entity -> InstancedPrototype SpriteID -> InstancedEntityConfig
 mkInstancedEntityConfig ety proto = InstancedEntityConfig (Just ety) protoID proto
     where protoID = proto^.basePrototype.to getPrototypeID
 
 data WSEditState = WSEditState
-    { worldspaceRef :: !(IORef (WorldSpace ImageID))
-    , wsProperties  :: !(Vector (EditableProperty (WorldSpace ImageID)))
+    { worldspaceRef :: !(IORef (WorldSpace SpriteID))
+    , wsProperties  :: !(Vector (EditableProperty (WorldSpace SpriteID)))
     , wsFilePath    :: !(Maybe FilePath)
     }
 

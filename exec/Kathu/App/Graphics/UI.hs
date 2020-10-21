@@ -12,9 +12,10 @@ import           Data.Fixed (divMod')
 import           Data.Functor.Compose (getCompose)
 import           Linear.V2 (V2(..))
 import qualified SDL
+import           Verda.Graphics.Icons            (Icon)
+import           Verda.Graphics.Sprites          (SpriteID)
 
 import           Kathu.App.Graphics.Drawing
-import           Kathu.App.Graphics.Image
 import           Kathu.App.Graphics.ImageManager
 import           Kathu.Entity.ActorState
 import           Kathu.Entity.Resource
@@ -27,27 +28,27 @@ data DisplayBar = DisplayBar
     -- for every N points that this bar measures, there will be a new unit of the image
     , pointsPerUnit   :: Double
     -- if present this will be drawn at the start and end of the bar
-    , barCapBeginning :: Maybe (RenderSprite ImageID)
-    , barCapEnding    :: Maybe (RenderSprite ImageID)
+    , barCapBeginning :: Maybe (RenderSprite SpriteID)
+    , barCapEnding    :: Maybe (RenderSprite SpriteID)
     , capWidth        :: Double
     , primaryWidth    :: Double
     , secondaryWidth  :: Double
-    , primaryFull     :: RenderSprite ImageID
-    , primary3Q       :: RenderSprite ImageID
-    , primaryHalf     :: RenderSprite ImageID
-    , primary1Q       :: RenderSprite ImageID
-    , secondaryFull   :: RenderSprite ImageID
-    , secondaryEmpty  :: RenderSprite ImageID
+    , primaryFull     :: RenderSprite SpriteID
+    , primary3Q       :: RenderSprite SpriteID
+    , primaryHalf     :: RenderSprite SpriteID
+    , primary1Q       :: RenderSprite SpriteID
+    , secondaryFull   :: RenderSprite SpriteID
+    , secondaryEmpty  :: RenderSprite SpriteID
     }
 
 data UIConfig = UIConfig
     { isEnabled :: Bool
-    , gameIcon  :: Image -- Not just ImageID, as this is stored differently to allow SDL to use its pixels as the icon
+    , gameIcon  :: Icon
     , healthBar :: DisplayBar
     , manaBar   :: DisplayBar
     }
 
-instance (FromJSON (Dependency s m (RenderSprite ImageID)), Monad m) => FromJSON (Dependency s m DisplayBar) where
+instance (FromJSON (Dependency s m (RenderSprite SpriteID)), Monad m) => FromJSON (Dependency s m DisplayBar) where
     parseJSON (Object v) = getCompose $ DisplayBar
         <$> v .:^ "starts-at"
         <*> v .:^ "points-per-part"
@@ -59,9 +60,9 @@ instance (FromJSON (Dependency s m (RenderSprite ImageID)), Monad m) => FromJSON
         <*> v .:- "secondary-full" <*> v .:- "secondary-empty"
     parseJSON v = typeMismatch "DisplayBar" v
 
-instance ( FromJSON (Dependency s m (RenderSprite ImageID))
-         , FromJSON (Dependency s m Image)
-         , FromJSON (Dependency s m ImageID)
+instance ( FromJSON (Dependency s m (RenderSprite SpriteID))
+         , FromJSON (Dependency s m Icon)
+         , FromJSON (Dependency s m SpriteID)
          , Monad m
          ) => FromJSON (Dependency s m UIConfig) where
     parseJSON (Object v) = getCompose $ UIConfig True

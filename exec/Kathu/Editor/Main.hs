@@ -19,10 +19,10 @@ import qualified GI.GLib                    as GLib
 import qualified GI.Gtk                     as Gtk
 import qualified SDL
 import           System.FilePath            (takeFileName)
+import           Verda.Graphics.Sprites     (SpriteID)
 
 import qualified Kathu.App.Main             as Kathu
 import           Kathu.App.Data.Settings
-import           Kathu.App.Graphics.Image
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
 import           Kathu.Editor.Dialogs
@@ -68,7 +68,7 @@ onFileLoad es@EditorState{eventQueue = queue, wsEditState = wsEditStRef} maybeFi
 
         setActiveWorldSpace es (T.pack $ takeFileName f) ws
 
-setActiveWorldSpace :: EditorState -> Text -> WorldSpace ImageID -> IO ()
+setActiveWorldSpace :: EditorState -> Text -> WorldSpace SpriteID -> IO ()
 setActiveWorldSpace EditorState{editorWindow = window, eventQueue = queue, wsEditState = wsStateRef} name worldspace = do
     let windowName = T.concat [Kathu.appName, " ~ ", name]
     set window [#title := windowName]

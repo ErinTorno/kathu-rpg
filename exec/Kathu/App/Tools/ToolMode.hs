@@ -3,8 +3,8 @@ module Kathu.App.Tools.ToolMode where
 import Apecs
 import Data.Word
 import Linear.V2                (V2(..))
+import Verda.Graphics.Sprites   (SpriteID)
 
-import Kathu.App.Graphics.Image (ImageID)
 import Kathu.World.Tile
 
 newtype TilePlacerState = TilePlacerState {tileSelectorEty :: Maybe Entity}
@@ -47,7 +47,7 @@ isSameMode _            _            = False
 
 data ToolModeUniversalState = ToolModeUniversalState
     { lastPlacedTilePos     :: !(Maybe (V2 Int))
-    , selectedTile          :: !(Tile ImageID)
+    , selectedTile          :: !(Tile SpriteID)
     , lastUndoRedoTime      :: !Word32
     , canEditEntityInstance :: !Bool
     }
