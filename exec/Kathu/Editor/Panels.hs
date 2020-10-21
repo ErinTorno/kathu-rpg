@@ -17,7 +17,7 @@ import qualified GI.Gtk                     as Gtk
 import qualified GI.GdkPixbuf               as Gdk
 
 import           Kathu.App.Data.Dictionary  (dictParsingStore, dictTiles)
-import           Kathu.App.Data.KathuStore  (countingIDs)
+import           Kathu.App.Data.KathuStore  (psCountingIDs)
 import           Kathu.App.Graphics.Image   (ImageID(..))
 import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
@@ -64,7 +64,7 @@ mkTileSelectorPanel EditorState{eventQueue = queue} = do
         getImageID t      = t^.tileRender.to (Vec.head . getRenderGraphicsVector)
         isTileImage imgID  = Map.member imgID libTilesByImageID
 
-        tileImageCounting = dictionary^.dictParsingStore.countingIDs.to ((Map.! "ImageID") . unCounting)
+        tileImageCounting = dictionary^.dictParsingStore.psCountingIDs.to ((Map.! "ImageID") . unCounting)
 
         tileImagePaths    = Map.fromList $ Map.foldlWithKey' appendIfTileImage [] tileImageCounting
         appendIfTileImage acc path idx

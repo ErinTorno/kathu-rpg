@@ -7,9 +7,12 @@ import           Data.Text                 (Text)
 import           Foreign.Lua
 import           Linear.V2                 (V2(..))
 import qualified System.Random             as R
+import           Verda.Event.Controls      (CursorMotionState, cursorPosition)
+import           Verda.Util.Containers     (fromJustElseError)
+import           Verda.Util.Types
+import           Verda.Util.Apecs
 
 import           Kathu.Entity.Components
-import           Kathu.Entity.Cursor
 import           Kathu.Entity.Logger
 import           Kathu.Entity.System
 import           Kathu.Entity.Time
@@ -17,9 +20,6 @@ import           Kathu.Graphics.Camera
 import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
-import           Verda.Util.Containers     (fromJustElseError)
-import           Verda.Util.Types
-import           Verda.Util.Apecs
 
 registerGlobalFunctions :: forall w g. (ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Debug, Local, Logger, LogicTime, Random, RenderTime, RunningScriptEntity, ScriptEventBuffer, Variables]) => w -> ExternalFunctions w g -> Lua ()
 registerGlobalFunctions world extFuns = do

@@ -16,8 +16,8 @@ import qualified Data.Map                    as Map
 import           Data.Word
 import qualified Data.Vector                 as Vec
 import qualified SDL
+import           Verda.Event.Controls
 
-import           Kathu.App.Data.Controls
 import           Kathu.App.Data.Dictionary
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Drawing
@@ -28,7 +28,6 @@ import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
 import           Kathu.App.World
 import           Kathu.Entity.Components
-import           Kathu.Entity.Cursor
 import           Kathu.Entity.Logger
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Time

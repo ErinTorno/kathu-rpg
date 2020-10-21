@@ -4,7 +4,7 @@ module Kathu.App.Init
     , sdlWindowConfig
     ) where
 
-import           Apecs                           hiding (get)
+import           Apecs
 import           Apecs.Physics
 import           Control.Lens                    hiding (Identity)
 import           Control.Monad                   (void)
@@ -16,8 +16,10 @@ import qualified SDL.Raw.Basic                   as SDLRaw
 import qualified SDL.Raw.Enum                    as SDLRaw
 import qualified SDL.Video                       as SDLV
 import qualified System.Random                   as R
+import           Verda.Event.Controls            (mkControlState)
+import           Verda.Util.Containers           (fromJustElseError)
+import           Verda.Util.Types                (unID)
 
-import           Kathu.App.Data.Controls
 import           Kathu.App.Data.Dictionary
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Font         (initFontCache)
@@ -34,9 +36,7 @@ import           Kathu.Graphics.Camera
 import           Kathu.Language
 import           Kathu.Scripting.Lua             (initScripting)
 import           Kathu.Scripting.Variables       (initVariables)
-import           Verda.Util.Containers           (fromJustElseError)
 import           Kathu.World.WorldSpace          (emptyWorldSpace)
-import           Verda.Util.Types                (unID)
 
 entityWorld :: IO EntityWorld
 entityWorld = initEntityWorld

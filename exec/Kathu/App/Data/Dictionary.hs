@@ -70,7 +70,7 @@ loadDictionary !renderer = do
         ]
     
     -- Construct SpriteManager for all loaded Surfaces
-    manager <- mkImageManager renderer (store^.plImages)
+    manager <- mkImageManager renderer (store^.psImages)
     let dict' = dict
             { _dictParsingStore = store
             , _dictTiles = Map.insert "empty" emptyTile (dict^.dictTiles)

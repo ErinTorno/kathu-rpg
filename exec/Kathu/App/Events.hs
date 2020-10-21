@@ -1,12 +1,15 @@
 module Kathu.App.Events (runEvents) where
 
-import           Apecs                           hiding (set)
+import           Apecs
 import           Apecs.Physics
 import           Control.Lens                    hiding (Identity)
 import           Control.Monad                   (void, when)
 import           Data.Maybe                      (fromMaybe)
 import qualified Data.Text.IO                    as T
 import qualified SDL
+import           Verda.Event.Controls
+import           Verda.Util.Apecs
+import           Verda.Util.Types
 
 import           Kathu.App.Data.Controls
 import           Kathu.App.Data.Settings
@@ -15,12 +18,9 @@ import           Kathu.App.Graphics.ImageManager (nextPaletteManager, setPalette
 import           Kathu.App.System
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
-import           Kathu.Entity.Cursor
 import           Kathu.Entity.System
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
-import           Verda.Util.Apecs
-import           Verda.Util.Types
 
 runEvents :: System' ()
 runEvents = do

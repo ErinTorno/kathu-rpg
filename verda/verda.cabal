@@ -13,12 +13,14 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 
 library
-  exposed-modules:  Verda.IO.Dictionary
-                    Verda.IO.Directory
-                    Verda.IO.Files
+  exposed-modules:  Verda.Event.Controls
                     -- Graphics
                     Verda.Graphics.Color
                     Verda.Graphics.Sprites
+                    -- IO
+                    Verda.IO.Dictionary
+                    Verda.IO.Directory
+                    Verda.IO.Files
                     -- Parsing
                     Verda.Parsing.Aeson
                     Verda.Parsing.Counting

@@ -48,7 +48,6 @@ library
                     Kathu.Entity.Action
                     Kathu.Entity.ActorState
                     Kathu.Entity.Components
-                    Kathu.Entity.Cursor
                     Kathu.Entity.Damage
                     Kathu.Entity.Item
                     Kathu.Entity.LifeTime

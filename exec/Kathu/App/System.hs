@@ -8,8 +8,8 @@ module Kathu.App.System where
 import           Apecs
 import           Apecs.Physics
 import           Control.Monad                   (void)
+import           Verda.Event.Controls
 
-import           Kathu.App.Data.Controls
 import           Kathu.App.Data.Dictionary       (Dictionary, emptyDictionary)
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Font
@@ -20,7 +20,6 @@ import           Kathu.App.Tools.ToolMode
 import           Kathu.Entity.Action
 import           Kathu.Entity.ActorState
 import           Kathu.Entity.Components
-import           Kathu.Entity.Cursor
 import           Kathu.Entity.Item               (Inventory)
 import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Logger
@@ -75,10 +74,6 @@ instance Component Tiles' where type Storage Tiles' = Global Tiles'
 instance Semigroup Settings where (<>) = mappend
 instance Monoid Settings where mempty = defaultSettings
 instance Component Settings where type Storage Settings = Global Settings
-
-instance Semigroup ControlState where (<>) = mappend
-instance Monoid ControlState where mempty = error "Attempted to use ControlState before it has been loaded"
-instance Component ControlState where type Storage ControlState = Global ControlState
 
 instance Semigroup ImageManager where (<>) = mappend
 instance Monoid ImageManager where mempty = defaultImageManager

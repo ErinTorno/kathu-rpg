@@ -25,9 +25,11 @@ import qualified Data.Vector                       as Vec
 import           Foreign.Lua                       hiding (call, error)
 import qualified Foreign.Lua.Core                  as Lua
 import qualified Foreign.Lua.FunctionCalling       as Lua
+import           Verda.Event.Controls              (CursorMotionState)
+import           Verda.Util.Types
+import           Verda.Util.Apecs
 
 import           Kathu.Entity.Components
-import           Kathu.Entity.Cursor
 import           Kathu.Entity.Logger
 import           Kathu.Entity.System
 import           Kathu.Entity.Time
@@ -40,8 +42,6 @@ import           Kathu.Scripting.Lua.Global
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
 import           Kathu.Scripting.Wire
-import           Verda.Util.Types
-import           Verda.Util.Apecs
 
 type HasScripting w m = ReadWriteEach w m [ActiveScript, RunningScriptEntity, ScriptBank, ScriptEventBuffer, WireReceivers]
 
