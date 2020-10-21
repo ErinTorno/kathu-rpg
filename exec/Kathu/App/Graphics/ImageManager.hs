@@ -44,7 +44,7 @@ import qualified SDL.Raw.Types                as SDLRaw
 
 import           Kathu.App.Graphics.Image     (ImageID(..))
 import           Kathu.Entity.Time
-import           Kathu.Graphics.Color
+import           Verda.Graphics.Color
 import           Kathu.Graphics.Palette
 import           Verda.Util.Apecs
 import           Verda.Util.Types             (Identifier, IDMap)
@@ -181,12 +181,12 @@ loadPalettes newPalettes im = liftIO (mapM updateSet . view textureSets $ im)
           -- If shader is Nothing, we write base palette into slots; otherwise we write the value yielded from passing each color into the shader function
           writeNewCols :: UVec.Vector Color -> UMVec.IOVector Color -> Int -> (Palette, [Color]) -> IO Int
           writeNewCols basePal pals i (pal, bkgs) = case pal of
-              (SPalette (StaticPalette bkg (Shader shdr))) -> UVec.foldM (writeFrame pals bkg shdr) i basePal
-              (APalette animPalette)                       -> fmap (const $ i + length bkgs * UVec.length basePal)
-                                                            . Vec.foldM_ (\off cols -> writeAnimFrame (UVec.length basePal) pals (i + off) cols >> pure (off + 1)) 0
-                                                            . Vec.map (applyAnimPalette bkgs animPalette)
-                                                            . Vec.convert
-                                                            $ basePal
+              (SPalette _ (StaticPalette bkg (Shader shdr))) -> UVec.foldM (writeFrame pals bkg shdr) i basePal
+              (APalette _ animPalette)                       -> fmap (const $ i + length bkgs * UVec.length basePal)
+                                                              . Vec.foldM_ (\off cols -> writeAnimFrame (UVec.length basePal) pals (i + off) cols >> pure (off + 1)) 0
+                                                              . Vec.map (applyAnimPalette bkgs animPalette)
+                                                              . Vec.convert
+                                                              $ basePal
           applyAnimPalette :: [Color] -> AnimatedPalette -> Color -> [Color]
           applyAnimPalette bkgs pal col | col == backgroundMask = bkgs
                                         | otherwise             = applyAnimatedPalette pal col

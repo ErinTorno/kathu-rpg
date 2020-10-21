@@ -10,7 +10,7 @@ import           GHC.Generics
 import           Linear.V2
 
 import           Kathu.App.Data.Controls
-import           Kathu.IO.File
+import           Verda.IO.Files
 import           Verda.Parsing.Aeson
 import           Verda.Util.Types        (Identifier)
 

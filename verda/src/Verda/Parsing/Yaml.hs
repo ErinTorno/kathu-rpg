@@ -1,4 +1,4 @@
-module Kathu.Parsing.Yaml where
+module Verda.Parsing.Yaml where
 
 import           Prelude               hiding (null)
 

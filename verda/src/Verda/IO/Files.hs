@@ -1,4 +1,4 @@
-module Kathu.IO.File where
+module Verda.IO.Files where
 
 import           Control.Monad.State
 import           Data.Aeson
@@ -13,7 +13,7 @@ import           System.Directory
 import           System.FilePath
 
 import           Verda.IO.Directory
-import qualified Kathu.Parsing.Yaml         as Yaml
+import qualified Verda.Parsing.Yaml         as Yaml
 import           Verda.Util.Dependency
 import           Verda.Util.Flow            (partitionM)
 

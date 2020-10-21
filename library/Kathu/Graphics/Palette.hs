@@ -12,6 +12,7 @@ module Kathu.Graphics.Palette
     , applyAnimatedPalette
     , composeShaders
     , emptyPalette
+    , paletteID
     , allBackgrounds
     , staticManager
     , animatedManager
@@ -31,7 +32,7 @@ import qualified Data.Vector           as Vec
 import           Data.Word
 
 import           Kathu.Entity.Time
-import           Kathu.Graphics.Color
+import           Verda.Graphics.Color
 import           Verda.Util.Dependency
 import           Verda.Util.Types
     
@@ -72,10 +73,14 @@ interpolateAnimatedColors getCol (AnimatedPalette frames delay dur _ intrp) = fr
               else               -- blends between the two boundary colors found
                   pure $ intrp (fromIntegral (tcur - ti) / fromIntegral (tf - ti)) coli colf
 
-data Palette = SPalette StaticPalette | APalette AnimatedPalette
+data Palette = SPalette Identifier StaticPalette | APalette Identifier AnimatedPalette
 
 emptyPalette :: Palette
-emptyPalette = SPalette $ StaticPalette black (Shader id)
+emptyPalette = SPalette "" $ StaticPalette black (Shader id)
+
+paletteID :: Palette -> Identifier
+paletteID (SPalette idt _) = idt
+paletteID (APalette idt _) = idt
 
 newtype Shader = Shader {unShader :: Color -> Color}
 
@@ -83,8 +88,8 @@ composeShaders :: Foldable f => f Shader -> Shader
 composeShaders = Shader . foldl' (\acc -> (.acc) . unShader) id
 
 allBackgrounds :: Palette -> [Color]
-allBackgrounds (SPalette spal) = pure . background $ spal
-allBackgrounds (APalette apal) = animatedPaletteBackgrounds apal
+allBackgrounds (SPalette _ spal) = pure . background $ spal
+allBackgrounds (APalette _ apal) = animatedPaletteBackgrounds apal
 
 instance FromJSON CycleEnd where
     parseJSON (String "restart") = pure Restart
@@ -118,15 +123,12 @@ instance FromJSON AnimatedPalette where
 
 instance FromJSON Palette where
     parseJSON o@(Object v) = v .:? "cycle-duration" >>= \case
-        (Just (_ :: Int)) -> APalette <$> parseJSON o -- if there is a duration, this must be animated, so we parse as such
-        Nothing           -> SPalette <$> parseJSON o -- otherwise we parse as static
+        (Just (_ :: Int)) -> APalette <$> v .: "palette-id" <*> parseJSON o -- if there is a duration, this must be animated, so we parse as such
+        Nothing           -> SPalette <$> v .: "palette-id" <*> parseJSON o -- otherwise we parse as static
     parseJSON e            = typeMismatch "Palette" e
 
 instance (s `CanStore` IDMap Palette, Monad m) => FromJSON (Dependency s m Palette) where
-    parseJSON obj@(Object v) = do
-        paletteID :: Identifier <- v .: "palette-id"
-        palette                 <- parseJSON obj
-        pure $ storeWithKeyFn (const paletteID) palette
+    parseJSON obj@(Object _) = storeWithKeyFn paletteID <$> parseJSON obj
     parseJSON e = typeMismatch "Palette" e
 
 instance FromJSON Shader where
@@ -200,6 +202,6 @@ animatedManager conf@(AnimatedPaletteState AnimatedPalette {renderDelay = delay,
                       global $= animatedManager (conf {currentFrame = nextPalette, lastChangeTime = curTime})
 
 managerFromPalette :: Int -> Int -> Palette -> PaletteManager
-managerFromPalette i _ (SPalette _) = staticManager i
-managerFromPalette minIdx maxIdx (APalette ap) = animatedManager aps
+managerFromPalette i _ (SPalette _ _) = staticManager i
+managerFromPalette minIdx maxIdx (APalette _ ap) = animatedManager aps
     where aps = AnimatedPaletteState ap minIdx maxIdx False minIdx 0

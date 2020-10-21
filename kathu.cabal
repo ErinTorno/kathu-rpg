@@ -64,7 +64,6 @@ library
                     Kathu.Entity.Time
                     -- Graphics
                     Kathu.Graphics.Camera
-                    Kathu.Graphics.Color
                     Kathu.Graphics.Drawable
                     Kathu.Graphics.Palette
                     Kathu.Graphics.UI
@@ -74,10 +73,6 @@ library
                     Kathu.World.Tile
                     Kathu.World.Time
                     Kathu.World.WorldSpace
-                    -- IO / File
-                    Kathu.IO.File
-                    -- Parsing
-                    Kathu.Parsing.Yaml
                     -- Scripting
                     Kathu.Scripting.Event
                     Kathu.Scripting.ExternalFunctions
@@ -120,7 +115,7 @@ executable kathu
                     -- Data
                     Kathu.App.Data.Controls
                     Kathu.App.Data.KathuStore
-                    Kathu.App.Data.Library
+                    Kathu.App.Data.Dictionary
                     Kathu.App.Data.Settings
                     -- Graphics
                     Kathu.App.Graphics.Debug

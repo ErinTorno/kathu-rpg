@@ -18,7 +18,7 @@ import qualified Data.Vector                 as Vec
 import qualified SDL
 
 import           Kathu.App.Data.Controls
-import           Kathu.App.Data.Library
+import           Kathu.App.Data.Dictionary
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Drawing
 import           Kathu.App.Graphics.Image    (ImageID)
@@ -33,7 +33,7 @@ import           Kathu.Entity.Logger
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
-import           Kathu.Graphics.Color
+import           Verda.Graphics.Color
 import           Kathu.Graphics.Drawable
 import           Kathu.World.Field
 import           Kathu.World.Tile
@@ -211,9 +211,9 @@ initToolMode mode = case mode of
             cleanUpRef (_, _)               = pure ()
         cmapM_ cleanUpRef
     TilePlacer st -> do
-        library <- get global
+        dictionary <- get global
         -- we want to create a tile placer entity to help show which tiles are which
-        case lookupFromLibrary library prototypes "editor-tile-selector" of
+        case dictionaryLookup dictionary dictPrototypes "editor-tile-selector" of
             Nothing    -> logLine Warning "Entity config editor-tile-selector was not loaded"
             Just proto -> do
                 ety    <- newFromPrototype proto

@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell       #-}
 
-module Kathu.Graphics.Color
+module Verda.Graphics.Color
     ( Color(..)
     , HSVColor(..)
     -- RGB

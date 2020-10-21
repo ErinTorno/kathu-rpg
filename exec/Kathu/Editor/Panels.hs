@@ -16,7 +16,7 @@ import qualified Data.Vector                as Vec
 import qualified GI.Gtk                     as Gtk
 import qualified GI.GdkPixbuf               as Gdk
 
-import           Kathu.App.Data.Library     (kathuStore, tiles)
+import           Kathu.App.Data.Dictionary  (dictParsingStore, dictTiles)
 import           Kathu.App.Data.KathuStore  (countingIDs)
 import           Kathu.App.Graphics.Image   (ImageID(..))
 import           Kathu.App.Tools.EventQueue
@@ -56,15 +56,15 @@ mkTileSelectorPanel :: EditorState -> IO Gtk.Widget
 mkTileSelectorPanel EditorState{eventQueue = queue} = do
     flowbox <- new Gtk.FlowBox [#activateOnSingleClick := True, #maxChildrenPerLine := 10]
 
-    library <- runWithEntityWorld queue $ Apecs.get Apecs.global
+    dictionary <- runWithEntityWorld queue $ Apecs.get Apecs.global
     let -- remove emptyTile, since it has no graphics and will error if we try to use them
-        libTiles          = library^.tiles.to (filter (\t -> t^.tileID /= emptyTileID) . Map.elems)
+        libTiles          = dictionary^.dictTiles.to (filter (\t -> t^.tileID /= emptyTileID) . Map.elems)
         libTilesByImageID = Map.fromList . map (\t -> (getImageID t, t)) $ libTiles
         
         getImageID t      = t^.tileRender.to (Vec.head . getRenderGraphicsVector)
         isTileImage imgID  = Map.member imgID libTilesByImageID
 
-        tileImageCounting = library^.kathuStore.countingIDs.to ((Map.! "ImageID") . unCounting)
+        tileImageCounting = dictionary^.dictParsingStore.countingIDs.to ((Map.! "ImageID") . unCounting)
 
         tileImagePaths    = Map.fromList $ Map.foldlWithKey' appendIfTileImage [] tileImageCounting
         appendIfTileImage acc path idx

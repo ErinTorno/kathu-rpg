@@ -14,7 +14,7 @@ import           Data.Text              (Text)
 import           Data.Vector            (Vector)
 import qualified Data.Vector            as Vec
 
-import           Kathu.IO.File          (parseAll)
+import           Verda.IO.Files         (parseAll)
 import           Verda.IO.Directory
 import           Verda.Parsing.Aeson
 import           Verda.Util.Dependency

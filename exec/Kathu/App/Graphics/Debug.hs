@@ -16,7 +16,7 @@ import           Kathu.App.System                (SystemT')
 import           Kathu.App.Tools.ToolMode        (isNoTool)
 import           Kathu.Entity.Physics.CollisionGroup (collisionFilterDebugColor)
 import           Kathu.Graphics.Camera
-import           Kathu.Graphics.Color
+import           Verda.Graphics.Color
 import           Kathu.World.WorldSpace
 import           Verda.Util.Types                (unID)
 

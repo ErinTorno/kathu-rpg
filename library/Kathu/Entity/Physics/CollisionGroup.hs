@@ -21,7 +21,7 @@ import           Data.Text            (Text)
 import           Data.Vector          (Vector)
 import qualified Data.Vector          as Vec
 
-import           Kathu.Graphics.Color
+import           Verda.Graphics.Color
 
 -- movement is kept separate from hitboxes for all objects to maintain 3D effect (movement box at feet, hitbox in center of mass)
 data CollisionGroup

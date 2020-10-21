@@ -10,7 +10,7 @@ import           Apecs.Physics
 import           Control.Monad                   (void)
 
 import           Kathu.App.Data.Controls
-import           Kathu.App.Data.Library
+import           Kathu.App.Data.Dictionary       (Dictionary, emptyDictionary)
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Font
 import           Kathu.App.Graphics.Image        (ImageID)
@@ -97,9 +97,9 @@ instance Semigroup WorldSpace'  where (<>) = mappend
 instance Monoid WorldSpace'  where mempty = emptyWorldSpace
 instance Component WorldSpace'  where type Storage WorldSpace'  = Global WorldSpace'
 
-instance Semigroup Library where (<>) = mappend
-instance Monoid Library where mempty = emptyLibrary
-instance Component Library where type Storage Library = Global Library
+instance Semigroup Dictionary where (<>) = mappend
+instance Monoid Dictionary where mempty = emptyDictionary
+instance Component Dictionary where type Storage Dictionary = Global Dictionary
 
 instance Semigroup ScriptBank where (<>) = mappend
 instance Monoid ScriptBank where mempty = error "Attempted to use ScriptBank before it has been loaded"
@@ -124,7 +124,7 @@ makeWorld "EntityWorld"
    ++ [''Existance, ''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''EditorInstancedFromWorld', ''ActionSet]
    ++ [''Local, ''Camera, ''Player]
    ++ [''ShouldQuit, ''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''IncludeEditorInfo, ''Logger]
-   ++ [''Settings, ''CursorMotionState, ''ControlState, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Library, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
+   ++ [''Settings, ''CursorMotionState, ''ControlState, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Dictionary, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
    ++ [''ToolMode, ''ToolModeUniversalState]
 
 type System' a = System EntityWorld a

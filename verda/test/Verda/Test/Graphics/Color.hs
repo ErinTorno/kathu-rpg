@@ -1,11 +1,11 @@
-module Kathu.Test.Graphics (graphicsTests) where
+module Verda.Test.Graphics.Color (colorTests) where
 
 import Test.HUnit
 
-import Kathu.Graphics.Color
+import Verda.Graphics.Color
 
-graphicsTests :: Test
-graphicsTests = TestList
+colorTests :: Test
+colorTests = TestList
     [ TestLabel "Convert Color 1" colConv1
     , TestLabel "Convert RGB HSV 1" convRGBHSV1
     , TestLabel "Convert RGB HSV 2" convRGBHSV2
@@ -37,8 +37,8 @@ convRGBHSV1 = TestCase $ assertEqual "Color RGB to HSV to RGB conversion" col (f
     where col = read "#f8ffb1"
 
 convRGBHSV2 :: Test
-convRGBHSV2 = TestCase $ assertEqual "Color HSV to RGB conversion" (read "#f7ffb0") (fromHSV $ col)
-    where col = (HSVColor 65.4 0.306 1.0 1.0)
+convRGBHSV2 = TestCase $ assertEqual "Color HSV to RGB conversion" (read "#f7ffb0") (fromHSV col)
+    where col = HSVColor 65.4 0.306 1.0 1.0
 
 hueShift1 :: Test
 hueShift1 = TestCase $ assertEqual "Color shift by 30 degrees" (read "#f8ffb1") (fromHSVFunction (shiftHue 30) . read $ "#ffdfb1")

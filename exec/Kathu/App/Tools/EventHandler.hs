@@ -5,7 +5,7 @@ import           Control.Lens
 import           Control.Monad               (when)
 import qualified Data.Map                    as Map
 
-import           Kathu.App.Data.Library
+import           Kathu.App.Data.Dictionary
 import           Kathu.App.System
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
@@ -35,9 +35,9 @@ handleEvent event = case event of
         toolUnivSt <- get global
         global $= toolUnivSt {selectedTile = sTile}
     LoadWorldSpace worldspace -> do
-        -- Update it in the library
-        library <- get global
-        global  $= over worldSpaces (Map.insert (worldspace^.worldID) worldspace) library
+        -- Update it in the dictionary
+        dictionary <- get global
+        global  $= over dictWorldSpaces (Map.insert (worldspace^.worldID) worldspace) dictionary
         loadWorldSpace worldspace
     DestroyEntity ety ->
         destroyEntity ety

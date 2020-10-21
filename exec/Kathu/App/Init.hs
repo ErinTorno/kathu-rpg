@@ -18,7 +18,7 @@ import qualified SDL.Video                       as SDLV
 import qualified System.Random                   as R
 
 import           Kathu.App.Data.Controls
-import           Kathu.App.Data.Library
+import           Kathu.App.Data.Dictionary
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Font         (initFontCache)
 import           Kathu.App.Graphics.ImageManager
@@ -29,7 +29,6 @@ import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.Floor
 import           Kathu.Entity.System
-import           Verda.IO.Directory              (assetPath)
 import           Kathu.Game                      (initPhysics)
 import           Kathu.Graphics.Camera
 import           Kathu.Language
@@ -47,12 +46,12 @@ initLocalPlayer :: Entity -> SystemT' IO ()
 initLocalPlayer ety =
     ety $= (Camera 1.0, Local emptyActionPressed, emptyActionSet, Player)
 
-initLanguage :: SDL.Window -> SDL.Renderer -> Settings -> Library -> SystemT' IO ()
-initLanguage window renderer settings library = do
-    let maybeLang        = library^.languages.to (Map.lookup $ language settings)
+initLanguage :: SDL.Window -> SDL.Renderer -> Settings -> Dictionary -> SystemT' IO ()
+initLanguage window renderer settings dictionary = do
+    let maybeLang        = dictionary^.dictLanguages.to (Map.lookup $ language settings)
         missingLangMsg   = "Language \"" `T.append` (unID . language $ settings) `T.append` "\" could not be found. Have the files been moved?"
 
-        promptAndDefault = case library^.languages.to (Map.lookup "english") of
+        promptAndDefault = case dictionary^.dictLanguages.to (Map.lookup "english") of
             Just e -> do
                 let msg = missingLangMsg `T.append` " Defaulting to English."
 
@@ -72,39 +71,37 @@ initLanguage window renderer settings library = do
 
 system :: SDL.Window -> SDL.Renderer -> Settings -> SystemT' IO ()
 system window renderer settings = do
-    (library, surfaces) <- lift . loadLibrary mempty $ assetPath
+    (dictionary, manager) <- liftIO $ loadDictionary renderer
     seed       <- lift . maybe (R.randomIO :: IO Int) pure . randomSeed $ settings
-    manager    <- lift . mkImageManager renderer $ surfaces
-    tilesV     <- lift . makeTiles . view tiles $ library
+    tilesV     <- lift . makeTiles . view dictTiles $ dictionary
     variables  <- initVariables
     controlST  <- mkControlState
     initScripting
     global $= variables
-    global $= library
+    global $= dictionary
     global $= manager
     global $= Random (R.mkStdGen seed)
     global $= tilesV
     global $= settings
     global $= controlST
-    global $= library^.uiConfig
+    global $= dictionary^.dictUIConfig
     global $= (Gravity $ V2 0 0) -- no gravity, as the game is top-down
 
-    initLanguage window renderer settings library
+    initLanguage window renderer settings dictionary
 
-    setWindowIcon window (library^.uiConfig.to gameIcon)
+    setWindowIcon window (dictionary^.dictUIConfig.to gameIcon)
 
-    floorPropEtys <- mapM initFloorProperty . view floorProperties $ library
+    floorPropEtys <- mapM initFloorProperty . view dictFloorProperties $ dictionary
     global  $= FloorProperties (floorPropEtys Map.! "default") floorPropEtys
     
-    playerEty <- newFromPrototype . fromJustElseError "No player entity config was loaded" $ lookupFromLibrary library prototypes "player"
+    playerEty <- newFromPrototype . fromJustElseError "No player entity config was loaded" $ dictionaryLookup dictionary dictPrototypes "player"
     initLocalPlayer playerEty
 
     loadWorldSpace $ case initialWorld settings of
         Nothing -> emptyWorldSpace
-        Just ws -> fromJustElseError ("No worldspace config with ID " ++ show ws ++ " was loaded") $ lookupFromLibrary library worldSpaces ws
+        Just ws -> fromJustElseError ("No worldspace config with ID " ++ show ws ++ " was loaded") $ dictionaryLookup dictionary dictWorldSpaces ws
 
     initPhysics
-    
     pure ()
 
 sdlWindowConfig :: IO ()

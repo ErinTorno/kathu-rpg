@@ -21,7 +21,7 @@ import           SDL                     (($=))
 import qualified SDL
 import qualified SDL.Font                as SDLF
 
-import           Kathu.Graphics.Color
+import           Verda.Graphics.Color
 import           Verda.IO.Directory
 import           Verda.Util.Dependency
 import           Verda.Util.Types        (Identifier, IDMap)

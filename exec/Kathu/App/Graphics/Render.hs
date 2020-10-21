@@ -24,7 +24,7 @@ import           Kathu.App.Tools.ToolSystem      (renderToolMode)
 import           Kathu.Entity.Action
 import           Kathu.Entity.System
 import           Kathu.Graphics.Camera
-import           Kathu.Graphics.Color (unColor)
+import           Verda.Graphics.Color (unColor)
 import           Kathu.Graphics.Drawable
 import           Kathu.World.Field
 import           Kathu.World.Tile                hiding (Vector, MVector)

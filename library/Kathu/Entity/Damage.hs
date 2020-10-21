@@ -9,7 +9,7 @@ import Data.Text              (Text)
 import Data.Word
 
 import GHC.Generics
-import Kathu.Graphics.Color   (Color)
+import Verda.Graphics.Color   (Color)
 import Verda.Parsing.Aeson
 import Verda.Parsing.Counting
 import Verda.Util.Dependency

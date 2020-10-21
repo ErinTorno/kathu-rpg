@@ -8,6 +8,7 @@ module Verda.Util.Types
     , Range(..)
     , TimeStamped(..)
     , mkIdentifier
+    , emptyIDMap
     , textIDLens
     , clampBetween
     , clampRange
@@ -23,6 +24,7 @@ import qualified Data.ByteString          as B
 import           Data.Hashable
 import           Data.HashTable.ST.Basic  (HashTable)
 import           Data.Map                 (Map)
+import qualified Data.Map                 as Map
 import           Data.Serialize
 import qualified Data.Serialize.Get       as SG
 import qualified Data.Serialize.Put       as SP
@@ -83,6 +85,9 @@ instance Hashable Identifier where
 type IDMap = Map Identifier
 
 type IDHashTable a = HashTable RealWorld Identifier a
+
+emptyIDMap :: IDMap a
+emptyIDMap = Map.empty
 
 -----------
 -- Range --

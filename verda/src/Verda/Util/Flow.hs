@@ -1,5 +1,6 @@
 module Verda.Util.Flow where
 
+import           Control.Applicative (liftA2)
 import           Control.Monad.State
 import qualified Control.Monad.Fail  as Fail
 import           Text.Read           (readMaybe)
@@ -9,6 +10,10 @@ import           Text.Read           (readMaybe)
 infixl 4 <<$>>
 (<<$>>) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
 fn <<$>> f = fmap fn <$> f
+
+infixl 4 <<*>>
+(<<*>>) :: (Applicative f, Applicative g) => f (g (a -> b)) -> f (g a) -> f (g b)
+(<<*>>) = liftA2 (<*>)
 
 -- Monad
 

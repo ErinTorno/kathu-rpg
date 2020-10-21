@@ -10,7 +10,7 @@ import           Linear.V2               (V2)
 
 import qualified Kathu.Entity.Item       as Item
 import           Kathu.Graphics.Drawable (Render, RenderSprite)
-import           Kathu.Graphics.Color
+import           Verda.Graphics.Color
 import           Verda.Parsing.Aeson
 import           Verda.Util.Dependency
 import           Verda.Util.Types        (Identifier, mkIdentifier)

@@ -3,15 +3,15 @@
 module Kathu.Editor.Dialogs.Entity where
 
 import qualified Apecs
-import           Control.Lens                   hiding (set)
+import           Control.Lens
 import           Control.Monad                  (void)
 import           Data.GI.Base
 import           Data.IORef
 import qualified Data.Map                       as Map
-import qualified Data.Text                  as T
+import qualified Data.Text                      as T
 import qualified GI.Gtk                         as Gtk
 
-import           Kathu.App.Data.Library
+import           Kathu.App.Data.Dictionary
 import           Kathu.App.Tools.EventQueue
 import           Kathu.Editor.Util.GtkMisc
 import           Kathu.Editor.Types
@@ -22,9 +22,9 @@ import           Verda.Util.Types
 newInstancedPrototypeDialogRunner :: EventQueue -> IO (DialogRunner InstancedEntityConfig)
 newInstancedPrototypeDialogRunner queue = do
     instanceRef <- newIORef emptyInstancedEntityConfig
-    library     <- runWithEntityWorld queue $ Apecs.get Apecs.global
+    dictionary     <- runWithEntityWorld queue $ Apecs.get Apecs.global
 
-    let allPrototypes = library^.prototypes
+    let allPrototypes = dictionary^.dictPrototypes
         addComplete w = do
             entityCompletion <- mkEntryCompletion $ map unID (Map.keys allPrototypes)
             Gtk.entrySetCompletion w (Just entityCompletion)

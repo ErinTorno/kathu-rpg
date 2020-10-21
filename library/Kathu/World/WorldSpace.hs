@@ -28,7 +28,7 @@ import           Kathu.Entity.System       (IncludeEditorInfo(..), Tiles)
 import           Kathu.Graphics.Drawable   (Render)
 import           Kathu.Graphics.Palette
 import           Verda.IO.Directory        (WorkingDirectory)
-import           Kathu.Parsing.Yaml        (FieldOrder, mkFieldOrderFromList)
+import           Verda.Parsing.Yaml        (FieldOrder, mkFieldOrderFromList)
 import           Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua       as Lua
 import           Kathu.Scripting.Variables

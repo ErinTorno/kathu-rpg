@@ -7,13 +7,13 @@ import           Data.Maybe
 import qualified Data.Text                  as T
 import qualified GI.Gtk                     as Gtk
 
-import           Kathu.App.Data.Library
+import           Kathu.App.Data.Dictionary
 import           Kathu.App.Graphics.Image   (ImageID)
 import           Kathu.App.Tools.EventQueue
 import           Kathu.Editor.Types
 import           Kathu.Editor.Util.GtkMisc
 import           Verda.IO.Directory
-import           Kathu.IO.File
+import           Verda.IO.Files
 import           Verda.Util.Dependency
 import           Kathu.World.WorldSpace
 
@@ -53,8 +53,8 @@ saveWorldSpace EditorState{ editorWindow = window
 
 loadWorldSpace :: EventQueue -> FilePath -> IO (WorldSpace ImageID)
 loadWorldSpace queue file = runWithEntityWorld queue $ do
-    library  <- get global
+    dictionary  <- get global
     worldDep <- lift $ loadFromFileDP file
-    (worldspace, store') <- runDependency worldDep (library^.kathuStore)
-    global   $= set kathuStore store' library
+    (worldspace, store') <- runDependency worldDep (dictionary^.dictParsingStore)
+    global $= set dictParsingStore store' dictionary
     pure worldspace
