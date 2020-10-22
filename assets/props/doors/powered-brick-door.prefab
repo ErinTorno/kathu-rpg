@@ -1,17 +1,17 @@
 identity:
-  id: powered-brick-door-cold
+  id: powered-brick-door
 tags: [door]
 script:
   file:   "powered-door.lua"
   is-singleton: true
   events: [on-signal-change]
 render:
-- atlas:  "powered-brick-door-cold.png"
+- atlas:  "powered-brick-door.png"
   bounds: [34, 48]
   strips:
   - {id: closed, frames: 1, row: 0, delay: 1000}
   - {id: open,   frames: 1, row: 1, delay: 1000}
-body-config:
+physics:
   type:   static
   shapes:
   - tag:      closed

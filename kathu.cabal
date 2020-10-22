@@ -55,10 +55,8 @@ library
                     Kathu.Entity.Physics.BodyConfig
                     Kathu.Entity.Physics.CollisionGroup
                     Kathu.Entity.Physics.Floor
-                    Kathu.Entity.Prototype
-                    Kathu.Entity.PrototypeTemplate
+                    Kathu.Entity.Prefab
                     Kathu.Entity.Resource
-                    Kathu.Entity.SerializableComponent
                     Kathu.Entity.System
                     Kathu.Entity.Time
                     -- Graphics
@@ -96,7 +94,7 @@ library
                     yaml                    ^>=0.11.3,
                     libyaml                 ^>=0.1.2,
                     text, bytestring,
-                    lens, linear, mtl, primitive, random, scientific, template-haskell, unordered-containers, vector, vector-th-unbox,
+                    lens, linear, mtl, primitive, random, scientific, unordered-containers, vector, vector-th-unbox,
                     directory, filepath,
                     aeson, cereal
   hs-source-dirs:   library

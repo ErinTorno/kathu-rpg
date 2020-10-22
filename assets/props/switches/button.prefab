@@ -11,7 +11,7 @@ render:
   strips:
   - {id: unpressed, frames: 1, row: 0, delay: 1000}
   - {id: pressed,   frames: 1, row: 1, delay: 1000}
-body-config:
+physics:
   type:   static
   shapes:
   - category: movement-sensor

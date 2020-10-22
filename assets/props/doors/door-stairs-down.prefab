@@ -4,7 +4,7 @@ render:
 - image: "door-stairs-down.png"
 - image: "door-stairs-down-background.png"
   layer: -1
-body-config:
+physics:
   type:   static
   shapes:
   - category: movement

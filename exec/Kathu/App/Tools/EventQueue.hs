@@ -7,7 +7,7 @@ import           Verda.Graphics.Sprites      (SpriteID)
 import           Kathu.App.System
 import           Kathu.App.Tools.ToolMode
 import           Kathu.World.Tile            (Tile)
-import           Kathu.World.WorldSpace      (InstancedPrototype, WorldSpace)
+import           Kathu.World.WorldSpace      (InstancedPrefab, WorldSpace)
 
 -- Events that the app receives
 data AppEvent
@@ -17,12 +17,12 @@ data AppEvent
     | LoadWorldSpace  (WorldSpace SpriteID)
     | ToggleDebug
     | DestroyEntity Entity
-    | PlaceEntity (InstancedPrototype SpriteID)
+    | PlaceEntity InstancedPrefab
     | FinishEditingEntityInstance
 
 -- Events that the editor receives
 data EditorEvent
-    = EditEntityInstance Entity (InstancedPrototype SpriteID)
+    = EditEntityInstance Entity InstancedPrefab
 
 data EventQueue = EventQueue
     { entityWorld  :: !(MVar EntityWorld)

@@ -15,7 +15,7 @@ loadWorldSpace ws = do
     prevManager <- get global
     manager <- loadPalettes (ws^.worldPalettes) prevManager
     global  $= manager
-    initWorldSpace destroyEntity newFromPrototypeWithScriptMapping (Lua.loadScript id externalFunctions) ws
+    initWorldSpace destroyEntity newFromPrefabWithScriptMapping (Lua.loadScript id externalFunctions) ws
     void $ setPaletteManager (ws^.initialPalette)
 
     -- to prevent pausing issues during gameplay, we force a GC now while it's just done loading

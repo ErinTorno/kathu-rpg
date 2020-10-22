@@ -94,7 +94,7 @@ system window renderer settings = do
     floorPropEtys <- mapM initFloorProperty . view dictFloorProperties $ dictionary
     global  $= FloorProperties (floorPropEtys Map.! "default") floorPropEtys
     
-    playerEty <- newFromPrototype . fromJustElseError "No player entity config was loaded" $ dictionaryLookup dictionary dictPrototypes "player"
+    playerEty <- newFromPrefab . fromJustElseError "No player entity config was loaded" $ dictionaryLookup dictionary dictPrefabs "player"
     initLocalPlayer playerEty
 
     loadWorldSpace $ case initialWorld settings of

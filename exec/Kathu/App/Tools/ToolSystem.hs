@@ -212,10 +212,10 @@ initToolMode mode = case mode of
     TilePlacer st -> do
         dictionary <- get global
         -- we want to create a tile placer entity to help show which tiles are which
-        case dictionaryLookup dictionary dictPrototypes "editor-tile-selector" of
+        case dictionaryLookup dictionary dictPrefabs "editor-tile-selector" of
             Nothing    -> logLine Warning "Entity config editor-tile-selector was not loaded"
-            Just proto -> do
-                ety    <- newFromPrototype proto
+            Just prefab -> do
+                ety    <- newFromPrefab prefab
                 ety    $= Position (V2 10000 10000) -- should be offscreen for first frame before it gets updated to follow camera
                 global $= TilePlacer st {tileSelectorEty = Just ety}
     _ -> pure ()
@@ -237,7 +237,7 @@ destroyEntityInfoCollisions =
 
 buildEntityInfoCollisions :: SystemT' IO ()
 buildEntityInfoCollisions = do
-    cmapM_ $ \(Render sprites :: Render SpriteID, _ :: EditorInstancedFromWorld SpriteID, ety) ->
+    cmapM_ $ \(Render sprites :: Render SpriteID, _ :: EditorInstancedFromWorld, ety) ->
         let area (V2 x y) = x * y
             foldMaxArea maxVec sprite = let (# _, bounds #) = currentBounds sprite in if area maxVec < area bounds then bounds else maxVec
             (V2 mx my)       = (/pixelsPerUnit) . fromIntegral <$> Vec.foldl' foldMaxArea (V2 2 2) sprites

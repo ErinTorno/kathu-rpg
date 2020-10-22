@@ -97,7 +97,7 @@ handleEditorEvent EditorState{eventQueue = queue, heldDialogRunners = dialogs} e
             onSaveEty newEty = do
                 forM_ (newEty^.iecOriginalEntity) $ \origEty ->
                     pushAppEvent queue (DestroyEntity origEty)
-                pushAppEvent queue (PlaceEntity (newEty^.iecInstancedPrototype))
+                pushAppEvent queue (PlaceEntity (newEty^.iecInstancedPrefab))
          in runDialog onSaveEty config
 
 newDialogRunners :: EventQueue -> IO HeldDialogRunners

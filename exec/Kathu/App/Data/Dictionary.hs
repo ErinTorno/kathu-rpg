@@ -18,7 +18,7 @@ import           Kathu.App.Graphics.ImageManager (ImageManager, mkImageManager)
 import           Kathu.App.Graphics.UI
 import           Kathu.Entity.Item
 import           Kathu.Entity.Physics.Floor (FloorProperty(..))
-import           Kathu.Entity.Prototype
+import           Kathu.Entity.Prefab        (Prefab, prefabID)
 import           Kathu.Graphics.Palette     (Palette, paletteID)
 import           Kathu.World.Tile           hiding (Vector, MVector)
 import           Kathu.World.WorldSpace
@@ -29,7 +29,7 @@ data Dictionary = Dictionary
     , _dictFloorProperties :: !(IDMap FloorProperty)
     , _dictLanguages       :: !(IDMap (Language Font))
     , _dictPalettes        :: !(IDMap Palette)
-    , _dictPrototypes      :: !(IDMap (EntityPrototype SpriteID))
+    , _dictPrefabs         :: !(IDMap Prefab)
     , _dictTiles           :: !(IDMap (Tile SpriteID))
     , _dictUIConfig        :: UIConfig
     , _dictWorldSpaces     :: !(IDMap (WorldSpace SpriteID))
@@ -43,7 +43,7 @@ emptyDictionary = Dictionary
     , _dictFloorProperties = emptyIDMap
     , _dictLanguages       = emptyIDMap
     , _dictPalettes        = emptyIDMap
-    , _dictPrototypes      = emptyIDMap
+    , _dictPrefabs         = emptyIDMap
     , _dictTiles           = emptyIDMap
     , _dictUIConfig        = error "Attempted to use UIConfig before it has been loaded"
     , _dictWorldSpaces     = emptyIDMap
@@ -62,7 +62,7 @@ loadDictionary !renderer = do
         [ parseFiles dictLanguages       ".lang"    langID
         , parseFiles dictPalettes        ".palette" paletteID
         , parseFiles dictItems           ".item"    itemID
-        , parseFiles dictPrototypes      ".entity"  getPrototypeID
+        , parseFiles dictPrefabs         ".prefab"  prefabID
         , parseFiles dictFloorProperties ".floor"   propTextID
         , parseFiles dictTiles           ".tile"    (^.tileTextID)
         , parseFiles dictWorldSpaces     ".world"   (^.worldID)

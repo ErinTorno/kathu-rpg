@@ -3,7 +3,7 @@ identity:
   name: block
   description: an unanchored block that can be pushed around
 render: "block.png"
-body-config:
+physics:
   type:       dynamic
   mass:       90
   friction:   100

@@ -2,7 +2,7 @@ identity:
   id: evil-eye
   name: evil eye
 moving-speed: 6
-body-config:
+physics:
   type:       dynamic
   mass:       15
   friction:   0

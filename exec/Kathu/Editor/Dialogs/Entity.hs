@@ -24,18 +24,18 @@ newInstancedPrototypeDialogRunner queue = do
     instanceRef <- newIORef emptyInstancedEntityConfig
     dictionary     <- runWithEntityWorld queue $ Apecs.get Apecs.global
 
-    let allPrototypes = dictionary^.dictPrototypes
+    let allPrefabs = dictionary^.dictPrefabs
         addComplete w = do
-            entityCompletion <- mkEntryCompletion $ map unID (Map.keys allPrototypes)
+            entityCompletion <- mkEntryCompletion $ map unID (Map.keys allPrefabs)
             Gtk.entrySetCompletion w (Just entityCompletion)
 
     grid <- new Gtk.Grid []
     editProps <- mkPropertyGrid grid instanceRef
-        [ mkRow "Instance ID"     $ iecInstancedPrototype . instanceID
-        , mkRowWith MutableRow addComplete "Base Entity" (iecPrototypeID . textIDLens)
-        , mkRow "Position"        $ iecInstancedPrototype . spawnLocation
-        , mkRow "Emits Signal"    $ iecInstancedPrototype . wireSignalEmitter . non ""
-        , mkRow "Receives Signal" $ iecInstancedPrototype . wireSignalReceiver . non ""
+        [ mkRow "Instance ID"     $ iecInstancedPrefab . instanceID
+        , mkRowWith MutableRow addComplete "Base Entity" (iecPrefabID . textIDLens)
+        , mkRow "Position"        $ iecInstancedPrefab . spawnLocation
+        , mkRow "Emits Signal"    $ iecInstancedPrefab . wireSignalEmitter . non ""
+        , mkRow "Receives Signal" $ iecInstancedPrefab . wireSignalReceiver . non ""
         -- instanceConfig     :: !(IDMap WorldVariable)
         ]
     
@@ -55,13 +55,13 @@ newInstancedPrototypeDialogRunner queue = do
             case responseID of
                 1 -> do
                     finalInstance <- readIORef instanceRef
-                    let newBaseEtyID = finalInstance^.iecPrototypeID
-                    case Map.lookup newBaseEtyID allPrototypes of
+                    let newBaseEtyID = finalInstance^.iecPrefabID
+                    case Map.lookup newBaseEtyID allPrefabs of
                         Nothing    -> do
                             showErrorDialog . T.pack $ "Unknown base entity " ++ show newBaseEtyID
                             runDialog onInstanceChange finalInstance
-                        Just proto ->
-                            onInstanceChange $ (iecInstancedPrototype . basePrototype .~ proto) finalInstance
+                        Just prefab ->
+                            onInstanceChange $ (iecInstancedPrefab . basePrefab .~ prefab) finalInstance
                 _ -> pure ()
             pushAppEvent queue FinishEditingEntityInstance
             Gtk.widgetHide dialogContent

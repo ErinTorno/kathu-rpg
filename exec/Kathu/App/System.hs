@@ -1,15 +1,17 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- we also need orphan instances to set up the Apecs system
 
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Kathu.App.System where
 
 import           Apecs
 import           Apecs.Physics
-import           Control.Monad                   (void)
+import           Control.Monad                   (forM_, void)
 import           Verda.Event.Controls
 import           Verda.Graphics.Sprites          (SpriteID)
+import           Verda.Util.Apecs
 
 import           Kathu.App.Data.Dictionary       (Dictionary, emptyDictionary)
 import           Kathu.App.Data.Settings
@@ -25,7 +27,7 @@ import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Logger
 import           Kathu.Entity.Physics.BodyConfig (setBodyConfig)
 import           Kathu.Entity.Physics.Floor      (WorldFloor)
-import           Kathu.Entity.Prototype
+import           Kathu.Entity.Prefab
 import           Kathu.Entity.System
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
@@ -38,15 +40,12 @@ import           Kathu.Scripting.Wire
 import           Kathu.World.Stasis              (WorldStases)
 import           Kathu.World.Time                (WorldTime)
 import           Kathu.World.WorldSpace          (EditorInstancedFromWorld, WorldSpace, emptyWorldSpace)
-import           Verda.Util.Apecs
 
 type Inventory' = Inventory SpriteID
 instance Component Inventory' where type Storage Inventory' = Map Inventory'
 
 type Render' = Render SpriteID
 instance Component Render' where type Storage Render' = Map Render'
-
-type EditorInstancedFromWorld' = EditorInstancedFromWorld SpriteID
 
 -- ECS Util
 -- selects all unique and non-unique components that an individual entity might have
@@ -116,7 +115,7 @@ instance Component WireReceivers where type Storage WireReceivers = Global WireR
 
 makeWorld "EntityWorld"
     $ [''Physics]
-   ++ [''Existance, ''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''EditorInstancedFromWorld', ''ActionSet]
+   ++ [''Existance, ''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''EditorInstancedFromWorld, ''ActionSet]
    ++ [''Local, ''Camera, ''Player]
    ++ [''ShouldQuit, ''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''IncludeEditorInfo, ''Logger]
    ++ [''Settings, ''CursorMotionState, ''ControlState, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Dictionary, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
@@ -126,13 +125,14 @@ type System' a = System EntityWorld a
 type SystemT' m a = SystemT EntityWorld m a
 
 -- Entity functions
+-- TODO Move into Prefab module
 
-externalFunctions :: Lua.ExternalFunctions EntityWorld SpriteID
+externalFunctions :: Lua.ExternalFunctions EntityWorld
 externalFunctions = Lua.ExternalFunctions
-    { Lua.setPalette         = setPaletteManager
-    , Lua.getEntityPrototype = error "getEntityPrototype not implemented"
-    , Lua.newFromPrototype   = newFromPrototype
-    , Lua.destroyEntity      = error "destroyEntity not implemented" -- destroyEntity -- don't use yet, game halts with "<<loop>>" with just this
+    { Lua.setPalette      = setPaletteManager
+    , Lua.getEntityPrefab = error "getEntityPrototype not implemented"
+    , Lua.newFromPrefab   = newFromPrefab
+    , Lua.destroyEntity   = error "destroyEntity not implemented" -- destroyEntity -- don't use yet, game halts with "<<loop>>" with just this
     }
 
 destroyEntity :: Entity -> SystemT' IO ()
@@ -141,16 +141,20 @@ destroyEntity ety = do
     
     destroy ety (Proxy @AllComponents)
 
-newFromPrototypeWithScriptMapping :: (ActiveScript -> ActiveScript) -> EntityPrototype SpriteID -> SystemT' IO Entity
-newFromPrototypeWithScriptMapping f proto = do
-    ety <- newFromSimplePrototype proto
 
-    setBodyConfig ety . bodyConfig $ proto
-    case script proto of
-        Nothing    -> pure ()
-        (Just scr) -> void $ Lua.loadScript f externalFunctions ety scr
-
+newFromPrefabWithScriptMapping :: (ActiveScript -> ActiveScript) -> Prefab -> SystemT' IO Entity
+newFromPrefabWithScriptMapping f Prefab{..} = do
+    ety <- newEntity (Existance, pIdentity)
+    forM_ pActorState    (ety$=)
+    forM_ pInventory     (ety$=)
+    forM_ pLifeTime      (ety$=)
+    forM_ pMovingSpeed   (ety$=)
+    forM_ pRender        (ety$=)
+    forM_ pSpecialEntity (ety$=)
+    forM_ pTags          (ety$=)
+    forM_ pScript        (void . Lua.loadScript f externalFunctions ety)
+    setBodyConfig ety pBodyConfig
     return ety
 
-newFromPrototype :: EntityPrototype SpriteID -> SystemT' IO Entity
-newFromPrototype = newFromPrototypeWithScriptMapping id
+newFromPrefab :: Prefab -> SystemT' IO Entity
+newFromPrefab = newFromPrefabWithScriptMapping id

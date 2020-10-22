@@ -21,7 +21,7 @@ import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
 
-registerGlobalFunctions :: forall w g. (ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Debug, Local, Logger, LogicTime, Random, RenderTime, RunningScriptEntity, ScriptEventBuffer, Variables]) => w -> ExternalFunctions w g -> Lua ()
+registerGlobalFunctions :: forall w. (ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Debug, Local, Logger, LogicTime, Random, RenderTime, RunningScriptEntity, ScriptEventBuffer, Variables]) => w -> ExternalFunctions w -> Lua ()
 registerGlobalFunctions world extFuns = do
     registerHaskellFunction "log"               $ logLua world
     registerHaskellFunction "getCursorPosition" $ getCursorPosition world
@@ -62,17 +62,17 @@ getCursorPosition :: forall w. (ReadWrite w IO CursorMotionState) => w -> Lua (V
 getCursorPosition !world = liftIO . Apecs.runWith world $
     cursorPosition <$> get global
 
-setPaletteLua :: ExternalFunctions w g -> w -> Text -> Lua Bool
+setPaletteLua :: ExternalFunctions w -> w -> Text -> Lua Bool
 setPaletteLua extFuns !world !idt = liftIO . Apecs.runWith world $ runW
     where runW = setPalette extFuns . mkIdentifier $ idt
 
-newFromPrototypeLua :: ExternalFunctions w g -> w -> Text -> Lua (Optional Int)
+newFromPrototypeLua :: ExternalFunctions w -> w -> Text -> Lua (Optional Int)
 newFromPrototypeLua extFuns !world !protoID = liftIO . Apecs.runWith world $ mkEntity
-    where mkEntity = getEntityPrototype extFuns (mkIdentifier protoID) >>= mkIfPres
+    where mkEntity = getEntityPrefab extFuns (mkIdentifier protoID) >>= mkIfPres
           mkIfPres Nothing   = return $ Optional Nothing
-          mkIfPres (Just pr) = Optional . Just . unEntity <$> newFromPrototype extFuns pr
+          mkIfPres (Just pr) = Optional . Just . unEntity <$> newFromPrefab extFuns pr
     
-destroyEntityLua :: ExternalFunctions w g -> w -> Int -> Lua ()
+destroyEntityLua :: ExternalFunctions w -> w -> Int -> Lua ()
 destroyEntityLua extFuns !world !ety = liftIO . Apecs.runWith world $ destroyEntity extFuns (Entity ety)
 
 -----------------------

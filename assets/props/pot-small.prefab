@@ -1,6 +1,6 @@
 identity: pot-small
 render:   "pot-small.png"
-body-config:
+physics:
   type:   dynamic
   mass:   50
   friction: 100

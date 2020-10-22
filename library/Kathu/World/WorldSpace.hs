@@ -18,46 +18,47 @@ import           Data.Text                 (Text)
 import qualified Data.Text                 as T
 import           Data.Vector               (Vector)
 import qualified Data.Vector               as Vec
+import           Verda.Graphics.Sprites    (SpriteID)
+import           Verda.IO.Directory        (WorkingDirectory)
+import           Verda.Parsing.Yaml        (FieldOrder, mkFieldOrderFromList)
+import           Verda.Util.Apecs
+import           Verda.Util.Dependency
+import           Verda.Util.Types          (Identifier, IDMap)
 
 import           Kathu.Entity.Components
 import           Kathu.Entity.Item
 import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.CollisionGroup
-import           Kathu.Entity.Prototype    (EntityPrototype, getPrototypeID)
+import           Kathu.Entity.Prefab       (Prefab, prefabID)
 import           Kathu.Entity.System       (IncludeEditorInfo(..), Tiles)
 import           Kathu.Graphics.Drawable   (Render)
 import           Kathu.Graphics.Palette
-import           Verda.IO.Directory        (WorkingDirectory)
-import           Verda.Parsing.Yaml        (FieldOrder, mkFieldOrderFromList)
 import           Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua       as Lua
 import           Kathu.Scripting.Variables
 import           Kathu.Scripting.Wire
-import           Verda.Util.Dependency
-import           Verda.Util.Types          (Identifier, IDMap)
 import           Kathu.World.Field
 import           Kathu.World.Stasis
 import           Kathu.World.Tile          (Tile)
-import           Verda.Util.Apecs
 
-data InstancedPrototype g = InstancedPrototype
+data InstancedPrefab = InstancedPrefab
     { _instanceID         :: !Identifier
-    , _basePrototype      :: EntityPrototype g
+    , _basePrefab         :: Prefab
     , _spawnLocation      :: !(V2 Double)
     , _wireSignalEmitter  :: !(Maybe Identifier)
     , _wireSignalReceiver :: !(Maybe Identifier)
     , _instanceConfig     :: !(IDMap WorldVariable)
     }
-makeLenses ''InstancedPrototype
+makeLenses ''InstancedPrefab
 
 -- | Marks an entity as having been created by an instance prototype specified by the loaded Worldspace; the Int is for the prototype's index
-newtype EditorInstancedFromWorld g = EditorInstancedFromWorld {unEditorInstancedFromWorld :: InstancedPrototype g}
+newtype EditorInstancedFromWorld = EditorInstancedFromWorld {unEditorInstancedFromWorld :: InstancedPrefab}
 -- Should be just a map, and is expected to be entirely empty when running the game normally
-instance Component (EditorInstancedFromWorld g) where type Storage (EditorInstancedFromWorld g) = Apecs.Map (EditorInstancedFromWorld g)
+instance Component EditorInstancedFromWorld where type Storage EditorInstancedFromWorld = Apecs.Map EditorInstancedFromWorld
 
-emptyInstancedPrototype :: InstancedPrototype g
-emptyInstancedPrototype = InstancedPrototype "" prototype (V2 0 0) Nothing Nothing Map.empty
-    where prototype = error "Attempted to use emptyInstancedPrototype basePrototype; no possible value exists for this"
+emptyInstancedPrefab :: InstancedPrefab
+emptyInstancedPrefab = InstancedPrefab "" prototype (V2 0 0) Nothing Nothing Map.empty
+    where prototype = error "Attempted to use emptyInstancedPrefab basePrefab; no possible value exists for this"
 
 data InstancedItem g = InstancedItem
     { _baseItem     :: ItemStack g
@@ -74,7 +75,7 @@ data WorldSpace g = WorldSpace
     , _shouldSavePosition :: !Bool -- when serialized, should we remember where the player was?
     , _worldVariables     :: IDMap WorldVariable
     , _worldScript        :: !(Maybe Lua.Script)
-    , _worldEntities      :: Vector (InstancedPrototype g)
+    , _worldEntities      :: Vector InstancedPrefab
     , _worldItems         :: Vector (InstancedItem g)
     , _worldFields        :: !FieldSet
     }
@@ -112,11 +113,11 @@ mkFieldIfNotPresent _ fieldPos = do
 -- System Related --
 --------------------
 
-initWorldSpace :: forall w g. (Get w IO EntityCounter, Get w IO (Tiles g), Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[EditorInstancedFromWorld g, Existance, IncludeEditorInfo, LifeTime, Player, Render g, SpecialEntity, Variables, WireReceivers, WorldSpace g, WorldStases])
+initWorldSpace :: forall w. (Get w IO EntityCounter, Get w IO (Tiles SpriteID), Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[EditorInstancedFromWorld, Existance, IncludeEditorInfo, LifeTime, Player, Render SpriteID, SpecialEntity, Variables, WireReceivers, WorldSpace SpriteID, WorldStases])
                => (Entity -> SystemT w IO ())
-               -> ((Lua.ActiveScript -> Lua.ActiveScript) -> EntityPrototype g -> SystemT w IO Entity)
+               -> ((Lua.ActiveScript -> Lua.ActiveScript) -> Prefab -> SystemT w IO Entity)
                -> (Entity -> Lua.Script -> SystemT w IO Lua.ActiveScript)
-               -> WorldSpace g
+               -> WorldSpace SpriteID
                -> SystemT w IO ()
 initWorldSpace destroyEty mkEntity loadScript ws = do
     -- we clean up all previous entities without lifetimes
@@ -128,12 +129,12 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
 
     global $= ws
 
-    shouldIncludeInfo <- get global
+    includeEditorInfo <- get global
 
     cmap $ \(_ :: Player) -> ws^.loadPoint.to Position
     -- we place all items in the world as entities
     forM_ (ws^.worldItems) $ \(InstancedItem item pos) -> newEntityFromItem item pos
-    forM_ (ws^.worldEntities) $ placeInstancedPrototype shouldIncludeInfo mkEntity
+    forM_ (ws^.worldEntities) $ placeInstancedPrefab includeEditorInfo mkEntity
 
     buildTileCollisions ws
 
@@ -144,17 +145,17 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
             active <- loadScript ety scr
             ety    $= active
 
-placeInstancedPrototype :: forall w g. (Get w IO EntityCounter, Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[EditorInstancedFromWorld g, Existance, Render g, SpecialEntity, WireReceivers])
-                        => IncludeEditorInfo
-                        -> ((Lua.ActiveScript -> Lua.ActiveScript) -> EntityPrototype g -> SystemT w IO Entity)
-                        -> InstancedPrototype g
-                        -> SystemT w IO ()
-placeInstancedPrototype (IncludeEditorInfo shouldIncludeInfo) mkEntity instancedProto@(InstancedPrototype _ proto pos sigOut sigIn config) = do
-    ety <- mkEntity (\s -> s {Lua.instanceConfig = config}) proto
+placeInstancedPrefab :: forall w. (Get w IO EntityCounter, Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[EditorInstancedFromWorld, Existance, Render SpriteID, SpecialEntity, WireReceivers])
+                     => IncludeEditorInfo
+                     -> ((Lua.ActiveScript -> Lua.ActiveScript) -> Prefab -> SystemT w IO Entity)
+                     -> InstancedPrefab
+                     -> SystemT w IO ()
+placeInstancedPrefab (IncludeEditorInfo shouldIncludeInfo) mkEntity instancedPrefab@(InstancedPrefab _ prefab pos sigOut sigIn config) = do
+    ety <- mkEntity (\s -> s {Lua.instanceConfig = config}) prefab
     ety $= Position pos
     -- include the instance with the entity, as we are running in some form of editor mode
     when shouldIncludeInfo $
-        ety $= EditorInstancedFromWorld instancedProto
+        ety $= EditorInstancedFromWorld instancedPrefab
 
     initialScript <- getIfExists ety
     forM_ initialScript $
@@ -209,16 +210,16 @@ saveWorldVariables newWS = do
 
 -- as of right now, count not considered; this will be added when picking up is implemented
 -- currently use StaticBody, although DynamicBody will be used once these have a shape and mass
-newEntityFromItem :: forall w m g. (MonadIO m, Get w m EntityCounter, ReadWriteEach w m '[Body, Existance, Position, Render g]) => ItemStack g -> V2 Double -> SystemT w m Entity
+newEntityFromItem :: forall w m. (MonadIO m, Get w m EntityCounter, ReadWriteEach w m '[Body, Existance, Position, Render SpriteID]) => ItemStack SpriteID -> V2 Double -> SystemT w m Entity
 newEntityFromItem stack v = newExistingEntity (StaticBody, Position v, itemIcon . stackItem $ stack)
 
 -------------------
 -- Serialization --
 -------------------
 
-instance ToJSON (InstancedPrototype g) where
-    toJSON (InstancedPrototype idt ety pos sigEmit sigRece config) = object
-        [ "entity"           .= getPrototypeID ety
+instance ToJSON InstancedPrefab where
+    toJSON (InstancedPrefab idt ety pos sigEmit sigRece config) = object
+        [ "entity"           .= prefabID ety
         , "instance-id"      .= (if idt == "" then Nothing else Just idt)
         , "position"         .= (pos / unitsPerTile)
         , "emitting-signal"  .= sigEmit
@@ -226,7 +227,7 @@ instance ToJSON (InstancedPrototype g) where
         , "config"           .= (if Map.null config then Nothing else Just config)
         ]
 
-instance (s `CanProvide` (IDMap (EntityPrototype g)), Monad m) => FromJSON (Dependency s m (InstancedPrototype g)) where
+instance (s `CanProvide` (IDMap Prefab), Monad m) => FromJSON (Dependency s m InstancedPrefab) where
     parseJSON (Object obj) = do
         idt     <- obj .:? "instance-id" .!= ""
         pos     <- (*unitsPerTile) <$> obj .: "position"
@@ -234,8 +235,8 @@ instance (s `CanProvide` (IDMap (EntityPrototype g)), Monad m) => FromJSON (Depe
         sigRece <- obj .:? "receiving-signal"
         config  <- obj .:? "config" .!= Map.empty
         entity  <- dependencyMapLookupElseError "Entity" <$> (obj .: "entity" :: Parser Identifier)
-        pure $ (\e -> InstancedPrototype idt e pos sigEmit sigRece config) <$> entity
-    parseJSON e = typeMismatch "InstancedPrototype" e
+        pure $ (\e -> InstancedPrefab idt e pos sigEmit sigRece config) <$> entity
+    parseJSON e = typeMismatch "InstancedPrefab" e
 
 instance ToJSON (InstancedItem g) where
     toJSON (InstancedItem (ItemStack item count) pos) = object
@@ -272,7 +273,7 @@ encodeValueForWorldSpace allTiles (WorldSpace wid wname initPal palettes loadPos
         ]
         ++ fieldPairs
 
-instance ( s `CanProvide` IDMap (EntityPrototype g)
+instance ( s `CanProvide` IDMap Prefab
          , s `CanProvide` IDMap Palette
          , s `CanProvide` IDMap (Tile g)
          , s `CanProvide` WorkingDirectory

@@ -14,14 +14,14 @@ import           Verda.Util.Types           (IDMap, emptyIDMap)
 
 import           Kathu.Entity.Item          (Item)
 import           Kathu.Entity.Physics.Floor (FloorProperty, reservedFloorIDMap)
-import           Kathu.Entity.Prototype
+import           Kathu.Entity.Prefab
 import           Kathu.Graphics.Drawable
 import           Kathu.Graphics.Palette
 import           Kathu.World.Tile           (emptyTile, reservedTileIDMap, Tile)
 
 data KathuStore = KathuStore
     { _psCountingIDs      :: !CountingIDs
-    , _psEntities         :: !(IDMap (EntityPrototype SpriteID))
+    , _psPrefabs          :: !(IDMap Prefab)
     , _psSurfaces         :: !SurfaceVector
     , _psItems            :: !(IDMap (Item SpriteID))
     , _psFloors           :: !(IDMap FloorProperty)
@@ -35,7 +35,7 @@ emptyKathuStore :: KathuStore
 emptyKathuStore = KathuStore
     -- we automatically certain reserved values in this counting map, so that we start counting after them
     { _psCountingIDs      = CountingIDs . Map.fromList $ [reservedTileIDMap, reservedFloorIDMap]
-    , _psEntities         = emptyIDMap
+    , _psPrefabs          = emptyIDMap
     , _psSurfaces         = Vec.empty
     , _psItems            = emptyIDMap
     , _psFloors           = emptyIDMap
@@ -54,8 +54,8 @@ instance KathuStore `CanProvide` WorkingDirectory
 instance KathuStore `CanStore`   CountingIDs where storeLens = psCountingIDs
 instance KathuStore `CanProvide` CountingIDs
 
-instance KathuStore `CanStore`   IDMap (EntityPrototype SpriteID) where storeLens = psEntities
-instance KathuStore `CanProvide` IDMap (EntityPrototype SpriteID)
+instance KathuStore `CanStore`   IDMap Prefab where storeLens = psPrefabs
+instance KathuStore `CanProvide` IDMap Prefab
 
 instance KathuStore `CanStore`   IDMap FloorProperty where storeLens = psFloors
 instance KathuStore `CanProvide` IDMap FloorProperty

@@ -5,7 +5,7 @@ render:
   bounds: [16, 16]
   strips:
   - {id: active, frames: 3, row: 0, delay: 150}
-body-config:
+physics:
   type:       dynamic
   mass:       1000
   friction:   0

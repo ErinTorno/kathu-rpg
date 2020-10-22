@@ -41,9 +41,9 @@ handleEvent event = case event of
         loadWorldSpace worldspace
     DestroyEntity ety ->
         destroyEntity ety
-    PlaceEntity instancedProto -> do
+    PlaceEntity instancedPrefab -> do
         includeEditorInfo <- get global
-        placeInstancedPrototype includeEditorInfo newFromPrototypeWithScriptMapping instancedProto
+        placeInstancedPrefab includeEditorInfo newFromPrefabWithScriptMapping instancedPrefab
         -- If we can edit entities, then we must rebuild the editor info collisions to include this new entity
         toolmode <- get global
         when (canEditEntities toolmode)

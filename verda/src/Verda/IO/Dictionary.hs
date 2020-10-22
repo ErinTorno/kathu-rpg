@@ -7,11 +7,18 @@ import           Data.Aeson
 import qualified Data.Map               as Map
 
 import           Verda.IO.Directory     (WorkingDirectory)
-import           Verda.IO.Files         (loadFromFileDP, parseAllDP)
+import           Verda.IO.Files         (loadFromFileDP, parseAll, parseAllDP)
 import           Verda.Util.Dependency
 import           Verda.Util.Types
 
 type DictionaryLoader m d s = FilePath -> (d, s) -> m (d, s)
+
+parseFiles' :: (FromJSON a, MonadIO m) => Setter' d (IDMap a) -> String -> (a -> Identifier) -> DictionaryLoader m d s
+parseFiles' updateDict extension getID assetsDir (dict, parsingStore) = do
+    values <- liftIO $ parseAll extension assetsDir
+    let idMap = Map.fromList . fmap (\v -> (getID v, v)) $ values
+        dict' = (updateDict .~ idMap) dict
+    pure (dict', parsingStore)
 
 parseFiles :: (s `CanStore` WorkingDirectory, FromJSON (Dependency s m a), MonadIO m) => Setter' d (IDMap a) -> String -> (a -> Identifier) -> DictionaryLoader m d s
 parseFiles updateDict extension getID assetsDir (dict, parsingStore) = do

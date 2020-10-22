@@ -5,7 +5,7 @@ identity:
   description: a wide set of locked doors
 tags: [door]
 render: ["door-brick-wide-unlocked.png"]
-body-config:
+physics:
   type:   static
   shapes:
   - category: movement

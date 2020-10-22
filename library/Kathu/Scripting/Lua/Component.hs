@@ -10,6 +10,7 @@ import qualified Data.Vector                         as Vec
 import qualified Data.Set                            as DSet
 import qualified Data.Text                           as T
 import           Foreign.Lua
+import           Verda.Graphics.Sprites              (SpriteID)
 
 import           Kathu.Entity.Components
 import           Kathu.Entity.Logger
@@ -23,8 +24,8 @@ import           Verda.Util.Types
 import           Verda.Util.Apecs
 
 -- ExternalFunctions is unused in this, but is included here since it might be in the future, mirrors the Global's function signature, and acts as a Proxy for g
-registerComponentFunctions :: forall w g. (Has w IO Physics, Members w IO (Render g), ReadWriteEach w IO '[ActiveScript, Force, Identity, Logger, Mass, MovingSpeed, Position, Render g, RunningScriptEntity, ScriptEventBuffer, Tags, Velocity, WireReceivers])
-                           => w -> ExternalFunctions w g -> Lua ()
+registerComponentFunctions :: forall w. (Has w IO Physics, ReadWriteEach w IO '[ActiveScript, Force, Identity, Logger, Mass, MovingSpeed, Position, Render SpriteID, RunningScriptEntity, ScriptEventBuffer, Tags, Velocity, WireReceivers])
+                           => w -> ExternalFunctions w -> Lua ()
 registerComponentFunctions world _ = do
     registerHaskellFunction "getIdentifier"        $ getIdentifier world
     registerHaskellFunction "getName"              $ getName world
@@ -32,7 +33,7 @@ registerComponentFunctions world _ = do
     registerHaskellFunction "getTags"              $ getTags world
     registerHaskellFunction "getMovingSpeed"       $ getMovingSpeed world
     registerHaskellFunction "setMovingSpeed"       $ setMovingSpeed world
-    registerHaskellFunction "setAnimation"         $ setAnimation (Proxy :: Proxy g) world
+    registerHaskellFunction "setAnimation"         $ setAnimation world
     registerHaskellFunction "getMass"              $ getMass world
     registerHaskellFunction "setMass"              $ setMass world
     registerHaskellFunction "getPosition"          $ getPosition world
@@ -88,15 +89,15 @@ setMovingSpeed !world !etyID s = liftIO . Apecs.runWith world $
 -- Graphics --
 --------------
 
-setAnimation :: forall w g. (Members w IO (Render g), ReadWrite w IO (Render g)) => Proxy g -> w -> Int -> Text -> Lua ()
-setAnimation _ !world !etyID !animID = liftIO . Apecs.runWith world $ do
+setAnimation :: forall w. (ReadWrite w IO (Render SpriteID)) => w -> Int -> Text -> Lua ()
+setAnimation !world !etyID !animID = liftIO . Apecs.runWith world $ do
     let ety = Entity etyID
         changeAnim (RSAnimated anim) = RSAnimated $ switchAnimationByID (mkIdentifier animID) anim
         changeAnim e                 = e
 
-    mrender :: Maybe (Render g) <- getIfExists ety
+    mrender :: Maybe (Render SpriteID) <- getIfExists ety
     case mrender of
-        Nothing     -> return ()
+        Nothing -> return ()
         Just (Render layers) -> ety $= Render (changeAnim <$> layers)
 
 setCollisionCategory :: forall w. (Has w IO Physics, ReadWriteEach w IO [CollisionFilter, Tags]) => w -> Entity -> Text -> Optional Text -> Lua ()
@@ -121,7 +122,7 @@ setCollisionCategory !world !ety colCategory (Optional tag) = liftIO . Apecs.run
 -- Physics --
 -------------
 
-getVector2D :: forall w c. (Get w IO c, Members w IO c) => (c -> V2 Double) -> w -> Int -> Lua (Optional (V2 Double))
+getVector2D :: forall w c. Get w IO c => (c -> V2 Double) -> w -> Int -> Lua (Optional (V2 Double))
 getVector2D mapper !world !etyID = liftIO . Apecs.runWith world $ do
     comp <- getIfExists (Entity etyID)
     pure $ case comp of

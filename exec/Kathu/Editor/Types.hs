@@ -12,7 +12,7 @@ import           Verda.Graphics.Sprites     (SpriteID)
 
 import           Kathu.App.Tools.EventQueue
 import           Kathu.Editor.Resources     (Resources)
-import           Kathu.Entity.Prototype     (getPrototypeID)
+import           Kathu.Entity.Prefab        (prefabID)
 import           Kathu.World.WorldSpace
 import           Verda.Util.Types
 
@@ -28,17 +28,17 @@ type DialogRunner a = (a -> IO ()) -- result consumer
 
 data InstancedEntityConfig = InstancedEntityConfig
     { _iecOriginalEntity     :: !(Maybe Entity)
-    , _iecPrototypeID        :: !Identifier
-    , _iecInstancedPrototype :: !(InstancedPrototype SpriteID)
+    , _iecPrefabID           :: !Identifier
+    , _iecInstancedPrefab    :: !InstancedPrefab
     }
 makeLenses ''InstancedEntityConfig
 
 emptyInstancedEntityConfig :: InstancedEntityConfig
-emptyInstancedEntityConfig = InstancedEntityConfig Nothing "" emptyInstancedPrototype
+emptyInstancedEntityConfig = InstancedEntityConfig Nothing "" emptyInstancedPrefab
 
-mkInstancedEntityConfig :: Entity -> InstancedPrototype SpriteID -> InstancedEntityConfig
-mkInstancedEntityConfig ety proto = InstancedEntityConfig (Just ety) protoID proto
-    where protoID = proto^.basePrototype.to getPrototypeID
+mkInstancedEntityConfig :: Entity -> InstancedPrefab -> InstancedEntityConfig
+mkInstancedEntityConfig ety prefab = InstancedEntityConfig (Just ety) pID prefab
+    where pID = prefab^.basePrefab.to prefabID
 
 data WSEditState = WSEditState
     { worldspaceRef :: !(IORef (WorldSpace SpriteID))
