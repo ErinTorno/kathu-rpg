@@ -51,7 +51,6 @@ library
                     Kathu.Entity.Damage
                     Kathu.Entity.Item
                     Kathu.Entity.LifeTime
-                    Kathu.Entity.Logger
                     Kathu.Entity.Physics.BodyConfig
                     Kathu.Entity.Physics.CollisionGroup
                     Kathu.Entity.Physics.Floor
@@ -117,7 +116,6 @@ executable kathu
                     -- Graphics
                     Kathu.App.Graphics.Debug
                     Kathu.App.Graphics.Drawing
-                    Kathu.App.Graphics.Font
                     Kathu.App.Graphics.ImageManager
                     Kathu.App.Graphics.Render
                     Kathu.App.Graphics.RenderBuffer

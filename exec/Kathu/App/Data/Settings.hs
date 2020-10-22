@@ -18,7 +18,6 @@ data Settings = Settings
     { targetFPS      :: !Float
     , resolution     :: !(V2 Word32)
     , isVSyncEnabled :: !Bool
-    , serverPort     :: !Word32
     , language       :: !Identifier
     , modDir         :: !Text
     , baseSaveDir    :: !Text
@@ -41,7 +40,6 @@ defaultSettings = Settings
     { targetFPS      = 60.0
     , resolution     = V2 1280 720
     , isVSyncEnabled = False
-    , serverPort     = 7777
     , language       = "english"
     , modDir         = "/mods"
     , baseSaveDir    = "/saves"

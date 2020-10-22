@@ -2,9 +2,5 @@ lang-id:   english
 name:      "english"
 # no line files given, as English is the default and has no need to override text
 fonts:
-  small:
-    file: "/fonts/VT323-Regular.ttf"
-    size: 28
-  title:
-    file: "/fonts/VT323-Regular.ttf"
-    size: 54
+  small: vt323-regular-28
+  title: vt323-regular-54

@@ -2,9 +2,5 @@ lang-id:   esperanto
 name:      "esperanto"
 directory: "./esperanto"
 fonts:
-  small:
-    file: "/fonts/VT323-Regular.ttf"
-    size: 28
-  title:
-    file: "/fonts/VT323-Regular.ttf"
-    size: 54
+  small: vt323-regular-28
+  title: vt323-regular-54

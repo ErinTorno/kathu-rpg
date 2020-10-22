@@ -6,6 +6,7 @@ import           Control.Lens
 import qualified Data.Map                   as Map
 import           Data.Maybe
 import qualified SDL
+import           Verda.Graphics.Fonts       (Font, fontID)
 import           Verda.Graphics.Sprites     (SpriteID)
 import           Verda.IO.Dictionary
 import           Verda.IO.Directory         (assetPath)
@@ -13,7 +14,6 @@ import           Verda.Util.Types
 
 import           Kathu.Language
 import           Kathu.App.Data.KathuStore
-import           Kathu.App.Graphics.Font    (Font)
 import           Kathu.App.Graphics.ImageManager (ImageManager, mkImageManager)
 import           Kathu.App.Graphics.UI
 import           Kathu.Entity.Item
@@ -27,7 +27,8 @@ data Dictionary = Dictionary
     { _dictParsingStore    :: !KathuStore
     , _dictItems           :: !(IDMap (Item SpriteID))
     , _dictFloorProperties :: !(IDMap FloorProperty)
-    , _dictLanguages       :: !(IDMap (Language Font))
+    , _dictFonts           :: !(IDMap Font)
+    , _dictLanguages       :: !(IDMap Language)
     , _dictPalettes        :: !(IDMap Palette)
     , _dictPrefabs         :: !(IDMap Prefab)
     , _dictTiles           :: !(IDMap (Tile SpriteID))
@@ -41,6 +42,7 @@ emptyDictionary = Dictionary
     { _dictParsingStore    = emptyKathuStore
     , _dictItems           = emptyIDMap
     , _dictFloorProperties = emptyIDMap
+    , _dictFonts           = emptyIDMap
     , _dictLanguages       = emptyIDMap
     , _dictPalettes        = emptyIDMap
     , _dictPrefabs         = emptyIDMap
@@ -59,7 +61,8 @@ dictionaryFetch !dict !getMap !key = fromMaybe err $ Map.lookup key (dict^.getMa
 loadDictionary :: SDL.Renderer -> IO (Dictionary, ImageManager)
 loadDictionary !renderer = do
     (dict, store) <- runDictionaryLoaders assetPath emptyDictionary emptyKathuStore
-        [ parseFiles dictLanguages       ".lang"    langID
+        [ parseFiles dictFonts           ".font"    fontID
+        , parseFiles dictLanguages       ".lang"    langID
         , parseFiles dictPalettes        ".palette" paletteID
         , parseFiles dictItems           ".item"    itemID
         , parseFiles dictPrefabs         ".prefab"  prefabID

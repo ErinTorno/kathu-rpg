@@ -17,13 +17,13 @@ import qualified SDL.Raw.Enum                    as SDLRaw
 import qualified SDL.Video                       as SDLV
 import qualified System.Random                   as R
 import           Verda.Event.Controls            (mkControlState)
+import           Verda.Graphics.Fonts            (fontID, initFontCache)
 import           Verda.Graphics.Icons            (setWindowIcon)
 import           Verda.Util.Containers           (fromJustElseError)
 import           Verda.Util.Types                (unID)
 
 import           Kathu.App.Data.Dictionary
 import           Kathu.App.Data.Settings
-import           Kathu.App.Graphics.Font         (initFontCache)
 import           Kathu.App.Graphics.UI
 import           Kathu.App.System
 import           Kathu.App.World                 (loadWorldSpace)
@@ -65,8 +65,12 @@ initLanguage window renderer settings dictionary = do
                 SDLV.showSimpleMessageBox (Just window) SDLV.Error "Missing Language" msg
                 pure $ error "No default language could be found"
 
-    lang      <- maybe promptAndDefault pure maybeLang
-    fontCache <- initFontCache renderer $ langFonts lang
+    lang   <- maybe promptAndDefault pure maybeLang
+    global $= lang
+    let missingFontErr lid = concat ["Font ", show lid, " required for language ", show $ langID lang, " but not found"]
+        findFont lid       = fromJustElseError (missingFontErr lid) $ Map.lookup lid (dictionary^.dictFonts)
+        curFonts = Map.fromList . map (\f -> (fontID f, f)) . Map.elems . fmap findFont . langFontIDs $ lang
+    fontCache <- initFontCache renderer curFonts
     global    $= fontCache
 
 system :: SDL.Window -> SDL.Renderer -> Settings -> SystemT' IO ()

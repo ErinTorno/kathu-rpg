@@ -23,6 +23,7 @@ import           Linear.V4             (V4(..))
 
 import           Verda.Util.Flow       ((>>>=))
 import           Verda.Util.Dependency
+import           Verda.Util.Types      (Identifier, IDMap)
 
 standardProjectOptions :: Options
 standardProjectOptions = defaultOptions {constructorTagModifier = camelTo2 '-', fieldLabelModifier = camelTo2 '-' . dropInitial '_', omitNothingFields = True}
@@ -61,6 +62,21 @@ composeDepParser = Compose . pure
 
 (.!=-) :: Monad m => Compose Parser m (Maybe a) -> a -> Compose Parser m a
 (.!=-) p def = fromMaybe def <$> p
+
+
+parseLookup :: (Monad m, s `CanProvide` IDMap a) => Object -> Text -> Compose Parser (Dependency s m) a
+parseLookup v = Compose . fmap lookupDep . (.:) v
+    where lookupDep (k :: Identifier) =
+              -- shouldn't error, but I'm not sure how to use fail right now in this case...
+              fromMaybe (error $ "Key " ++ show k ++ " not found during parsing") . Map.lookup k <$> provide
+
+parseLookupMap :: (Monad m, s `CanProvide` IDMap a) => Object -> Text -> Compose Parser (Dependency s m) (IDMap a)
+parseLookupMap v = Compose . fmap lookupDeps . (.:) v
+    where lookupDeps (m :: IDMap Identifier) = do
+              depMap <- provide
+              -- shouldn't error, but I'm not sure how to use fail right now in this case...
+              let look k = fromMaybe (error $ "Key " ++ show k ++ " not found during parsing") (Map.lookup k depMap)
+              pure (look <$> m)
 
 parseListDPWith :: Monad m => (Value -> Parser (Dependency s m a)) -> Value -> Parser (Dependency s m [a])
 parseListDPWith parser (Array a) = foldM append (pure []) a

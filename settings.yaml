@@ -19,6 +19,5 @@ misc: {}
 language: english
 base-save-dir: /saves
 is-v-sync-enabled: false
-server-port: 7777
 target-fps: 60.0
 initial-world: test-world

@@ -4,21 +4,24 @@ import           Apecs                           hiding (($=))
 import           Apecs.Physics                   hiding (($=))
 import           Control.Lens                    hiding (Identity)
 import           Control.Monad                   (void, when)
+import qualified Data.Map                        as Map
 import qualified Data.Text                       as T
 import qualified Data.Vector.Storable            as SVec
 import           SDL                             (($=))
 import qualified SDL
+import           Verda.Graphics.Color
+import           Verda.Graphics.Fonts            (renderText)
 import           Verda.Graphics.Sprites          (SpriteID)
+import           Verda.Util.Containers           (fromJustElseError)
+import           Verda.Util.Types                (unID)
 
-import           Kathu.App.Graphics.Font         (defaultFont, renderText)
 import           Kathu.App.Graphics.ImageManager (currentPalette)
 import           Kathu.App.System                (SystemT')
 import           Kathu.App.Tools.ToolMode        (isNoTool)
 import           Kathu.Entity.Physics.CollisionGroup (collisionFilterDebugColor)
 import           Kathu.Graphics.Camera
-import           Verda.Graphics.Color
+import           Kathu.Language
 import           Kathu.World.WorldSpace
-import           Verda.Util.Types                (unID)
 
 -- | A circular shape composed of many vertices; when collisions are drawn, the radius and origin of this can be shifted to match each collision
 circleVertices :: SVec.Vector (V2 Double)
@@ -72,5 +75,7 @@ renderDebugText renderer = do
             , " y: ",       T.pack . show $ camY
             ]
 
+    lang      <- get global
     fontCache <- get global
-    void $ renderText renderer fontCache defaultFont white (V2 0 0) displayText
+    let smallFont = fromJustElseError "Loaded language is missing \"small\" font definition" . Map.lookup "small" . langFontIDs $ lang
+    void $ renderText renderer fontCache smallFont white (V2 0 0) displayText

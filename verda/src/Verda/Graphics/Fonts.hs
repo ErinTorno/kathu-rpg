@@ -1,9 +1,8 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+module Verda.Graphics.Fonts where
 
-module Kathu.App.Graphics.Font where
-
+import           Apecs                   hiding (($=))
 import           Control.Monad           (forM_)
-import           Control.Monad.IO.Class  (MonadIO, liftIO)
+import           Control.Monad.IO.Class  (MonadIO)
 import           Control.Monad.ST        (RealWorld, stToIO)
 import           Data.Aeson
 import           Data.HashTable.ST.Basic (HashTable)
@@ -26,20 +25,20 @@ import           Verda.IO.Directory
 import           Verda.Util.Dependency
 import           Verda.Util.Types        (Identifier, IDMap)
 
-type Font = SDLF.Font
+data Font = Font
+    { fontID :: !Identifier
+    , unFont :: SDLF.Font
+    }
 
--- | This font is always assumed to be loaded by a language, and is used for debugging purposes
-defaultFont :: Identifier
-defaultFont = "small"
-
-instance (s `CanProvide` WorkingDirectory, MonadIO m) => FromJSON (Dependency s m SDLF.Font) where
+instance (s `CanProvide` WorkingDirectory, MonadIO m) => FromJSON (Dependency s m Font) where
     parseJSON = withObject "Font" $ \v -> do
+        fontID <- v .: "font-id"
         filePath <- resolveAssetPathDP <$> v .: "file"
         size     <- v .: "size"
-        pure $ liftDependency . flip SDLF.load size =<< filePath
+        pure $ fmap (Font fontID) . liftDependency . flip SDLF.load size =<< filePath
 
 -- in future, might want to load this from language file
-defaultCachedChars :: [Char]
+defaultCachedChars :: String
 defaultCachedChars = [' '..'~'] -- Most letters, numbers, and symbols for American keyboard
 
 defaultFontCacheSize :: Int
@@ -48,12 +47,16 @@ defaultFontCacheSize = 128
 newtype CharCache = CharCache {unCharCache :: HashTable RealWorld Char (V2 CInt, SDL.Texture)}
 
 data FontCache = FontCache
-    { fontMap    :: !(IDMap SDLF.Font)
+    { fontMap    :: !(IDMap Font)
     , charCaches :: !(HashTable RealWorld Identifier CharCache)
     }
 
-writeChar :: MonadIO m => SDL.Renderer -> SDLF.Font -> CharCache -> Char -> m (V2 CInt, SDL.Texture)
-writeChar !renderer !font (CharCache !cache) !key = do
+instance Semigroup FontCache where (<>) = mappend
+instance Monoid FontCache where mempty = error "Attempted to use FontCache before it has been initialized"
+instance Component FontCache where type Storage FontCache = Global FontCache
+
+writeChar :: MonadIO m => SDL.Renderer -> Font -> CharCache -> Char -> m (V2 CInt, SDL.Texture)
+writeChar !renderer (Font _ !font) (CharCache !cache) !key = do
     -- nothing in cache, so we need to render the char then return texture
     surface <- SDLF.blended font (unColor white) (T.singleton key)
     size    <- SDL.surfaceDimensions surface
@@ -63,7 +66,7 @@ writeChar !renderer !font (CharCache !cache) !key = do
     SDL.freeSurface surface
     pure (size, texture)
 
-getCharacter :: MonadIO m => SDL.Renderer -> SDLF.Font -> CharCache -> Char -> m (V2 CInt, SDL.Texture)
+getCharacter :: MonadIO m => SDL.Renderer -> Font -> CharCache -> Char -> m (V2 CInt, SDL.Texture)
 getCharacter !renderer !font (CharCache !cache) !key = insertIfNeeded =<< (liftIO . stToIO $ HT.lookup cache key)
     where insertIfNeeded (Just p) = pure p
           insertIfNeeded Nothing  = writeChar renderer font (CharCache cache) key
@@ -86,7 +89,7 @@ renderText !renderer (FontCache fonts caches) !fontID (Color (V4 !r !g !b !a)) (
 
     ofoldlM drawChar x0 text
     
-initFontCache :: MonadIO m => SDL.Renderer -> IDMap SDLF.Font -> m FontCache
+initFontCache :: MonadIO m => SDL.Renderer -> IDMap Font -> m FontCache
 initFontCache !renderer !fonts = do
     allCaches <- liftIO . stToIO $ HT.newSized (Map.size fonts)
 

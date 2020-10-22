@@ -18,6 +18,7 @@ import qualified Data.Vector                 as Vec
 import qualified SDL
 import           Verda.Event.Controls
 import           Verda.Graphics.Sprites      (SpriteID)
+import           Verda.Logger
 
 import           Kathu.App.Data.Dictionary
 import           Kathu.App.Data.Settings
@@ -28,7 +29,6 @@ import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
 import           Kathu.App.World
 import           Kathu.Entity.Components
-import           Kathu.Entity.Logger
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera

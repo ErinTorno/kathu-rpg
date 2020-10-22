@@ -1,13 +1,17 @@
-module Kathu.Entity.Logger where
+module Verda.Logger where
 
 import           Apecs
-import           Control.Monad.IO.Class      (MonadIO)
-import           Data.Text                   (Text)
-import qualified Data.Text.IO                as T
+import           Control.Monad.IO.Class (MonadIO)
+import           Data.Text              (Text)
+import qualified Data.Text.IO           as T
 
 data LogType = Info | Warning | Error deriving Show
 
 newtype Logger = Logger {unLogger :: LogType -> Text -> IO ()}
+
+instance Semigroup Logger where (<>) = mappend
+instance Monoid Logger where mempty  = defaultLogger
+instance Component Logger where type Storage Logger = Global Logger
 
 logTypeText :: LogType -> Text
 logTypeText Info    = "Info"

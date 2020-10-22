@@ -2,7 +2,8 @@
 
 module Kathu.Language where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Apecs                  hiding (Map)
+import           Control.Monad.IO.Class (MonadIO)
 import           Data.Aeson
 import           Data.Aeson.Types       (typeMismatch)
 import qualified Data.Foldable          as F
@@ -13,7 +14,6 @@ import           Data.Map.Merge.Strict  (merge, preserveMissing, zipWithMatched)
 import           Data.Text              (Text)
 import           Data.Vector            (Vector)
 import qualified Data.Vector            as Vec
-
 import           Verda.IO.Files         (parseAll)
 import           Verda.IO.Directory
 import           Verda.Parsing.Aeson
@@ -45,22 +45,25 @@ mergeLines = Lines . F.foldl' merger Map.empty . fmap unLines
 -- Word with cases, plurals, and both
 -- LangUnit "kato" $ Map.fromList [("akuzativa", "katon"), ("plurala", "katoj"), ("akuzativplurala", "katojn")]
 
-data Language f = Language
-    { langID    :: !Identifier
-    , langName  :: !Text
-    , langFonts :: IDMap f
-    , langLines :: Lines
+data Language = Language
+    { langID      :: !Identifier
+    , langName    :: !Text
+    , langFontIDs :: IDMap Identifier
+    , langLines   :: Lines
     }
+
+instance Semigroup Language where (<>) = mappend
+instance Monoid Language where mempty = Language "missing-lang" "missing-lang" emptyIDMap (Lines emptyIDMap)
+instance Component Language where type Storage Language = Global Language
 
 instance
     ( s `CanProvide` WorkingDirectory
-    , FromJSON (Dependency s m f)
     , MonadIO m
-    ) => FromJSON (Dependency s m (Language f)) where
+    ) => FromJSON (Dependency s m Language) where
     parseJSON (Object m) = getCompose $ Language
         <$> m .:^ "lang-id"
         <*> m .:^ "name"
-        <*> Compose (parseMapDP =<< m .: "fonts")
+        <*> m .:^ "fonts"
         <*> Compose (loadLines <$> m .:? "directory")
         where -- we load all .lines files in the given directory as text lines for this language
               loadLines (Just path) = resolveAssetPathDP path

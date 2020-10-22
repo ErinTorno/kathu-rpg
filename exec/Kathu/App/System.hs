@@ -10,12 +10,13 @@ import           Apecs
 import           Apecs.Physics
 import           Control.Monad                   (forM_, void)
 import           Verda.Event.Controls
+import           Verda.Graphics.Fonts            (FontCache)
 import           Verda.Graphics.Sprites          (SpriteID)
+import           Verda.Logger                    (Logger)
 import           Verda.Util.Apecs
 
 import           Kathu.App.Data.Dictionary       (Dictionary, emptyDictionary)
 import           Kathu.App.Data.Settings
-import           Kathu.App.Graphics.Font
 import           Kathu.App.Graphics.ImageManager
 import           Kathu.App.Graphics.UI
 import           Kathu.App.Tools.ToolMode
@@ -24,7 +25,6 @@ import           Kathu.Entity.ActorState
 import           Kathu.Entity.Components
 import           Kathu.Entity.Item               (Inventory)
 import           Kathu.Entity.LifeTime
-import           Kathu.Entity.Logger
 import           Kathu.Entity.Physics.BodyConfig (setBodyConfig)
 import           Kathu.Entity.Physics.Floor      (WorldFloor)
 import           Kathu.Entity.Prefab
@@ -33,6 +33,7 @@ import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
 import           Kathu.Graphics.Drawable         (Render)
 import           Kathu.Graphics.Palette          (PaletteManager)
+import           Kathu.Language                  (Language)
 import qualified Kathu.Scripting.Lua             as Lua
 import           Kathu.Scripting.Lua.Types       (ActiveScript, RunningScriptEntity(..), ScriptBank, ScriptEventBuffer(..))
 import           Kathu.Scripting.Variables       (Variables)
@@ -78,10 +79,6 @@ instance Semigroup ImageManager where (<>) = mappend
 instance Monoid ImageManager where mempty = defaultImageManager
 instance Component ImageManager where type Storage ImageManager = Global ImageManager
 
-instance Semigroup FontCache where (<>) = mappend
-instance Monoid FontCache where mempty = error "Attempted to use FontCache before it has been loaded"
-instance Component FontCache where type Storage FontCache = Global FontCache
-
 instance Semigroup UIConfig where (<>) = mappend
 instance Monoid UIConfig where mempty = error "Attempted to use UIConfig before it has been loaded"
 instance Component UIConfig where type Storage UIConfig = Global UIConfig
@@ -115,7 +112,7 @@ instance Component WireReceivers where type Storage WireReceivers = Global WireR
 
 makeWorld "EntityWorld"
     $ [''Physics]
-   ++ [''Existance, ''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''EditorInstancedFromWorld, ''ActionSet]
+   ++ [''Existance, ''SpecialEntity, ''Identity, ''Language, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''EditorInstancedFromWorld, ''ActionSet]
    ++ [''Local, ''Camera, ''Player]
    ++ [''ShouldQuit, ''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''IncludeEditorInfo, ''Logger]
    ++ [''Settings, ''CursorMotionState, ''ControlState, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Dictionary, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]

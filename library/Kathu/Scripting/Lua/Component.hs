@@ -11,9 +11,9 @@ import qualified Data.Set                            as DSet
 import qualified Data.Text                           as T
 import           Foreign.Lua
 import           Verda.Graphics.Sprites              (SpriteID)
+import           Verda.Logger
 
 import           Kathu.Entity.Components
-import           Kathu.Entity.Logger
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Graphics.Drawable             (Render(..), RenderSprite(..), switchAnimationByID)
 import           Kathu.Scripting.ExternalFunctions

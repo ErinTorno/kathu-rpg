@@ -15,13 +15,12 @@ import qualified Data.Vector.Mutable as MVec
 import           Data.Vector.Mutable (IOVector)
 import           Data.Word
 import qualified System.Random as R
+import           Verda.Util.Types (IDMap)
 
 import           Kathu.Entity.Physics.Floor (FloorPropEntity)
-import           Kathu.Entity.Logger
 import           Kathu.Entity.Time
 import           Kathu.Graphics.Palette (PaletteManager, staticManager)
 import           Kathu.Scripting.Variables (Variables)
-import           Verda.Util.Types (IDMap)
 import           Kathu.World.Stasis
 import           Kathu.World.Tile (Tile(..), TileID(..), tileID, TileState(..), tileTextID, unTileID)
 import           Kathu.World.Time (WorldTime(..))
@@ -80,10 +79,6 @@ newtype  IncludeEditorInfo = IncludeEditorInfo {unEditorInfo :: Bool}
 instance Semigroup IncludeEditorInfo where (<>) = mappend
 instance Monoid IncludeEditorInfo where mempty  = IncludeEditorInfo False
 instance Component IncludeEditorInfo where type Storage IncludeEditorInfo = Global IncludeEditorInfo
-
-instance Semigroup Logger where (<>) = mappend
-instance Monoid Logger where mempty = defaultLogger
-instance Component Logger where type Storage Logger = Global Logger
 
 -- Entity functions
 
