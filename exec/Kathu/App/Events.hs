@@ -8,18 +8,18 @@ import           Data.Maybe                      (fromMaybe)
 import qualified Data.Text.IO                    as T
 import qualified SDL
 import           Verda.Event.Controls
+import           Verda.Graphics.SpriteManager    (nextPaletteManager, setPaletteManager)
+import           Verda.Time
 import           Verda.Util.Apecs
 import           Verda.Util.Types
 
 import           Kathu.App.Data.Controls
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Drawing
-import           Kathu.App.Graphics.ImageManager (nextPaletteManager, setPaletteManager)
 import           Kathu.App.System
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.System
-import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
 
 runEvents :: System' ()
@@ -117,8 +117,8 @@ updateDebugControls = do
             whenPressed (inputDebugPrintPhysics cs)
                 printPhysics
             whenPressed (inputDebugNextPalette cs) $ do
-                im <- get global
-                void $ setPaletteManager (nextPaletteManager im)
+                mgr <- get global
+                void $ setPaletteManager (nextPaletteManager mgr)
 
 printPhysics :: SystemT' IO ()
 printPhysics = do

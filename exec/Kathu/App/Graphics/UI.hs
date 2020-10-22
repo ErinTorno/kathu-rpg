@@ -13,10 +13,10 @@ import           Data.Functor.Compose (getCompose)
 import           Linear.V2 (V2(..))
 import qualified SDL
 import           Verda.Graphics.Icons            (Icon)
+import           Verda.Graphics.SpriteManager    (SpriteManager)
 import           Verda.Graphics.Sprites          (SpriteID)
 
 import           Kathu.App.Graphics.Drawing
-import           Kathu.App.Graphics.ImageManager
 import           Kathu.Entity.ActorState
 import           Kathu.Entity.Resource
 import           Kathu.Graphics.Drawable
@@ -78,7 +78,7 @@ instance ( FromJSON (Dependency s m (RenderSprite SpriteID))
 barIconBleed :: Floating a => a
 barIconBleed = 1.01
 
-renderUI :: forall w m. (MonadIO m, Get w m UIConfig, Get w m ImageManager) => SDL.Renderer -> Double -> Maybe ActorState -> SystemT w m ()
+renderUI :: forall w m. (MonadIO m, Get w m UIConfig, Get w m SpriteManager) => SDL.Renderer -> Double -> Maybe ActorState -> SystemT w m ()
 renderUI _ _ Nothing = pure ()
 renderUI renderer scale (Just as) = do
     config <- get global
@@ -88,8 +88,8 @@ renderUI renderer scale (Just as) = do
     drawBar renderer scale manager (as^.mana)   (manaBar config)
     pure ()
 
-drawBar :: MonadIO m => SDL.Renderer -> Double -> ImageManager -> Dynamic Double -> DisplayBar -> m ()
-drawBar renderer scale im dyn (DisplayBar startingPos ppu capBegin capEnd capw pw sw pi4 pi3 pi2 pi1 sif sie) = go >> pure ()
+drawBar :: MonadIO m => SDL.Renderer -> Double -> SpriteManager -> Dynamic Double -> DisplayBar -> m ()
+drawBar renderer scale mgr dyn (DisplayBar startingPos ppu capBegin capEnd capw pw sw pi4 pi3 pi2 pi1 sif sie) = go >> pure ()
     where go = drawCap capBegin sx >>= goInner >>= drawCap capEnd
           goInner x = drawN fullUnits sif sw x >>= drawAt primaryImg pw >>= drawN emptyUnits sie sw
           drawCap cap x = maybe (pure x) (\i -> drawAt i capw x) cap
@@ -103,6 +103,6 @@ drawBar renderer scale im dyn (DisplayBar startingPos ppu capBegin capEnd capw p
           fixPartial p = p
           emptyUnits = unitCount - fullUnits - 1
           primaryImg = case partialRem of {1 -> pi1; 2 -> pi2; 3 -> pi3; 4 -> pi4; _ -> pi4}
-          drawAt img w x = blitRenderSprite renderer im (mkRenderRectNoCenter barIconBleed scale (V2 x sy)) img >> pure (x + scale * w)
+          drawAt img w x = blitRenderSprite renderer mgr (mkRenderRectNoCenter barIconBleed scale (V2 x sy)) img >> pure (x + scale * w)
           drawN 0 _ _ x   = pure x
           drawN i img w x = drawAt img w x >>= drawN (i - 1) img w

@@ -13,13 +13,17 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 
 library
-  exposed-modules:  Verda.Logger
+  exposed-modules:  Verda.Audio
+                    Verda.Logger
+                    Verda.Time
                     -- Event
                     Verda.Event.Controls
                     -- Graphics
                     Verda.Graphics.Color
+                    Verda.Graphics.Components
                     Verda.Graphics.Fonts
                     Verda.Graphics.Icons
+                    Verda.Graphics.SpriteManager
                     Verda.Graphics.Sprites
                     -- IO
                     Verda.IO.Dictionary
@@ -54,6 +58,7 @@ library
                     primitive            ^>=0.7,
                     sdl2                 ^>=2.5.2,
                     sdl2-image           ^>=2.0,
+                    sdl2-mixer           ^>=1.1,
                     sdl2-ttf             ^>=2.1,
                     text                 ^>=1.2.4,
                     unordered-containers ^>=0.2.10,

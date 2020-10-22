@@ -3,24 +3,24 @@
 module Kathu.App.Data.Dictionary where
 
 import           Control.Lens
-import qualified Data.Map                   as Map
+import qualified Data.Map                        as Map
 import           Data.Maybe
 import qualified SDL
-import           Verda.Graphics.Fonts       (Font, fontID)
-import           Verda.Graphics.Sprites     (SpriteID)
+import           Verda.Graphics.Fonts            (Font, fontID)
+import           Verda.Graphics.SpriteManager    (SpriteManager, mkSpriteManager)
+import           Verda.Graphics.Sprites          (SpriteID)
 import           Verda.IO.Dictionary
-import           Verda.IO.Directory         (assetPath)
+import           Verda.IO.Directory              (assetPath)
 import           Verda.Util.Types
 
 import           Kathu.Language
 import           Kathu.App.Data.KathuStore
-import           Kathu.App.Graphics.ImageManager (ImageManager, mkImageManager)
 import           Kathu.App.Graphics.UI
 import           Kathu.Entity.Item
-import           Kathu.Entity.Physics.Floor (FloorProperty(..))
-import           Kathu.Entity.Prefab        (Prefab, prefabID)
-import           Kathu.Graphics.Palette     (Palette, paletteID)
-import           Kathu.World.Tile           hiding (Vector, MVector)
+import           Kathu.Entity.Physics.Floor      (FloorProperty(..))
+import           Kathu.Entity.Prefab             (Prefab, prefabID)
+import           Kathu.Graphics.Palette          (Palette, paletteID)
+import           Kathu.World.Tile                hiding (Vector, MVector)
 import           Kathu.World.WorldSpace
 
 data Dictionary = Dictionary
@@ -58,7 +58,7 @@ dictionaryFetch :: Dictionary -> Lens' Dictionary (IDMap a) -> Identifier -> a
 dictionaryFetch !dict !getMap !key = fromMaybe err $ Map.lookup key (dict^.getMap)
     where err = error $ "Failed to retrieve dictionary value for key " ++ show key
 
-loadDictionary :: SDL.Renderer -> IO (Dictionary, ImageManager)
+loadDictionary :: SDL.Renderer -> IO (Dictionary, SpriteManager)
 loadDictionary !renderer = do
     (dict, store) <- runDictionaryLoaders assetPath emptyDictionary emptyKathuStore
         [ parseFiles dictFonts           ".font"    fontID
@@ -73,7 +73,7 @@ loadDictionary !renderer = do
         ]
     
     -- Construct SpriteManager for all loaded Surfaces
-    manager <- mkImageManager renderer (store^.psSurfaces)
+    manager <- mkSpriteManager renderer (store^.psSurfaces)
     let dict' = dict
             { _dictParsingStore = store
             , _dictTiles = Map.insert "empty" emptyTile (dict^.dictTiles)

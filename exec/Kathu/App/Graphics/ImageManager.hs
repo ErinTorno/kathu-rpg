@@ -4,7 +4,7 @@
 {-# LANGUAGE Strict            #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Kathu.App.Graphics.ImageManager
+module Kathu.App.Graphics.ImageManager {-# DEPRECATED "SpriteManager and Shaders will replace this functionality" #-}
     ( ImageManager
     , defaultImageManager
     , mkImageManager
@@ -13,7 +13,6 @@ module Kathu.App.Graphics.ImageManager
     , setPaletteIdx
     , setPaletteManager
     , fetchTextures
-    , backgroundColor
     , loadPalettes
     , currentPalette
     , availablePaletteCount
@@ -40,10 +39,10 @@ import qualified SDL
 import qualified SDL.Raw.Types                as SDLRaw
 import           Verda.Graphics.Color
 import           Verda.Graphics.Sprites       (SpriteID(..))
+import           Verda.Time
 import           Verda.Util.Apecs
 import           Verda.Util.Types             (Identifier, IDMap)
 
-import           Kathu.Entity.Time
 import           Kathu.Graphics.Palette
 
 -- Warning: most things in this class are private, and as it makes use of rather unsafe operations and mutability
@@ -141,9 +140,6 @@ setPalette newSet = (\im -> liftIO (mapM_ updateTex . view textureSets $ im) >> 
               pure (i + 1)
           check im | newSet >= im^.paletteSetCount = error . concat $ ["Attempted to set ImageManager palette to index ", show newSet, " when there are only ", im^.paletteSetCount.to show, " available palettes"]
                    | otherwise                     = im
-
-backgroundColor :: ImageManager -> Color
-backgroundColor im = (im^.backgrounds) UVec.! (im^.currentSetIdx)
 
 currentPalette :: ImageManager -> Int
 currentPalette im = im^.currentSetIdx

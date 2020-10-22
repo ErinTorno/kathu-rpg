@@ -1,25 +1,25 @@
 module Kathu.Game (initPhysics, runGame, updateDelay) where
 
-import Apecs hiding (set)
-import Apecs.Physics hiding (set)
-import Control.Lens
-import Control.Monad (when)
-import Control.Monad.IO.Class (MonadIO)
-import Data.Maybe
-import Data.Word
-
-import Kathu.Entity.Action
-import Kathu.Entity.Components
-import Kathu.Entity.LifeTime
-import Kathu.Entity.Physics.CollisionGroup
-import Kathu.Entity.Physics.Floor
-import Kathu.Entity.System
-import Kathu.Entity.Time
-import Kathu.Scripting.Event
-import qualified Kathu.Scripting.Lua as Lua
-import Verda.Util.Types
-import Kathu.World.Time (WorldTime)
+import           Apecs                               hiding (set)
+import           Apecs.Physics                       hiding (set)
+import           Control.Lens
+import           Control.Monad                       (when)
+import           Control.Monad.IO.Class              (MonadIO)
+import           Data.Maybe
+import           Data.Word
+import           Verda.Time
 import           Verda.Util.Apecs
+import           Verda.Util.Types
+
+import           Kathu.Entity.Action
+import           Kathu.Entity.Components
+import           Kathu.Entity.LifeTime
+import           Kathu.Entity.Physics.CollisionGroup
+import           Kathu.Entity.Physics.Floor
+import           Kathu.Entity.System
+import           Kathu.Scripting.Event
+import qualified Kathu.Scripting.Lua                 as Lua
+import           Kathu.World.Time                    (WorldTime)
 
 updateDelay :: Word32
 updateDelay = floor $ 1000 / (60 :: Double) -- 60 ticks per second is ideal

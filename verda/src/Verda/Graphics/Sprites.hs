@@ -136,17 +136,13 @@ updateFrames !dT sprite = case sprite of
 -- Serialization --
 -------------------
 
---type SurfaceVector = Vec.Vector (SDL.Surface, Maybe SDL.RenderScaleQuality)
-type SurfaceVector = Vec.Vector SDL.Surface
+type SurfaceVector = Vec.Vector (SDL.Surface, Maybe SDL.RenderScaleQuality)
 
 boundsFromSpriteID :: (MonadIO m, s `CanProvide` SurfaceVector) => SpriteID -> Dependency s m (V2 CInt)
-boundsFromSpriteID (SpriteID idx) = provide
-                                >>= liftDependency . SDL.surfaceDimensions . (Vec.! idx)
-    {-
+boundsFromSpriteID (SpriteID idx) =
     let getSurface (s, _ :: Maybe SDL.RenderScaleQuality) = s
      in provide
     >>= liftDependency . SDL.surfaceDimensions . getSurface . (Vec.! idx)
-    -}
 
 instance ( s `CanProvide` WorkingDirectory
          , s `CanStoreEach`  '[CountingIDs, SurfaceVector]
@@ -154,16 +150,14 @@ instance ( s `CanProvide` WorkingDirectory
          ) => FromJSON (Dependency s m SpriteID) where
     parseJSON = withText "SpriteID" $ \t ->
         let -- Kinda a hack for now; texture scaling can be given in the file's path
-            {-
             scaleType = if | "@nearest." `T.isInfixOf` t -> Just SDL.ScaleNearest
                            | "@linear." `T.isInfixOf` t  -> Just SDL.ScaleLinear
                            | otherwise                   -> Nothing
-            -}
             url   = fmap T.pack . resolveAssetPathDP . T.unpack $ t
             adder = do url'       <- url
                        image      <- liftDependency . SDLI.load . T.unpack $ url'
                        images     <- readStore
-                       writeStore . Vec.snoc images $ image --(image, scaleType)
+                       writeStore . Vec.snoc images $ (image, scaleType)
                        pure $ Vec.length images
          in pure $ SpriteID . fromIntegral <$> (url >>= lookupOrExecAndVerify adder "SpriteID")
 

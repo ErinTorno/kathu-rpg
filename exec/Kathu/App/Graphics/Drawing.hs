@@ -8,7 +8,7 @@ import           Linear.V2                       (V2(..))
 import qualified SDL
 import           Verda.Graphics.Sprites          (SpriteID)
 
-import           Kathu.App.Graphics.ImageManager
+import           Verda.Graphics.SpriteManager
 import           Kathu.Graphics.Drawable
 import           Verda.Util.Types                (clampBetween)
 
@@ -72,11 +72,11 @@ mkRenderRectNoCenter :: (Floating a, RealFrac a) => a -> a -> V2 a -> SDL.Rectan
 mkRenderRectNoCenter !bleed !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = mkRectWith round x y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
     where y' = y - scale * fromIntegral h
 
-blitRenderSprite :: MonadIO m => SDL.Renderer -> ImageManager -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite SpriteID -> m ()
-blitRenderSprite !renderer !im !mkRect !ren = blit ren
+blitRenderSprite :: MonadIO m => SDL.Renderer -> SpriteManager -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite SpriteID -> m ()
+blitRenderSprite !renderer !mgr !mkRect !ren = blit ren
     where draw !srcBnd !destBnd tex = SDL.copy renderer tex srcBnd (Just . mkRect $ destBnd)
-          blit (RSStatic (StaticSprite !iid !bnd _)) = mapM_ (draw Nothing (SDL.Rectangle (SDL.P (V2 0 0)) bnd)) $ fetchTextures iid im
-          blit dyn@(RSAnimated AnimatedSprite {animation = anim}) = mapM_ (draw (Just bounds) bounds) $ fetchTextures (animAtlas anim) im
+          blit (RSStatic (StaticSprite !iid !bnd _)) = draw Nothing (SDL.Rectangle (SDL.P (V2 0 0)) bnd) $ fetchTexture mgr iid
+          blit dyn@(RSAnimated AnimatedSprite {animation = anim}) = draw (Just bounds) bounds $ fetchTexture mgr (animAtlas anim)
               where bounds = SDL.Rectangle (SDL.P boundsPos) boundsDim
                     (# boundsPos, boundsDim #) = currentBounds dyn
 

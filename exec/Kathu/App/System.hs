@@ -10,14 +10,14 @@ import           Apecs
 import           Apecs.Physics
 import           Control.Monad                   (forM_, void)
 import           Verda.Event.Controls
-import           Verda.Graphics.Fonts            (FontCache)
-import           Verda.Graphics.Sprites          (SpriteID)
+import           Verda.Graphics.Components
+import           Verda.Graphics.SpriteManager    (setPaletteManager)
 import           Verda.Logger                    (Logger)
+import           Verda.Time
 import           Verda.Util.Apecs
 
 import           Kathu.App.Data.Dictionary       (Dictionary, emptyDictionary)
 import           Kathu.App.Data.Settings
-import           Kathu.App.Graphics.ImageManager
 import           Kathu.App.Graphics.UI
 import           Kathu.App.Tools.ToolMode
 import           Kathu.Entity.Action
@@ -29,7 +29,6 @@ import           Kathu.Entity.Physics.BodyConfig (setBodyConfig)
 import           Kathu.Entity.Physics.Floor      (WorldFloor)
 import           Kathu.Entity.Prefab
 import           Kathu.Entity.System
-import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
 import           Kathu.Graphics.Drawable         (Render)
 import           Kathu.Graphics.Palette          (PaletteManager)
@@ -75,10 +74,6 @@ instance Semigroup Settings where (<>) = mappend
 instance Monoid Settings where mempty = defaultSettings
 instance Component Settings where type Storage Settings = Global Settings
 
-instance Semigroup ImageManager where (<>) = mappend
-instance Monoid ImageManager where mempty = defaultImageManager
-instance Component ImageManager where type Storage ImageManager = Global ImageManager
-
 instance Semigroup UIConfig where (<>) = mappend
 instance Monoid UIConfig where mempty = error "Attempted to use UIConfig before it has been loaded"
 instance Component UIConfig where type Storage UIConfig = Global UIConfig
@@ -112,10 +107,11 @@ instance Component WireReceivers where type Storage WireReceivers = Global WireR
 
 makeWorld "EntityWorld"
     $ [''Physics]
-   ++ [''Existance, ''SpecialEntity, ''Identity, ''Language, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''EditorInstancedFromWorld, ''ActionSet]
+   ++ [''Existance, ''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Render', ''ActorState, ''Inventory', ''EditorInstancedFromWorld, ''ActionSet]
    ++ [''Local, ''Camera, ''Player]
    ++ [''ShouldQuit, ''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles', ''Variables, ''Debug, ''IncludeEditorInfo, ''Logger]
-   ++ [''Settings, ''CursorMotionState, ''ControlState, ''ImageManager, ''FontCache, ''UIConfig, ''WorldSpace', ''Dictionary, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
+   ++ [''Settings, ''CursorMotionState, ''ControlState, ''FontCache, ''UIConfig, ''WorldSpace', ''Dictionary, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
+   ++ [''BackgroundColor, ''Language, ''SpriteManager]
    ++ [''ToolMode, ''ToolModeUniversalState]
 
 type System' a = System EntityWorld a

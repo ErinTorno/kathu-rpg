@@ -30,9 +30,8 @@ import qualified Data.Map              as Map
 import qualified Data.Text             as T
 import qualified Data.Vector           as Vec
 import           Data.Word
-
-import           Kathu.Entity.Time
 import           Verda.Graphics.Color
+import           Verda.Time
 import           Verda.Util.Dependency
 import           Verda.Util.Types
     

@@ -11,11 +11,11 @@ import           SDL                             (($=))
 import qualified SDL
 import           Verda.Graphics.Color
 import           Verda.Graphics.Fonts            (renderText)
+import           Verda.Graphics.SpriteManager    (currentPalette)
 import           Verda.Graphics.Sprites          (SpriteID)
 import           Verda.Util.Containers           (fromJustElseError)
 import           Verda.Util.Types                (unID)
 
-import           Kathu.App.Graphics.ImageManager (currentPalette)
 import           Kathu.App.System                (SystemT')
 import           Kathu.App.Tools.ToolMode        (isNoTool)
 import           Kathu.Entity.Physics.CollisionGroup (collisionFilterDebugColor)

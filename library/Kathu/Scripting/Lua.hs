@@ -28,12 +28,12 @@ import qualified Foreign.Lua.FunctionCalling       as Lua
 import           Verda.Event.Controls              (CursorMotionState)
 import           Verda.Graphics.Sprites            (SpriteID)
 import           Verda.Logger
+import           Verda.Time
 import           Verda.Util.Types
 import           Verda.Util.Apecs
 
 import           Kathu.Entity.Components
 import           Kathu.Entity.System
-import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
 import           Kathu.Graphics.Drawable           (Render)
 import           Kathu.Scripting.Event

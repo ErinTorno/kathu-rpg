@@ -19,6 +19,7 @@ import qualified SDL
 import           Verda.Event.Controls
 import           Verda.Graphics.Sprites      (SpriteID)
 import           Verda.Logger
+import           Verda.Time
 
 import           Kathu.App.Data.Dictionary
 import           Kathu.App.Data.Settings
@@ -30,7 +31,6 @@ import           Kathu.App.Tools.ToolMode
 import           Kathu.App.World
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.CollisionGroup
-import           Kathu.Entity.Time
 import           Kathu.Graphics.Camera
 import           Verda.Graphics.Color
 import           Kathu.Graphics.Drawable

@@ -15,10 +15,10 @@ import qualified Data.Vector.Mutable as MVec
 import           Data.Vector.Mutable (IOVector)
 import           Data.Word
 import qualified System.Random as R
+import           Verda.Time
 import           Verda.Util.Types (IDMap)
 
 import           Kathu.Entity.Physics.Floor (FloorPropEntity)
-import           Kathu.Entity.Time
 import           Kathu.Graphics.Palette (PaletteManager, staticManager)
 import           Kathu.Scripting.Variables (Variables)
 import           Kathu.World.Stasis
@@ -26,14 +26,6 @@ import           Kathu.World.Tile (Tile(..), TileID(..), tileID, TileState(..), 
 import           Kathu.World.Time (WorldTime(..))
 
 -- New Globals
-
-instance Semigroup LogicTime where (<>) = mappend
-instance Monoid LogicTime where mempty  = LogicTime 0
-instance Component LogicTime where type Storage LogicTime = Global LogicTime
-
-instance Semigroup RenderTime where (<>) = mappend
-instance Monoid RenderTime where mempty  = RenderTime 0
-instance Component RenderTime where type Storage RenderTime = Global RenderTime
 
 instance Semigroup WorldTime where (<>) = mappend
 instance Monoid WorldTime where mempty  = WorldTime 0

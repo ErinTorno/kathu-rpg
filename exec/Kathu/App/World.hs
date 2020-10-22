@@ -3,9 +3,9 @@ module Kathu.App.World where
 import           Apecs
 import           Control.Lens
 import           Control.Monad                   (void)
+import           Verda.Graphics.SpriteManager
 import           Verda.Graphics.Sprites          (SpriteID)
 
-import           Kathu.App.Graphics.ImageManager
 import           Kathu.App.System
 import qualified Kathu.Scripting.Lua             as Lua
 import           Kathu.World.WorldSpace

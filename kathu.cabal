@@ -57,7 +57,6 @@ library
                     Kathu.Entity.Prefab
                     Kathu.Entity.Resource
                     Kathu.Entity.System
-                    Kathu.Entity.Time
                     -- Graphics
                     Kathu.Graphics.Camera
                     Kathu.Graphics.Drawable

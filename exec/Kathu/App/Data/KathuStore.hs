@@ -79,5 +79,7 @@ instance KathuStore `CanStore`   SurfaceVector where storeLens = psSurfaces
 instance KathuStore `CanProvide` SurfaceVector
 
 instance KathuStore `CanProvide` (ImageBounds (Dependency KathuStore IO) SpriteID) where
-    provide = ImageBounds . getFn <$> provide
-        where getFn images (SpriteID iid) = liftDependency . SDL.surfaceDimensions . (Vec.!) images $ iid
+    provide = do
+        let getFn images (SpriteID iid) = liftDependency . SDL.surfaceDimensions . (Vec.!) images $ iid
+        surfaceVec :: SurfaceVector <- provide
+        pure . ImageBounds . getFn . Vec.map fst $ surfaceVec

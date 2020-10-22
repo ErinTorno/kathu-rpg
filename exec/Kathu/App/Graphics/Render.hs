@@ -11,12 +11,12 @@ import qualified Data.Vector.Mutable             as MVec
 import           Data.Word
 import           SDL                             (($=))
 import qualified SDL
+import           Verda.Graphics.Components       (BackgroundColor(..))
 import           Verda.Graphics.Sprites          (SpriteID)
 
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Debug        (renderDebug)
 import           Kathu.App.Graphics.Drawing
-import           Kathu.App.Graphics.ImageManager
 import           Kathu.App.Graphics.RenderBuffer
 import           Kathu.App.Graphics.UI
 import           Kathu.App.System                (SystemT')
@@ -79,8 +79,7 @@ runRender !renderer !renderBuffer !dT = do
     stepRenderTime dT
     updateAnimations dT
 
-    runImageManager
-    imageManager     <- get global
+    spriteManager    <- get global
     settings         <- get global
     Debug isDebug    <- get global
     Tiles tileVector <- get global
@@ -91,7 +90,8 @@ runRender !renderer !renderBuffer !dT = do
     (Position (V2 camX camY), Camera zoomScale) <- fromMaybe (Position (V2 0 0), Camera 1) <$> getUnique
 
     -- clears background
-    SDL.rendererDrawColor renderer $= (unColor . backgroundColor $ imageManager)
+    BackgroundColor bkgColor <- get global
+    SDL.rendererDrawColor renderer $= unColor bkgColor
     SDL.clear renderer
 
     let V2 _ resY      = resolution settings
@@ -146,7 +146,7 @@ runRender !renderer !renderBuffer !dT = do
         renderEvery !i !len
             | i == len    = pure ()
             | otherwise   = do
-                let drawEach !pos !ren = blitRenderSprite renderer imageManager (mkRenderRect edgeBleedScaling scale pos) ren
+                let drawEach !pos !ren = blitRenderSprite renderer spriteManager (mkRenderRect edgeBleedScaling scale pos) ren
                 (!pos, !spr) <- readFromBuffer i renderBuffer
                 drawEach pos spr
                 renderEvery (i + 1) len
