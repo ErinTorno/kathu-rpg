@@ -16,6 +16,7 @@ import qualified SDL
 import qualified SDL.Font                        as SDLF
 import           SDL                             (($=))
 import           Verda.Graphics.SpriteBuffer     (SpriteBuffer, mkSpriteBuffer)
+import           Verda.World                     (IsQuitting(..))
 
 import           Kathu.App.Data.Settings
 import           Kathu.App.Events
@@ -107,7 +108,7 @@ run !renDelay !renderer !buffer !prevPhysTime !prevRendTime = do
     -- render steps in variable time, so we must reflect that
     runRender renderer buffer renderDiffer
     
-    ShouldQuit isQuitting <- get global
+    IsQuitting isQuitting <- get global
     -- Physics steps back to ensure next update is on time; render goes whenever it can
     unless isQuitting $
         run renDelay renderer buffer (startTime - remainder) renderStartTime
@@ -143,6 +144,6 @@ runForEventQueue !queue !commandState !renDelay !renderer !buffer !prevPhysTime 
     
     putEntityWorld world queue
     
-    ShouldQuit isQuitting <- runWith world $ get global
+    IsQuitting isQuitting <- runWith world $ get global
     unless isQuitting $
         runForEventQueue queue commandState renDelay renderer buffer (startTime - remainder) renderStartTime

@@ -3,7 +3,7 @@ name:                verda
 version:             0.1.0.0
 -- synopsis:
 -- description:
-license:             GPL-3.0-only
+license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Erin Torno
 -- maintainer:
@@ -16,8 +16,10 @@ library
   exposed-modules:  Verda.Audio
                     Verda.Logger
                     Verda.Time
+                    Verda.World
                     -- Event
                     Verda.Event.Controls
+                    Verda.Event.EventHandler
                     -- Graphics
                     Verda.Graphics.Color
                     Verda.Graphics.Components
@@ -62,6 +64,7 @@ library
                     sdl2-image           ^>=2.0,
                     sdl2-mixer           ^>=1.1,
                     sdl2-ttf             ^>=2.1,
+                    template-haskell     ^>=2.15,
                     text                 ^>=1.2.4,
                     unordered-containers ^>=0.2.10,
                     vector               ^>=0.12.1.2,

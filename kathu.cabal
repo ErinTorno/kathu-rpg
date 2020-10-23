@@ -58,7 +58,6 @@ library
                     Kathu.Entity.Resource
                     Kathu.Entity.System
                     -- Graphics
-                    Kathu.Graphics.Camera
                     Kathu.Graphics.Palette
                     -- World
                     Kathu.World.Field
@@ -112,7 +111,6 @@ executable kathu
                     Kathu.App.Data.Settings
                     -- Graphics
                     Kathu.App.Graphics.Debug
-                    Kathu.App.Graphics.ImageManager
                     Kathu.App.Graphics.Render
                     Kathu.App.Graphics.UI
                     -- Tools

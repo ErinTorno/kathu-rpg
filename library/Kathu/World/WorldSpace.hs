@@ -24,6 +24,7 @@ import           Verda.Parsing.Yaml        (FieldOrder, mkFieldOrderFromList)
 import           Verda.Util.Apecs
 import           Verda.Util.Dependency
 import           Verda.Util.Types          (Identifier, IDMap)
+import           Verda.World               (Existance(..))
 
 import           Kathu.Entity.Components
 import           Kathu.Entity.Item

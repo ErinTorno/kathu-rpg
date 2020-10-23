@@ -10,7 +10,7 @@ import           Data.Word
 import           SDL                             (($=))
 import qualified SDL
 import           Verda.Graphics.Color            (unColor, white)
-import           Verda.Graphics.Components       (BackgroundColor(..))
+import           Verda.Graphics.Components       (BackgroundColor(..), Camera(..), Tint(..))
 import           Verda.Graphics.SpriteBuffer
 import           Verda.Graphics.Sprites
 import           Verda.Util.Containers           (forMVec)
@@ -24,7 +24,6 @@ import           Kathu.App.System                (SystemT')
 import           Kathu.App.Tools.ToolSystem      (renderToolMode)
 import           Kathu.Entity.Action
 import           Kathu.Entity.System
-import           Kathu.Graphics.Camera
 import           Kathu.World.Field
 import           Kathu.World.Tile                hiding (Vector, MVector)
 import           Kathu.World.WorldSpace
@@ -94,12 +93,12 @@ runRender !renderer !spriteBuffer !dT = do
         maxX = camX' + (0.5    * zoomScale * unitsPerWidth  + renderBorderUnits)
 
         -- adds to spriteBuffer and increments if judged to be drawable; expands the buffer if needed
-        addToBuffer :: Int -> Sprite -> V2 Double -> SystemT' IO Int
-        addToBuffer !idx !sprite !pos
+        addToBuffer :: Int -> Sprite -> V2 Double -> Tint -> SystemT' IO Int
+        addToBuffer !idx !sprite !pos (Tint tint)
             | isOffScreen pos = pure idx
             | otherwise       = lift $ do
                 let renderPos = worldToScreen pos
-                sbeWrite spriteBuffer idx (SpriteBufferElement renderPos white sprite)
+                sbeWrite spriteBuffer idx (SpriteBufferElement renderPos tint sprite)
                 pure $ idx + 1
 
         -- this call to fieldFoldM is (as of when this is written) the most time intensive process in the program
@@ -111,10 +110,9 @@ runRender !renderer !spriteBuffer !dT = do
         addTile :: V2 Int -> Int -> V2 Int -> TileState -> SystemT' IO Int
         addTile fpos i pos !t = getTile t >>= \tileInst ->
             -- foldFnField filters out empty tiles, so we know they are safe here; if it didn't, attempting to render an empty would error
-            addToBuffer i (getTileSprite t tileInst) (worldCoordFromTileCoord fpos pos)
+            addToBuffer i (getTileSprite t tileInst) (worldCoordFromTileCoord fpos pos) (Tint white)
 
-        gatherEntitySprite :: Int -> (Sprite, Position) -> SystemT' IO Int
-        gatherEntitySprite i (sprite, Position pos) = addToBuffer i sprite pos
+        gatherEntitySprite i (Position pos, sprite, t :: Maybe Tint) = addToBuffer i sprite pos (fromMaybe (Tint white) t)
 
         gatherTileSprite :: Int -> SystemT' IO Int
         gatherTileSprite i = foldM foldFnField i . fieldsSurrounding camX camY $ world 

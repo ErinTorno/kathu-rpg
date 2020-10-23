@@ -9,13 +9,9 @@ module Kathu.App.System where
 import           Apecs
 import           Apecs.Physics
 import           Control.Monad                   (forM_, void)
-import           Verda.Event.Controls
-import           Verda.Graphics.Components
 import           Verda.Graphics.SpriteManager    (setPaletteManager)
-import           Verda.Graphics.Sprites          (Sprite)
-import           Verda.Logger                    (Logger)
-import           Verda.Time
 import           Verda.Util.Apecs
+import           Verda.World                     (DeletableBaseVerdaComponents, Existance(..), baseVerdaComponentNames)
 
 import           Kathu.App.Data.Dictionary       (Dictionary, emptyDictionary)
 import           Kathu.App.Data.Settings
@@ -30,7 +26,6 @@ import           Kathu.Entity.Physics.BodyConfig (setBodyConfig)
 import           Kathu.Entity.Physics.Floor      (WorldFloor)
 import           Kathu.Entity.Prefab
 import           Kathu.Entity.System
-import           Kathu.Graphics.Camera
 import           Kathu.Graphics.Palette          (PaletteManager)
 import           Kathu.Language                  (Language)
 import qualified Kathu.Scripting.Lua             as Lua
@@ -44,20 +39,14 @@ import           Kathu.World.WorldSpace          (EditorInstancedFromWorld, Worl
 -- ECS Util
 -- selects all unique and non-unique components that an individual entity might have
 type AllComponents =
-    ( Existance
-    , (ActiveScript, SpecialEntity)
-    , (Identity, LifeTime, WorldFloor, Tags, Sprite, Body)
-    , (MovingSpeed, ActorState, Inventory, ActionSet)
-    , (Local, Camera)
+    ( (ActiveScript, SpecialEntity)
+    , (Identity, LifeTime, WorldFloor, Tags, Body)
+    , (MovingSpeed, ActorState, Inventory, ActionSet, Local)
     , (Body, Shape, Constraint)
+    , DeletableBaseVerdaComponents
     )
     
 -- New Globals
-
-newtype ShouldQuit = ShouldQuit Bool
-instance Semigroup ShouldQuit where (<>) = mappend
-instance Monoid ShouldQuit where mempty = ShouldQuit False
-instance Component ShouldQuit where type Storage ShouldQuit = Global ShouldQuit
 
 instance Semigroup Settings where (<>) = mappend
 instance Monoid Settings where mempty = defaultSettings
@@ -91,11 +80,11 @@ instance Component WireReceivers where type Storage WireReceivers = Global WireR
 
 makeWorld "EntityWorld"
     $ [''Physics]
-   ++ [''Existance, ''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''Sprite, ''ActorState, ''Inventory, ''EditorInstancedFromWorld, ''ActionSet]
-   ++ [''Local, ''Camera, ''Player]
-   ++ [''ShouldQuit, ''LogicTime, ''RenderTime, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles, ''Variables, ''Debug, ''IncludeEditorInfo, ''Logger]
-   ++ [''Settings, ''CursorMotionState, ''ControlState, ''FontCache, ''UIConfig, ''WorldSpace, ''Dictionary, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
-   ++ [''BackgroundColor, ''Language, ''SpriteManager]
+   ++ baseVerdaComponentNames
+   ++ [''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''ActorState, ''Inventory, ''EditorInstancedFromWorld, ''ActionSet]
+   ++ [''Local, ''Player]
+   ++ [''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles, ''Variables, ''Debug, ''IncludeEditorInfo]
+   ++ [''Settings, ''UIConfig, ''WorldSpace, ''Dictionary, ''Language, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
    ++ [''ToolMode, ''ToolModeUniversalState]
 
 type System' a = System EntityWorld a

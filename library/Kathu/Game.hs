@@ -10,6 +10,7 @@ import           Data.Word
 import           Verda.Time
 import           Verda.Util.Apecs
 import           Verda.Util.Types
+import           Verda.World                         (Existance)
 
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components

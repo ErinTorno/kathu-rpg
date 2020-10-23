@@ -10,6 +10,7 @@ import qualified Data.Vector.Storable            as SVec
 import           SDL                             (($=))
 import qualified SDL
 import           Verda.Graphics.Color
+import           Verda.Graphics.Components       (Camera(..))
 import           Verda.Graphics.Fonts            (renderText)
 import           Verda.Graphics.SpriteManager    (currentPalette)
 import           Verda.Util.Containers           (fromJustElseError)
@@ -18,7 +19,6 @@ import           Verda.Util.Types                (unID)
 import           Kathu.App.System                (SystemT')
 import           Kathu.App.Tools.ToolMode        (isNoTool)
 import           Kathu.Entity.Physics.CollisionGroup (collisionFilterDebugColor)
-import           Kathu.Graphics.Camera
 import           Kathu.Language
 import           Kathu.World.WorldSpace
 

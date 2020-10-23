@@ -8,6 +8,7 @@ import           Foreign.Lua
 import           Linear.V2                 (V2(..))
 import qualified System.Random             as R
 import           Verda.Event.Controls      (CursorMotionState, cursorPosition)
+import           Verda.Graphics.Components (Camera(..), defaultCamera)
 import           Verda.Logger
 import           Verda.Time
 import           Verda.Util.Containers     (fromJustElseError)
@@ -16,7 +17,6 @@ import           Verda.Util.Apecs
 
 import           Kathu.Entity.Components
 import           Kathu.Entity.System
-import           Kathu.Graphics.Camera
 import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables

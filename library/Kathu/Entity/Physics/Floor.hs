@@ -14,14 +14,15 @@ import           Data.Map                (Map)
 import qualified Data.Map                as Map
 import           Data.Text               (Text)
 import           Data.Word
-
-import           Kathu.Entity.Components (CacheSize, Existance, newExistingEntity)
-import           Kathu.Entity.LifeTime
-import           Verda.Parsing.Aeson
-import           Verda.Parsing.Counting
 import           Verda.Util.Dependency
 import           Verda.Util.Types        (Identifier)
 import           Verda.Util.Apecs
+import           Verda.World             (Existance)
+
+import           Kathu.Entity.Components (CacheSize, newExistingEntity)
+import           Kathu.Entity.LifeTime
+import           Verda.Parsing.Aeson
+import           Verda.Parsing.Counting
 
 -------------
 -- FloorID --

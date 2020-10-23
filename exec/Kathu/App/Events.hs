@@ -4,14 +4,12 @@ import           Apecs
 import           Apecs.Physics
 import           Control.Lens                    hiding (Identity)
 import           Control.Monad                   (void, when)
-import           Data.Maybe                      (fromMaybe)
 import qualified Data.Text.IO                    as T
-import qualified SDL
 import           Verda.Event.Controls
-import           Verda.Graphics.Drawing
+import           Verda.Event.EventHandler        (handleEvents)
+import           Verda.Graphics.Components       (Camera(..))
 import           Verda.Graphics.SpriteManager    (nextPaletteManager, setPaletteManager)
 import           Verda.Time
-import           Verda.Util.Apecs
 import           Verda.Util.Types
 
 import           Kathu.App.Data.Controls
@@ -20,55 +18,12 @@ import           Kathu.App.System
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.System
-import           Kathu.Graphics.Camera
 
 runEvents :: System' ()
 runEvents = do
-    controlSt <- get global
-    nextInputStateFrame controlSt
-
-    -- set motion to zero now
-    cursorMotion <- get global
-    global       $= cursorMotion {cursorMovement = V2 0 0, cursorScrollWheel = 0}
-
-    settings  <- get global
-    (Position (V2 camX camY), Camera zoomScale) <- fromMaybe (Position (V2 0 0), Camera 1) <$> getUnique
-
-    let V2 _ resY      = resolution settings
-        unitsPerHeight = getUnitsPerHeight resY
-        scale          = getScale (fromIntegral resY) unitsPerHeight zoomScale
-        screenToWorld  = screenToWorldScale (fromIntegral <$> resolution settings) scale camX camY 
-
-    SDL.mapEvents (handleEvent controlSt scale)
-    cursorMotion' <- get global
-    -- sets the cursor position to a world-adjusted coordinate from the current pixel it is at
-    global        $= cursorMotion' {cursorPosition = screenToWorld . fmap fromIntegral $ cursorScreenPosition cursorMotion'}
-
+    handleEvents
     updateControls
     updateDebugControls
-
-handleEvent :: ControlState -> Double -> SDL.Event -> SystemT' IO ()
-handleEvent controlSt scale event =
-    case SDL.eventPayload event of
-        SDL.QuitEvent -> global $= ShouldQuit True
-        -- marks key with its state
-        SDL.KeyboardEvent (SDL.KeyboardEventData _ motion _ keysym) ->
-            let key = fromScanCode $ SDL.keysymScancode keysym
-            in updateInputCode controlSt key motion
-        -- sets mouse clicks
-        SDL.MouseButtonEvent SDL.MouseButtonEventData{SDL.mouseButtonEventMotion = motion, SDL.mouseButtonEventButton = btn} ->
-            updateInputCode controlSt (fromMouseButton btn) motion
-        -- sets mouse's position and motion
-        -- we want to convert this from screen pixels to game world units
-        SDL.MouseMotionEvent SDL.MouseMotionEventData{SDL.mouseMotionEventPos = SDL.P pos, SDL.mouseMotionEventRelMotion = relPos} -> do
-            motionState <- get global
-            global      $= motionState { cursorScreenPosition = pos
-                                       , cursorMovement       = (/(scale * pixelsPerUnit)) . fromIntegral <$> relPos}
-        -- sets mouse's scrolling amount
-        SDL.MouseWheelEvent SDL.MouseWheelEventData{SDL.mouseWheelEventPos = V2 _ y, SDL.mouseWheelEventDirection = dir} -> do
-            motionState <- get global
-            global      $= motionState {cursorScrollWheel = fromIntegral y * (if dir == SDL.ScrollFlipped then -1 else 1)}
-        _ -> pure ()
 
 updateControls :: SystemT' IO ()
 updateControls = do

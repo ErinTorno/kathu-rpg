@@ -26,6 +26,7 @@ import           Foreign.Lua                       hiding (call, error)
 import qualified Foreign.Lua.Core                  as Lua
 import qualified Foreign.Lua.FunctionCalling       as Lua
 import           Verda.Event.Controls              (CursorMotionState)
+import           Verda.Graphics.Components         (Camera(..))
 import           Verda.Graphics.Sprites            (Sprite)
 import           Verda.Logger
 import           Verda.Time
@@ -34,7 +35,6 @@ import           Verda.Util.Apecs
 
 import           Kathu.Entity.Components
 import           Kathu.Entity.System
-import           Kathu.Graphics.Camera
 import           Kathu.Scripting.Event
 import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Component

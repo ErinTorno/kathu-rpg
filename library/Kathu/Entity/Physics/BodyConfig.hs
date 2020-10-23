@@ -13,8 +13,9 @@ import Data.Aeson.Types (Parser, typeMismatch)
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as DSet
 import Data.Text (Text)
+import           Verda.World             (Existance)
 
-import Kathu.Entity.Components (Existance, Tags(..), newExistingEntity)
+import Kathu.Entity.Components (Tags(..), newExistingEntity)
 import Kathu.Entity.LifeTime
 import Kathu.Entity.Physics.CollisionGroup
 import Kathu.Entity.Physics.Floor (assignMeWorldFloor, WorldFloor)

@@ -17,6 +17,7 @@ import qualified SDL.Raw.Enum                    as SDLRaw
 import qualified SDL.Video                       as SDLV
 import qualified System.Random                   as R
 import           Verda.Event.Controls            (mkControlState)
+import           Verda.Graphics.Components       (Resolution(..), defaultCamera)
 import           Verda.Graphics.Fonts            (fontID, initFontCache)
 import           Verda.Graphics.Icons            (setWindowIcon)
 import           Verda.Util.Containers           (fromJustElseError)
@@ -32,7 +33,6 @@ import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.Floor
 import           Kathu.Entity.System
 import           Kathu.Game                      (initPhysics)
-import           Kathu.Graphics.Camera
 import           Kathu.Language
 import           Kathu.Scripting.Lua             (initScripting)
 import           Kathu.Scripting.Variables       (initVariables)
@@ -44,7 +44,7 @@ entityWorld = initEntityWorld
 -- initializes an entity as the local player
 initLocalPlayer :: Entity -> SystemT' IO ()
 initLocalPlayer ety =
-    ety $= (Camera 1.0, Local emptyActionPressed, emptyActionSet, Player)
+    ety $= (defaultCamera, Local emptyActionPressed, emptyActionSet, Player)
 
 initLanguage :: SDL.Window -> SDL.Renderer -> Settings -> Dictionary -> SystemT' IO ()
 initLanguage window renderer settings dictionary = do
@@ -90,6 +90,7 @@ system window renderer settings = do
     global $= controlST
     global $= dictionary^.dictUIConfig
     global $= (Gravity $ V2 0 0) -- no gravity, as the game is top-down
+    global $= Resolution (fromIntegral <$> resolution settings)
 
     initLanguage window renderer settings dictionary
 

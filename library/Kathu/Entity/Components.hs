@@ -7,18 +7,14 @@ import Data.Aeson.Types       (typeMismatch)
 import Data.Text              (Text)
 import qualified Data.Set     as DSet
 import GHC.Generics
+import Verda.Util.Types       (Identifier, mkIdentifier)
+import Verda.World            (Existance(..))
 
 import Kathu.Entity.Action
-import Verda.Util.Types       (Identifier, mkIdentifier)
 
 type CacheSize = 4096
 
 -- Component types and instances
-
--- | A component that we enforce all created entities can hold without any differences
-data Existance = Existance
-
-instance Component Existance where type Storage Existance = Cache CacheSize (Map Existance)
 
 -- | If all entities are created through this, then we can use it to get all entities
 newExistingEntity :: (MonadIO m, Set w m c, Set w m Existance, Get w m EntityCounter) => c -> SystemT w m Entity

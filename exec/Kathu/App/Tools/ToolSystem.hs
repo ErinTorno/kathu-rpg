@@ -16,6 +16,7 @@ import qualified Data.Map                    as Map
 import           Data.Word
 import qualified SDL
 import           Verda.Event.Controls
+import           Verda.Graphics.Components   (Camera(..), defaultCamera)
 import           Verda.Graphics.Drawing
 import           Verda.Graphics.Sprites      (Sprite, spriteRectangle)
 import           Verda.Logger
@@ -30,7 +31,6 @@ import           Kathu.App.Tools.ToolMode
 import           Kathu.App.World
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.CollisionGroup
-import           Kathu.Graphics.Camera
 import           Verda.Graphics.Color
 import           Kathu.World.Field
 import           Kathu.World.Tile
