@@ -12,7 +12,6 @@ import qualified SDL
 import           Verda.Graphics.Color
 import           Verda.Graphics.Fonts            (renderText)
 import           Verda.Graphics.SpriteManager    (currentPalette)
-import           Verda.Graphics.Sprites          (SpriteID)
 import           Verda.Util.Containers           (fromJustElseError)
 import           Verda.Util.Types                (unID)
 
@@ -63,7 +62,7 @@ renderDebug renderer logicToRenderPos = do
 
 renderDebugText :: SDL.Renderer -> SystemT' IO ()
 renderDebugText renderer = do
-    world :: WorldSpace SpriteID <- get global
+    world :: WorldSpace <- get global
     manager <- get global
     (V2 camX camY, cZoom) <- cfold (\_ (Position pos, Camera z) -> (pos, z)) (V2 0 0, 1)
 

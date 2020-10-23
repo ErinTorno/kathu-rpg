@@ -44,6 +44,9 @@ composeAndStoreWith f depV = getCompose depV >>>= storeWithKeyFn f
 composeDepParser :: Dependency s m a -> Compose Parser (Dependency s m) a
 composeDepParser = Compose . pure
 
+mapDepParseJSON :: (FromJSON (Dependency s m a), Monad m) => (a -> b) -> Value -> Parser (Dependency s m b)
+mapDepParseJSON f = composeParser . fmap f . Compose . parseJSON
+
 -- gets a normal type from Parser and raises it to a Compose
 (.:^) :: (Monad m, FromJSON a) => Object -> Text -> Compose Parser m a
 (.:^) v = Compose . fmap return . (.:) v

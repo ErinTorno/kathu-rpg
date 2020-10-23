@@ -1,5 +1,5 @@
 tile-id:  brick-wall-vibrant
 name:     vibrant brick wall
-render:   ["brick-wall-vibrant.png"]
+sprite:   brick-wall-vibrant.png
 is-solid: true
 break-behavior: unbreakable

@@ -5,9 +5,8 @@ module Kathu.App.Data.KathuStore where
 import           Control.Lens
 import qualified Data.Map                   as Map
 import qualified Data.Vector                as Vec
-import qualified SDL
 import           Verda.Graphics.Fonts       (Font)
-import           Verda.Graphics.Sprites     (SpriteID(..), SurfaceVector)
+import           Verda.Graphics.Sprites     (SurfaceVector)
 import           Verda.IO.Directory         (WorkingDirectory)
 import           Verda.Parsing.Counting     (CountingIDs(..))
 import           Verda.Util.Dependency
@@ -16,19 +15,18 @@ import           Verda.Util.Types           (IDMap, emptyIDMap)
 import           Kathu.Entity.Item          (Item)
 import           Kathu.Entity.Physics.Floor (FloorProperty, reservedFloorIDMap)
 import           Kathu.Entity.Prefab
-import           Kathu.Graphics.Drawable
 import           Kathu.Graphics.Palette
 import           Kathu.World.Tile           (emptyTile, reservedTileIDMap, Tile)
 
 data KathuStore = KathuStore
     { _psCountingIDs      :: !CountingIDs
-    , _psItems            :: !(IDMap (Item SpriteID))
+    , _psItems            :: !(IDMap Item)
     , _psFloors           :: !(IDMap FloorProperty)
     , _psFonts            :: !(IDMap Font)
     , _psPalettes         :: !(IDMap Palette)
     , _psPrefabs          :: !(IDMap Prefab)
     , _psSurfaces         :: !SurfaceVector
-    , _psTiles            :: !(IDMap (Tile SpriteID))
+    , _psTiles            :: !(IDMap Tile)
     , _psWorkingDirectory :: !WorkingDirectory
     }
 makeLenses ''KathuStore
@@ -63,23 +61,17 @@ instance KathuStore `CanProvide` IDMap FloorProperty
 instance KathuStore `CanStore`   IDMap Font where storeLens = psFonts
 instance KathuStore `CanProvide` IDMap Font
 
-instance KathuStore `CanStore`   IDMap (Item SpriteID) where storeLens = psItems
-instance KathuStore `CanProvide` IDMap (Item SpriteID)
+instance KathuStore `CanStore`   IDMap Item where storeLens = psItems
+instance KathuStore `CanProvide` IDMap Item
 
 instance KathuStore `CanStore`   IDMap Prefab where storeLens = psPrefabs
 instance KathuStore `CanProvide` IDMap Prefab
 
-instance KathuStore `CanStore`   IDMap (Tile SpriteID) where storeLens = psTiles
-instance KathuStore `CanProvide` IDMap (Tile SpriteID)
+instance KathuStore `CanStore`   IDMap Tile where storeLens = psTiles
+instance KathuStore `CanProvide` IDMap Tile
 
 instance KathuStore `CanStore`   IDMap Palette where storeLens = psPalettes
 instance KathuStore `CanProvide` IDMap Palette
 
 instance KathuStore `CanStore`   SurfaceVector where storeLens = psSurfaces
 instance KathuStore `CanProvide` SurfaceVector
-
-instance KathuStore `CanProvide` (ImageBounds (Dependency KathuStore IO) SpriteID) where
-    provide = do
-        let getFn images (SpriteID iid) = liftDependency . SDL.surfaceDimensions . (Vec.!) images $ iid
-        surfaceVec :: SurfaceVector <- provide
-        pure . ImageBounds . getFn . Vec.map fst $ surfaceVec

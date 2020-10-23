@@ -1,9 +1,10 @@
 tile-id:  spikes
 name:     spikes
-render:
-- atlas:  "spikes.png"
+sprite:
+  atlas:  spikes.png
   layer:  -1
   bounds: [16, 16]
-  strips: [{id: idle, frames: 2, row: 0, delay: 250}]
+  animation:
+    idle: {row: 0, frames: 2, delay: 250}
 is-solid: false
 break-behavior: unbreakable

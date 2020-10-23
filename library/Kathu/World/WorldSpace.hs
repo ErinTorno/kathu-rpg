@@ -18,7 +18,7 @@ import           Data.Text                 (Text)
 import qualified Data.Text                 as T
 import           Data.Vector               (Vector)
 import qualified Data.Vector               as Vec
-import           Verda.Graphics.Sprites    (SpriteID)
+import           Verda.Graphics.Sprites    (Sprite)
 import           Verda.IO.Directory        (WorkingDirectory)
 import           Verda.Parsing.Yaml        (FieldOrder, mkFieldOrderFromList)
 import           Verda.Util.Apecs
@@ -31,7 +31,6 @@ import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Prefab       (Prefab, prefabID)
 import           Kathu.Entity.System       (IncludeEditorInfo(..), Tiles)
-import           Kathu.Graphics.Drawable   (Render)
 import           Kathu.Graphics.Palette
 import           Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua       as Lua
@@ -60,32 +59,36 @@ emptyInstancedPrefab :: InstancedPrefab
 emptyInstancedPrefab = InstancedPrefab "" prototype (V2 0 0) Nothing Nothing Map.empty
     where prototype = error "Attempted to use emptyInstancedPrefab basePrefab; no possible value exists for this"
 
-data InstancedItem g = InstancedItem
-    { _baseItem     :: ItemStack g
+data InstancedItem = InstancedItem
+    { _baseItem     :: ItemStack
     , _itemPosition :: !(V2 Double)
     }
 makeLenses ''InstancedItem
 
-data WorldSpace g = WorldSpace
+data WorldSpace = WorldSpace
     { _worldID            :: !Identifier
     , _worldName          :: !Text
     , _initialPalette     :: !Identifier
     , _worldPalettes      :: !(IDMap Palette)
     , _loadPoint          :: !(V2 Double)
     , _shouldSavePosition :: !Bool -- when serialized, should we remember where the player was?
-    , _worldVariables     :: IDMap WorldVariable
+    , _worldVariables     :: !(IDMap WorldVariable)
     , _worldScript        :: !(Maybe Lua.Script)
-    , _worldEntities      :: Vector InstancedPrefab
-    , _worldItems         :: Vector (InstancedItem g)
+    , _worldEntities      :: !(Vector InstancedPrefab)
+    , _worldItems         :: !(Vector InstancedItem)
     , _worldFields        :: !FieldSet
     }
 makeLenses ''WorldSpace
 
-emptyWorldSpace :: WorldSpace g
+instance Semigroup WorldSpace  where (<>) = mappend
+instance Monoid WorldSpace  where mempty = emptyWorldSpace
+instance Component WorldSpace  where type Storage WorldSpace  = Global WorldSpace
+
+emptyWorldSpace :: WorldSpace
 emptyWorldSpace = WorldSpace "" "the void..." "" Map.empty (V2 0 0) False Map.empty Nothing Vec.empty Vec.empty emptyFieldSet
 
 -- right now we only consider horizontal fields; ones with different z depths are ignored
-fieldsSurrounding :: RealFrac a => a -> a -> WorldSpace g -> [(V2 Int, Field)]
+fieldsSurrounding :: RealFrac a => a -> a -> WorldSpace -> [(V2 Int, Field)]
 fieldsSurrounding wx wy ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
     where fields    = unFieldSet $ ws^.worldFields
           (# ox, oy #) = fieldContainingCoord wx wy
@@ -95,9 +98,9 @@ fieldsSurrounding wx wy ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
               where curV = V2 x y -- only consider same z level right now
 
 -- | Returned the given Field, creating a new one and inserting into the current worldspace if the given field is missing
-mkFieldIfNotPresent :: forall w g. (ReadWrite w IO (WorldSpace g)) => Proxy g -> V2 Int -> SystemT w IO Field
-mkFieldIfNotPresent _ fieldPos = do
-    ws :: WorldSpace g <- get global
+mkFieldIfNotPresent :: forall w. (ReadWrite w IO WorldSpace) => V2 Int -> SystemT w IO Field
+mkFieldIfNotPresent fieldPos = do
+    ws :: WorldSpace <- get global
 
     let fieldMap = ws^.worldFields.to unFieldSet
 
@@ -113,11 +116,11 @@ mkFieldIfNotPresent _ fieldPos = do
 -- System Related --
 --------------------
 
-initWorldSpace :: forall w. (Get w IO EntityCounter, Get w IO (Tiles SpriteID), Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[EditorInstancedFromWorld, Existance, IncludeEditorInfo, LifeTime, Player, Render SpriteID, SpecialEntity, Variables, WireReceivers, WorldSpace SpriteID, WorldStases])
+initWorldSpace :: forall w. (Get w IO EntityCounter, Get w IO Tiles, Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[EditorInstancedFromWorld, Existance, IncludeEditorInfo, LifeTime, Player, SpecialEntity, Sprite, Variables, WireReceivers, WorldSpace, WorldStases])
                => (Entity -> SystemT w IO ())
                -> ((Lua.ActiveScript -> Lua.ActiveScript) -> Prefab -> SystemT w IO Entity)
                -> (Entity -> Lua.Script -> SystemT w IO Lua.ActiveScript)
-               -> WorldSpace SpriteID
+               -> WorldSpace
                -> SystemT w IO ()
 initWorldSpace destroyEty mkEntity loadScript ws = do
     -- we clean up all previous entities without lifetimes
@@ -145,7 +148,7 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
             active <- loadScript ety scr
             ety    $= active
 
-placeInstancedPrefab :: forall w. (Get w IO EntityCounter, Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[EditorInstancedFromWorld, Existance, Render SpriteID, SpecialEntity, WireReceivers])
+placeInstancedPrefab :: forall w. (Get w IO EntityCounter, Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[EditorInstancedFromWorld, Existance, SpecialEntity, Sprite, WireReceivers])
                      => IncludeEditorInfo
                      -> ((Lua.ActiveScript -> Lua.ActiveScript) -> Prefab -> SystemT w IO Entity)
                      -> InstancedPrefab
@@ -173,11 +176,11 @@ destroyTileCollisions :: forall w. (ReadWrite w IO SpecialEntity) => (Entity -> 
 destroyTileCollisions destroyEty =
     cmapM_ $ \(specialEty, ety) -> when (specialEty == WorldCollision) $ destroyEty ety
 
-buildTileCollisions :: forall w g. (Get w IO EntityCounter, Get w IO (Tiles g), Has w IO Physics, ReadWriteEach w IO '[Existance, SpecialEntity])
-                      => WorldSpace g
+buildTileCollisions :: forall w. (Get w IO EntityCounter, Get w IO Tiles, Has w IO Physics, ReadWriteEach w IO '[Existance, SpecialEntity])
+                      => WorldSpace
                       -> SystemT w IO ()
 buildTileCollisions ws = do
-    tiles :: Tiles g <- get global
+    tiles :: Tiles <- get global
     let worldCollisionFilter = groupCollisionFilter Movement
         addWorldCollision polygons
             | Vec.null polygons = pure ()
@@ -191,9 +194,9 @@ buildTileCollisions ws = do
     addWorldCollision colPolys
 
 -- | Loads in the new variables for the current world, and saves the previous to its Stasis
-saveWorldVariables :: forall w m g. (MonadIO m, ReadWriteEach w m '[Variables, WorldSpace g, WorldStases]) => WorldSpace g -> SystemT w m ()
+saveWorldVariables :: forall w m. (MonadIO m, ReadWriteEach w m '[Variables, WorldSpace, WorldStases]) => WorldSpace -> SystemT w m ()
 saveWorldVariables newWS = do
-    oldWS :: WorldSpace g <- get global
+    oldWS :: WorldSpace <- get global
     variables <- get global
     stases    <- get global
 
@@ -210,7 +213,7 @@ saveWorldVariables newWS = do
 
 -- as of right now, count not considered; this will be added when picking up is implemented
 -- currently use StaticBody, although DynamicBody will be used once these have a shape and mass
-newEntityFromItem :: forall w m. (MonadIO m, Get w m EntityCounter, ReadWriteEach w m '[Body, Existance, Position, Render SpriteID]) => ItemStack SpriteID -> V2 Double -> SystemT w m Entity
+newEntityFromItem :: forall w m. (MonadIO m, Get w m EntityCounter, ReadWriteEach w m '[Body, Existance, Position, Sprite]) => ItemStack -> V2 Double -> SystemT w m Entity
 newEntityFromItem stack v = newExistingEntity (StaticBody, Position v, itemIcon . stackItem $ stack)
 
 -------------------
@@ -238,14 +241,14 @@ instance (s `CanProvide` (IDMap Prefab), Monad m) => FromJSON (Dependency s m In
         pure $ (\e -> InstancedPrefab idt e pos sigEmit sigRece config) <$> entity
     parseJSON e = typeMismatch "InstancedPrefab" e
 
-instance ToJSON (InstancedItem g) where
+instance ToJSON InstancedItem where
     toJSON (InstancedItem (ItemStack item count) pos) = object
         [ "item"     .= itemID item
         , "count"    .= (if count == 1 then Nothing else Just count)
         , "position" .= (pos / unitsPerTile)
         ]
 
-instance (FromJSON (Dependency s m (ItemStack g)), Functor m) => FromJSON (Dependency s m (InstancedItem g)) where
+instance (FromJSON (Dependency s m ItemStack), Functor m) => FromJSON (Dependency s m InstancedItem) where
     parseJSON val@(Object obj) = do
         pos     <- (*unitsPerTile) <$> obj .: "position"
         stack   <- parseJSON val
@@ -256,7 +259,7 @@ instance (FromJSON (Dependency s m (ItemStack g)), Functor m) => FromJSON (Depen
 -- WorldSpace --
 ----------------
 
-encodeValueForWorldSpace :: MonadIO m => Tiles g -> WorldSpace g -> m Value
+encodeValueForWorldSpace :: MonadIO m => Tiles -> WorldSpace -> m Value
 encodeValueForWorldSpace allTiles (WorldSpace wid wname initPal palettes loadPos shouldSavePos vars script etys items fields) = do
     fieldPairs <- serializeFieldSetPairs allTiles fields
     pure . object $
@@ -275,11 +278,11 @@ encodeValueForWorldSpace allTiles (WorldSpace wid wname initPal palettes loadPos
 
 instance ( s `CanProvide` IDMap Prefab
          , s `CanProvide` IDMap Palette
-         , s `CanProvide` IDMap (Tile g)
+         , s `CanProvide` IDMap Tile
          , s `CanProvide` WorkingDirectory
-         , FromJSON (Dependency s m (ItemStack g))
+         , FromJSON (Dependency s m ItemStack)
          , MonadIO m
-         ) => FromJSON (Dependency s m (WorldSpace g)) where
+         ) => FromJSON (Dependency s m WorldSpace) where
     parseJSON (Object v) = do
         worldId    <- v .: "world-id"
         wName      <- v .: "name"
@@ -293,7 +296,7 @@ instance ( s `CanProvide` IDMap Prefab
         
         wScript :: Dependency s m (Maybe Lua.Script) <- flattenDependency <$> v .:? "script"
 
-        dLegend :: Dependency s m (MapLegend g) <- do
+        dLegend :: Dependency s m MapLegend <- do
             (keys, vals) :: ([Text], [Identifier]) <- unzip . Map.toList <$> v .: "legend"
 
             pure . fmap (Map.fromList . zip (T.head <$> keys))

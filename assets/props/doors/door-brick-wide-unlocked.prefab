@@ -4,7 +4,7 @@ identity:
   name: brick door
   description: a wide set of locked doors
 tags: [door]
-render: ["door-brick-wide-unlocked.png"]
+sprite: door-brick-wide-unlocked.png
 physics:
   type:   static
   shapes:

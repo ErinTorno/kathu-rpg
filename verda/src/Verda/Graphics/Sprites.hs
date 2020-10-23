@@ -9,6 +9,9 @@ module Verda.Graphics.Sprites
     , StaticSprite(..)
     , Sprite(..)
     , SurfaceVector
+    , setAnimation
+    , getAnimationID
+    , setAnimationID
     , spriteID
     , spriteLayer
     , spriteScale
@@ -63,7 +66,7 @@ data Animation = Animation
     { animAtlas  :: !SpriteID
     , animBounds :: !(V2 CInt)
     , animStrips :: !(UVec.Vector AnimationStrip)
-    , animIDs    :: !(IDMap Int)
+    , animIDs    :: !(IDMap CInt)
     }
 
 -------------
@@ -131,6 +134,28 @@ updateFrames !dT sprite = case sprite of
     ScrlSprite l s sspr@ScrollingSprite{scrollDuration, scrollTime} ->
         ScrlSprite l s sspr{scrollTime = (scrollTime + fromIntegral dT) `mod` scrollDuration}
     s -> s
+
+-- | Updates a sprite to use the given animation, if it exists for that sprite. No-op for non-AnimatedSprite.
+setAnimation :: Identifier -> Sprite -> Sprite
+setAnimation !idt as@(AnimSprite _ _ animSpr) = case Map.lookup idt . animIDs . animation $ animSpr of
+    Nothing  -> as
+    Just idx -> setAnimationID idx as
+setAnimation _ sprite = sprite
+
+-- | Returns a sprite's current animation. A non-AnimatedSprite is considered to be permanently using animation index 0.
+getAnimationID :: Sprite -> CInt
+getAnimationID (AnimSprite _ _ anim) = activeAnim anim
+getAnimationID _ = 0
+
+-- | Updates a sprite to use the given animation ID. No bounds checking. No-op for non-AnimatedSprite.
+setAnimationID :: CInt -> Sprite -> Sprite
+setAnimationID idx (AnimSprite l s anim) = AnimSprite l s anim{activeAnim = idx, currentFrame = 0, animTime = timeBeforeFrameChange anim}
+setAnimationID _ s = s
+
+-- | Time in ms directly before one frame of an animation would switch to another.
+timeBeforeFrameChange :: AnimatedSprite -> Word32
+timeBeforeFrameChange !animspr = subtract 1 . animDelay . (UVec.!curAnim) . animStrips . animation $ animspr
+    where curAnim = fromIntegral $ activeAnim animspr
 
 -------------------
 -- Serialization --

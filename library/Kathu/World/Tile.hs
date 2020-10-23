@@ -6,24 +6,24 @@ module Kathu.World.Tile where
 import           Control.Lens
 import           Control.Monad.IO.Class       (liftIO, MonadIO)
 import           Data.Aeson
-import           Data.Aeson.Types             (typeMismatch)
-import           Data.Bits
+import           Data.Aeson.Types             (Parser, typeMismatch)
 import           Data.Functor.Compose
 import           Data.Map                     (Map)
 import qualified Data.Map                     as Map
 import           Data.Text                    (Text)
+import           Data.Vector                  (Vector)
 import qualified Data.Vector                  as Vec
 import           Data.Vector.Unboxed.Deriving
 import           Data.Word
 import qualified System.Random                as R
-
-import           Kathu.Entity.Resource
-import           Kathu.Graphics.Drawable      (Render(..))
+import           Verda.Graphics.Sprites       (Sprite, updateFrames)
 import           Verda.Parsing.Aeson
 import           Verda.Parsing.Counting
 import           Verda.Util.Dependency
 import           Verda.Util.Flow              ((>>>=))
 import           Verda.Util.Types             (Identifier, IDMap)
+
+import           Kathu.Entity.Resource
 
 -----------------------
 -- Tile Config Types --
@@ -61,74 +61,58 @@ instance (FromJSON (Dependency s m ToolType), Monad m) => FromJSON (Dependency s
     parseJSON (Object v) = getCompose $ Breakable <$> v .:- "toolType" <*> v .:^ "minimumPower" <*> v .:^ "durability"
     parseJSON v          = typeMismatch "BreakBehavior" v
 
-newtype TileDrawFlag = TileDrawFlag Word32 deriving (Show, Eq)
+data TileRenderMode = TRMNormal Sprite | TRMRandom (Vector Sprite)
 
-newtype TileDrawFlags = TileDrawFlags Word32 deriving (Show, Eq)
-
-noTileDrawFlags :: TileDrawFlags
-noTileDrawFlags = TileDrawFlags 0
-
-pattern NormalMode, RandomMode :: TileDrawFlag
-pattern NormalMode          = TileDrawFlag 1
-pattern RandomMode          = TileDrawFlag 2  -- Instead of drawing all RenderSprites given at once, we instead draw one at random, as determined by metadata
--- pattern TiledByNeighborMode = TileDrawFlag 0b100 -- Atlas is a set of tiles which are drawn based on the surrounding tiles
-
-isDrawFlagSet :: TileDrawFlag -> TileDrawFlags -> Bool
-isDrawFlagSet _ (TileDrawFlags 0) = False
-isDrawFlagSet (TileDrawFlag !flag) (TileDrawFlags !setFlags) = 0 /= flag .&. setFlags
-
-instance FromJSON TileDrawFlag where
-    parseJSON = withText "TileRenderMode" $ \case
-        "normal"              -> pure NormalMode
-        "choose-random-atlas" -> pure RandomMode
-        m                     -> fail $ "Unknown TileRenderMode " ++ show m
-
-instance FromJSON TileDrawFlags where
-    parseJSON = withArray "TileDrawFlags" $ \arr ->
-                    let nextFlag acc (TileDrawFlag f) = f .|. acc
-                     in TileDrawFlags . Vec.foldl' nextFlag 0 <$> parseJSON (Array arr)
+instance ( FromJSON (Dependency s m Sprite)
+         , Monad m
+         ) => FromJSON (Dependency s m TileRenderMode) where
+    parseJSON s@(String _)   = mapDepParseJSON TRMNormal s
+    parseJSON obj@(Object v) = (v .:? "mode" :: Parser (Maybe Text)) >>= \case
+        Nothing       -> mapDepParseJSON TRMNormal obj
+        Just "normal" -> mapDepParseJSON TRMNormal obj -- treat as a sprite if normal or no mode
+        Just "random" -> composeParser (TRMRandom <$> v .:- "sprite-options")
+        Just e        -> fail $ "Unknown TileRenderMode " ++ show e
+    parseJSON e = typeMismatch "TileRenderMode" e
 
 ----------
 -- Tile --
 ----------
 
-data Tile g = Tile
+data Tile = Tile
     { _tileID         :: !TileID
     , _tileTextID     :: !Identifier
     , _tileName       :: !Text
-    , _tileRender     :: Render g
-    , _tileDrawFlags  :: !TileDrawFlags 
+    , _tileRenderMode :: TileRenderMode -- lazy, emptyTiles have this undefined
     , _isSolid        :: !Bool
     , _breakBehavior  :: !BreakBehavior
     }
 makeLenses ''Tile
 
-instance ( s `CanStore` (IDMap (Tile g))
+instance ( s `CanStore` (IDMap Tile)
          , FromJSON (Dependency s m BreakBehavior)
-         , FromJSON (Dependency s m (Render g))
+         , FromJSON (Dependency s m Sprite)
          , FromJSON (Dependency s m TileID)
+         , FromJSON (Dependency s m TileRenderMode)
          , Monad m
-         ) => FromJSON (Dependency s m (Tile g)) where
+         ) => FromJSON (Dependency s m Tile) where
     parseJSON (Object v) = tilePar >>>= storeWithKeyFn (view tileTextID)
         where tilePar = getCompose $ Tile
                   <$> v .:- "tile-id" -- this uses the id to parse Dependency s m TileID
                   <*> v .:^ "tile-id" -- this is used for the text name
                   <*> v .:^ "name"
-                  <*> v .:- "render"
-                  <*> v .:^? "render-flags" .!=- noTileDrawFlags
+                  <*> v .:- "sprite"
                   <*> v .:^ "is-solid"
                   <*> v .:- "break-behavior"
     parseJSON v          = typeMismatch "Tile" v
 
-emptyTile :: Tile g
+emptyTile :: Tile
 emptyTile = Tile
-    { _tileID        = emptyTileID
-    , _tileTextID    = "empty"
-    , _tileName      = "empty tile"
-    , _tileRender    = error "Attempted to use an empty tile's render"
-    , _tileDrawFlags = noTileDrawFlags
-    , _isSolid       = False
-    , _breakBehavior = Unbreakable
+    { _tileID         = emptyTileID
+    , _tileTextID     = "empty"
+    , _tileName       = "empty tile"
+    , _tileRenderMode = error "Attempted to use an empty tile's TileRenderMode"
+    , _isSolid        = False
+    , _breakBehavior  = Unbreakable
     }
 
 -- Target Size: 8 bytes (for better alignment)
@@ -142,23 +126,26 @@ derivingUnbox "TileState"
     [| \(TileState tl mt) -> (tl, mt) |]
     [| uncurry TileState              |]
 
-mkTileState :: Tile g -> TileState
+mkTileState :: Tile -> TileState
 mkTileState t = TileState (t^.tileID) 0
 
 emptyTileState :: TileState
 emptyTileState = mkTileState emptyTile
 
 -- | Uses randomIO to initialize metadata for tiles that make use of random properties through its metadata
-mkTileStateWithMetadata :: MonadIO m => Tile g -> m TileState
+mkTileStateWithMetadata :: MonadIO m => Tile -> m TileState
 mkTileStateWithMetadata t
-    | t^.tileDrawFlags.to (isDrawFlagSet RandomMode) =
-        let restrictRandomMeta = (`mod`(t^.tileRender.to (fromIntegral . Vec.length . unRender)))
-         in TileState (t^.tileID) . restrictRandomMeta <$> liftIO (R.randomIO :: IO Word32)
-    | otherwise = pure $ mkTileState t
+    | t^.tileID == emptyTileID = pure emptyTileState
+    | otherwise                = case t^.tileRenderMode of
+        TRMNormal _       -> pure $ mkTileState t
+        TRMRandom sprites -> TileState (t^.tileID) . (`mod` fromIntegral (Vec.length sprites)) <$> liftIO (R.randomIO :: IO Word32)
 
-getTileRender :: TileState -> Tile g -> Render g
-getTileRender !tileState !tileInst
-    | tileInst^.tileDrawFlags.to (isDrawFlagSet RandomMode) =
-        let chooseFrame (Render layers) = Render (Vec.singleton $ layers Vec.! (tileState^.metadata.to fromIntegral))
-         in chooseFrame (tileInst^.tileRender)
-    | otherwise = tileInst^.tileRender
+getTileSprite :: TileState -> Tile -> Sprite
+getTileSprite !tileState !tileInst = case tileInst^.tileRenderMode of
+    TRMNormal sprite  -> sprite
+    TRMRandom sprites -> sprites Vec.! (tileState^.metadata.to fromIntegral)
+
+updateTileAnimation :: Word32 -> Tile -> Tile
+updateTileAnimation !dT = over tileRenderMode $ \case
+    TRMNormal s -> TRMNormal $ updateFrames dT s
+    TRMRandom s -> TRMRandom $ updateFrames dT <$> s

@@ -8,7 +8,6 @@ import           Data.IORef
 import           Data.Text                  (Text)
 import           Data.Vector                (Vector)
 import qualified GI.Gtk                     as Gtk
-import           Verda.Graphics.Sprites     (SpriteID)
 
 import           Kathu.App.Tools.EventQueue
 import           Kathu.Editor.Resources     (Resources)
@@ -41,8 +40,8 @@ mkInstancedEntityConfig ety prefab = InstancedEntityConfig (Just ety) pID prefab
     where pID = prefab^.basePrefab.to prefabID
 
 data WSEditState = WSEditState
-    { worldspaceRef :: !(IORef (WorldSpace SpriteID))
-    , wsProperties  :: !(Vector (EditableProperty (WorldSpace SpriteID)))
+    { worldspaceRef :: !(IORef WorldSpace)
+    , wsProperties  :: !(Vector (EditableProperty WorldSpace))
     , wsFilePath    :: !(Maybe FilePath)
     }
 

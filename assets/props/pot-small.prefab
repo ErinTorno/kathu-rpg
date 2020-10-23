@@ -1,5 +1,5 @@
 identity: pot-small
-render:   "pot-small.png"
+sprite:   pot-small.png
 physics:
   type:   dynamic
   mass:   50

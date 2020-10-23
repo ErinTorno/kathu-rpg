@@ -2,7 +2,6 @@ module Kathu.App.Tools.EventQueue where
 
 import           Apecs
 import           Control.Concurrent.MVar
-import           Verda.Graphics.Sprites      (SpriteID)
 
 import           Kathu.App.System
 import           Kathu.App.Tools.ToolMode
@@ -13,8 +12,8 @@ import           Kathu.World.WorldSpace      (InstancedPrefab, WorldSpace)
 data AppEvent
     = TryToQuitGame
     | UseToolMode ToolMode
-    | SetSelectedTile (Tile SpriteID)
-    | LoadWorldSpace  (WorldSpace SpriteID)
+    | SetSelectedTile Tile
+    | LoadWorldSpace  WorldSpace
     | ToggleDebug
     | DestroyEntity Entity
     | PlaceEntity InstancedPrefab

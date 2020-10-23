@@ -3,7 +3,12 @@ identity:
   name: locked chest
   description: a locked box
 tags: [container]
-render: ["chest-locked.png"]
+sprite:
+  atlas:  chest-locked.png
+  bounds: [16, 16]
+  animations:
+    locked: {row: 0, frames: 1, delay: 1000}
+    open:   {row: 1, frames: 1, delay: 1000}
 inventory:
   type: container
   equip-slots: []

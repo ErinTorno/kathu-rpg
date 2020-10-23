@@ -8,7 +8,6 @@ import           Data.Maybe
 import qualified SDL
 import           Verda.Graphics.Fonts            (Font, fontID)
 import           Verda.Graphics.SpriteManager    (SpriteManager, mkSpriteManager)
-import           Verda.Graphics.Sprites          (SpriteID)
 import           Verda.IO.Dictionary
 import           Verda.IO.Directory              (assetPath)
 import           Verda.Util.Types
@@ -25,15 +24,15 @@ import           Kathu.World.WorldSpace
 
 data Dictionary = Dictionary
     { _dictParsingStore    :: !KathuStore
-    , _dictItems           :: !(IDMap (Item SpriteID))
+    , _dictItems           :: !(IDMap Item)
     , _dictFloorProperties :: !(IDMap FloorProperty)
     , _dictFonts           :: !(IDMap Font)
     , _dictLanguages       :: !(IDMap Language)
     , _dictPalettes        :: !(IDMap Palette)
     , _dictPrefabs         :: !(IDMap Prefab)
-    , _dictTiles           :: !(IDMap (Tile SpriteID))
+    , _dictTiles           :: !(IDMap Tile)
     , _dictUIConfig        :: UIConfig
-    , _dictWorldSpaces     :: !(IDMap (WorldSpace SpriteID))
+    , _dictWorldSpaces     :: !(IDMap WorldSpace)
     }
 makeLenses ''Dictionary
 

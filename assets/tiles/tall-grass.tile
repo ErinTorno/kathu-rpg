@@ -1,13 +1,15 @@
 tile-id:      tall-grass
 name:         tall grass
-render-flags: [choose-random-atlas]
-render:
-- atlas: "tall-grass.png"
-  bounds: [16, 16]
-  strips: [{id: idle, frames: 4, row: 0, delay: 500}] # in ms
-- atlas: "tall-grass-2.png"
-  bounds: [16, 16]
-  strips: [{id: idle, frames: 3, row: 0, delay: 666}]
-  
+sprite:
+  mode: random
+  sprite-options:
+  - atlas:  tall-grass.png
+    bounds: [16, 16]
+    animations:
+      idle: {row: 0, frames: 4, delay: 500} # in ms
+  - atlas:  tall-grass-2.png
+    bounds: [16, 16]
+    animations:
+      idle: {row: 0, frames: 3, delay: 666}
 is-solid: false
 break-behavior: unbreakable

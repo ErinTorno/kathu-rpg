@@ -1,18 +1,17 @@
-{-# LANGUAGE UnboxedTuples #-}
+module Verda.Graphics.Drawing where
 
-module Kathu.App.Graphics.Drawing where
-
-import           Control.Monad.IO.Class          (MonadIO)
-import           Foreign.C.Types                 (CInt)
-import           Linear.V2                       (V2(..))
+import           Control.Monad.IO.Class       (MonadIO)
+import           Foreign.C.Types
+import           Linear.V2
+import           Linear.V3
+import           Linear.V4
+import           SDL                          (($=))
 import qualified SDL
-import           Verda.Graphics.Sprites          (SpriteID)
 
+import           Verda.Graphics.Color
+import           Verda.Graphics.Sprites
 import           Verda.Graphics.SpriteManager
-import           Kathu.Graphics.Drawable
-import           Verda.Util.Types                (clampBetween)
-
--- the height of the screen in units; depending on screen size, more or less is included
+import           Verda.Util.Types             (clampBetween)
 
 minUnitsPerHeight :: Floating a => a
 minUnitsPerHeight = 8.0
@@ -26,6 +25,7 @@ pixelsForMinUnits = 360
 pixelsForMaxUnits :: Integral a => a
 pixelsForMaxUnits = 1080
 
+-- TODO move these into Kathu
 pixelsPerUnit :: Floating a => a
 pixelsPerUnit = 16.0
 
@@ -36,8 +36,8 @@ cameraShiftUp = 0.75
 edgeBleedScaling :: Floating a => a
 edgeBleedScaling = 1.005
 
-aspectRatio :: Floating a => V2 a -> a
-aspectRatio (V2 x y) = x / y
+getAspectRatio :: Floating a => V2 a -> a
+getAspectRatio (V2 x y) = x / y
 
 getUnitsPerHeight :: (Integral i, Floating a) => i -> a
 getUnitsPerHeight resY = minUnitsPerHeight + (maxUnitsPerHeight - minUnitsPerHeight) * pixMult
@@ -58,11 +58,7 @@ screenToWorldScale screenDim scale camX camY = \pos -> ((/logicScale) <$> (pos -
     where logicScale    = scale * pixelsPerUnit
           shiftedCamera = V2 camX (camY - cameraShiftUp)
           halfScreenDim = (*0.5) <$> screenDim
-
-getSpriteID :: RenderSprite SpriteID -> SpriteID
-getSpriteID (RSStatic (StaticSprite !img _ _)) = img
-getSpriteID (RSAnimated !anim) = animAtlas . animation $ anim
-
+          
 mkRenderRect :: (Floating a, RealFrac a) => a -> a -> V2 a -> SDL.Rectangle CInt -> SDL.Rectangle CInt
 mkRenderRect !bleed !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = mkRectWith round x' y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
     where x' = x - scale * 0.5 * fromIntegral w
@@ -72,13 +68,14 @@ mkRenderRectNoCenter :: (Floating a, RealFrac a) => a -> a -> V2 a -> SDL.Rectan
 mkRenderRectNoCenter !bleed !scale (V2 !x !y) (SDL.Rectangle _ (V2 !w !h)) = mkRectWith round x y' (bleed * scale * fromIntegral w) (bleed * scale * fromIntegral h)
     where y' = y - scale * fromIntegral h
 
-blitRenderSprite :: MonadIO m => SDL.Renderer -> SpriteManager -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> RenderSprite SpriteID -> m ()
-blitRenderSprite !renderer !mgr !mkRect !ren = blit ren
-    where draw !srcBnd !destBnd tex = SDL.copy renderer tex srcBnd (Just . mkRect $ destBnd)
-          blit (RSStatic (StaticSprite !iid !bnd _)) = draw Nothing (SDL.Rectangle (SDL.P (V2 0 0)) bnd) $ fetchTexture mgr iid
-          blit dyn@(RSAnimated AnimatedSprite {animation = anim}) = draw (Just bounds) bounds $ fetchTexture mgr (animAtlas anim)
-              where bounds = SDL.Rectangle (SDL.P boundsPos) boundsDim
-                    (# boundsPos, boundsDim #) = currentBounds dyn
+blitSprite :: MonadIO m => SDL.Renderer -> SpriteManager -> Sprite -> Color -> (SDL.Rectangle CInt -> SDL.Rectangle CInt) -> m ()
+blitSprite !renderer !spriteManager !sprite (Color (V4 r g b a)) !mkTargetRect =
+    let texture    = fetchTexture spriteManager $ spriteID sprite
+        srcRect    = spriteRectangle sprite
+        targetRect = mkTargetRect srcRect
+     in do SDL.textureColorMod texture $= V3 r g b
+           SDL.textureAlphaMod texture $= a
+           SDL.copy renderer texture (Just srcRect) (Just targetRect)
 
 -------------------------
 -- SDL Data Type Utils --

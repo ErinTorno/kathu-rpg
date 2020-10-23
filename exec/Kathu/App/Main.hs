@@ -15,11 +15,11 @@ import           Data.Word
 import qualified SDL
 import qualified SDL.Font                        as SDLF
 import           SDL                             (($=))
+import           Verda.Graphics.SpriteBuffer     (SpriteBuffer, mkSpriteBuffer)
 
 import           Kathu.App.Data.Settings
 import           Kathu.App.Events
 import           Kathu.App.Graphics.Render       (runRender)
-import           Kathu.App.Graphics.RenderBuffer (RenderBuffer, mkRenderBuffer)
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventHandler
 import           Kathu.App.Tools.EventQueue
@@ -32,7 +32,7 @@ import           Kathu.Game                      (runGame, updateDelay)
 appName :: Text
 appName = "Kathu"
 
-data RenderInfo = RenderInfo {sdlWindow :: SDL.Window, sdlRenderer :: SDL.Renderer, renderBuffer :: RenderBuffer, gameSettings :: Settings}
+data RenderInfo = RenderInfo {sdlWindow :: SDL.Window, sdlRenderer :: SDL.Renderer, spriteBuffer :: SpriteBuffer, gameSettings :: Settings}
 
 -- determines the millisecond delay needed to hit goal fps. Will disregard fps goals beneath the physics delay
 renderDelay :: Settings -> Word32
@@ -52,7 +52,7 @@ createWindow = do
     SDL.showWindow window
     SDLF.initialize
     renderer <- SDL.createRenderer window (-1) $ SDL.RendererConfig (if isVSyncEnabled settings then SDL.AcceleratedVSyncRenderer else SDL.AcceleratedRenderer) False
-    buffer   <- mkRenderBuffer
+    buffer   <- mkSpriteBuffer
     pure $ RenderInfo window renderer buffer settings
 
 createWorld :: RenderInfo -> IO EntityWorld
@@ -88,8 +88,8 @@ startWith updateSettings runner = do
     destroyWindow renInfo
     SDL.quit
 
-run :: Word32 -> SDL.Renderer -> RenderBuffer -> Word32 -> Word32 -> SystemT' IO ()
-run !renDelay !renderer !renBuf !prevPhysTime !prevRendTime = do
+run :: Word32 -> SDL.Renderer -> SpriteBuffer -> Word32 -> Word32 -> SystemT' IO ()
+run !renDelay !renderer !buffer !prevPhysTime !prevRendTime = do
     startTime <- SDL.ticks
     let (n, remainder) = (startTime - prevPhysTime) `divMod` updateDelay
 
@@ -105,15 +105,15 @@ run !renDelay !renderer !renBuf !prevPhysTime !prevRendTime = do
     unless (renderDiffer >= renDelay) $
         SDL.delay (renDelay - renderDiffer)
     -- render steps in variable time, so we must reflect that
-    runRender renderer renBuf renderDiffer
+    runRender renderer buffer renderDiffer
     
     ShouldQuit isQuitting <- get global
     -- Physics steps back to ensure next update is on time; render goes whenever it can
     unless isQuitting $
-        run renDelay renderer renBuf (startTime - remainder) renderStartTime
+        run renDelay renderer buffer (startTime - remainder) renderStartTime
 
-runForEventQueue :: EventQueue -> CommandState -> Word32 -> SDL.Renderer -> RenderBuffer -> Word32 -> Word32 -> IO ()
-runForEventQueue !queue !commandState !renDelay !renderer !renBuf !prevPhysTime !prevRendTime = do
+runForEventQueue :: EventQueue -> CommandState -> Word32 -> SDL.Renderer -> SpriteBuffer -> Word32 -> Word32 -> IO ()
+runForEventQueue !queue !commandState !renDelay !renderer !buffer !prevPhysTime !prevRendTime = do
     -- the editor might want to work with the world, so we need to make sure it hasn't taken the world when this runs
     world         <- takeEntityWorld queue
     shouldRunGame <- runWith world $ do
@@ -139,10 +139,10 @@ runForEventQueue !queue !commandState !renDelay !renderer !renBuf !prevPhysTime 
     -- we might want to delay until ready to run again; in this case we should yield the world until we are done delaying
     unless (renderDiffer >= renDelay) $
         SDL.delay (renDelay - renderDiffer)
-    runWith world $ runRender renderer renBuf renderDiffer
+    runWith world $ runRender renderer buffer renderDiffer
     
     putEntityWorld world queue
     
     ShouldQuit isQuitting <- runWith world $ get global
     unless isQuitting $
-        runForEventQueue queue commandState renDelay renderer renBuf (startTime - remainder) renderStartTime
+        runForEventQueue queue commandState renDelay renderer buffer (startTime - remainder) renderStartTime

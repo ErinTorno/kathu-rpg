@@ -1,14 +1,14 @@
 identity: orb-toggle
 script:
-  file:   "orb-toggle.lua"
+  file:   orb-toggle.lua
   events: [on-init]
   is-singleton: true
-render:
-- atlas: "orb-toggle.png"
+sprite:
+  atlas: orb-toggle.png
   bounds: [16, 16]
-  strips:
-  - {id: cold, frames: 1, row: 0, delay: 1000}
-  - {id: warm, frames: 1, row: 1, delay: 1000}
+  animations:
+    cold: {row: 0, frames: 1, delay: 1000}
+    warm: {row: 1, frames: 1, delay: 1000}
 physics:
   type:   static
   shapes:

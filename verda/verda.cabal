@@ -21,8 +21,10 @@ library
                     -- Graphics
                     Verda.Graphics.Color
                     Verda.Graphics.Components
+                    Verda.Graphics.Drawing
                     Verda.Graphics.Fonts
                     Verda.Graphics.Icons
+                    Verda.Graphics.SpriteBuffer
                     Verda.Graphics.SpriteManager
                     Verda.Graphics.Sprites
                     -- IO
@@ -63,6 +65,7 @@ library
                     text                 ^>=1.2.4,
                     unordered-containers ^>=0.2.10,
                     vector               ^>=0.12.1.2,
+                    vector-algorithms    ^>=0.8,
                     vector-th-unbox      ^>=0.2.1.7,
                     yaml                 ^>=0.11.5
   hs-source-dirs:   src

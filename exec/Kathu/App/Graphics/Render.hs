@@ -5,32 +5,29 @@ import           Apecs.Physics                   hiding (($=))
 import           Control.Lens                    hiding (Identity)
 import           Control.Monad                   (foldM, when)
 import           Data.Maybe                      (fromMaybe)
-import           Data.Vector                     (Vector)
-import qualified Data.Vector                     as Vec
 import qualified Data.Vector.Mutable             as MVec
 import           Data.Word
 import           SDL                             (($=))
 import qualified SDL
+import           Verda.Graphics.Color            (unColor, white)
 import           Verda.Graphics.Components       (BackgroundColor(..))
-import           Verda.Graphics.Sprites          (SpriteID)
+import           Verda.Graphics.SpriteBuffer
+import           Verda.Graphics.Sprites
+import           Verda.Util.Containers           (forMVec)
+import           Verda.Util.Apecs
 
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Debug        (renderDebug)
-import           Kathu.App.Graphics.Drawing
-import           Kathu.App.Graphics.RenderBuffer
+import           Verda.Graphics.Drawing
 import           Kathu.App.Graphics.UI
 import           Kathu.App.System                (SystemT')
 import           Kathu.App.Tools.ToolSystem      (renderToolMode)
 import           Kathu.Entity.Action
 import           Kathu.Entity.System
 import           Kathu.Graphics.Camera
-import           Verda.Graphics.Color (unColor)
-import           Kathu.Graphics.Drawable
 import           Kathu.World.Field
 import           Kathu.World.Tile                hiding (Vector, MVector)
 import           Kathu.World.WorldSpace
-import           Verda.Util.Containers           (forMVec)
-import           Verda.Util.Apecs
 
 -- if sprite position is more than this many units from left or right, or from bottom, we don't draw
 -- we don't draw anything above the top of the screen, however, since sprites draw out and upwards
@@ -42,40 +39,25 @@ logicCoordToRender scale (V2 topX topY) (V2 tarX tarY) = V2 ((tarX - topX) * sca
 
 updateAnimations :: Word32 -> SystemT' IO ()
 updateAnimations dT = do
-    -- anim frames are updated
-    let updateFramesIfAnim (RSAnimated !anim) = RSAnimated $ updateFrames dT anim
-        updateFramesIfAnim s                  = s
-        -- just advances to next frame, no special animation-switching is needed
-        updateWithoutController :: (Render SpriteID, Not ActionSet) -> Render SpriteID
-        updateWithoutController (Render sprites, _) = Render $ updateFramesIfAnim <$> sprites
-        -- since this has actions, we also need to check and see if it should change animation states
-        updateAnimated :: (Render SpriteID, ActionSet) -> Render SpriteID
-        updateAnimated (Render sprites, ActionSet {_moving = m, _facingDirection = fac}) = Render $ updateEach <$> sprites
-            where updateEach (RSAnimated anim)  = RSAnimated $ update m anim
-                  updateEach s                  = s
-                  update Nothing anim =
-                      -- we ensure that this is paused and waiting on first frame
-                      anim {activeAnim = dirToAnimIndex fac, currentFrame = 0, animTime = timeBeforeFrameChange anim}
-                  update (Just d) anim
-                      | dir == act  = updateFrames dT anim -- if same direction, we just update its frames
-                      | otherwise   = switchAnimation dir anim -- we switch to new animation and reset
-                          where dir = dirToAnimIndex d
-                                act = activeAnim anim
-    -- only update frames for those without any controller for them
-    cmap updateWithoutController
-    -- if it has an ActionSet, we have to deal with swapping animations
-    cmap updateAnimated
+    let updateAnimated (sprite, ActionSet {_moving = mv, _facingDirection = fac}) = case mv of
+            Nothing -> setAnimationID (dirToAnimIndex fac) sprite
+            Just dir -> if
+                | dirIdx == getAnimationID sprite -> updateFrames dT sprite
+                | otherwise                       -> setAnimationID dirIdx sprite
+                where dirIdx = dirToAnimIndex dir
 
+    cmap (\(sprite, _ :: Not ActionSet) -> updateFrames dT sprite)
+    cmap updateAnimated
     -- since tile graphics information isn't stored as entities, we instead just grab all tiles and update their animations
-    Tiles tileVector <- get global :: SystemT' IO (Tiles SpriteID)
-    lift . forMVec tileVector $ over tileRender (\(Render frames) -> Render (updateFramesIfAnim <$> frames))
+    Tiles tileVector <- get global :: SystemT' IO Tiles
+    lift $ forMVec tileVector (updateTileAnimation dT)
 
 ----------------------
 -- main render loop --
 ----------------------
 
-runRender :: SDL.Renderer -> RenderBuffer -> Word32 -> SystemT' IO ()
-runRender !renderer !renderBuffer !dT = do
+runRender :: SDL.Renderer -> SpriteBuffer -> Word32 -> SystemT' IO ()
+runRender !renderer !spriteBuffer !dT = do
     stepRenderTime dT
     updateAnimations dT
 
@@ -83,10 +65,10 @@ runRender !renderer !renderBuffer !dT = do
     settings         <- get global
     Debug isDebug    <- get global
     Tiles tileVector <- get global
-    let getTile :: TileState -> SystemT' IO (Tile SpriteID)
+    let getTile :: TileState -> SystemT' IO Tile
         getTile = lift . MVec.read tileVector . fromIntegral .  unTileID . view tile
 
-    world :: WorldSpace SpriteID <- get global
+    world :: WorldSpace <- get global
     (Position (V2 camX camY), Camera zoomScale) <- fromMaybe (Position (V2 0 0), Camera 1) <$> getUnique
 
     -- clears background
@@ -97,7 +79,7 @@ runRender !renderer !renderBuffer !dT = do
     let V2 _ resY      = resolution settings
         res            = fromIntegral <$> resolution settings
         unitsPerHeight = getUnitsPerHeight resY
-        unitsPerWidth  = unitsPerHeight * aspectRatio res
+        unitsPerWidth  = unitsPerHeight * getAspectRatio res
 
         scale          = getScale (fromIntegral resY) unitsPerHeight zoomScale
         worldToScreen  = worldToScreenScale res scale camX camY 
@@ -111,14 +93,14 @@ runRender !renderer !renderBuffer !dT = do
         minX = camX' + ((-0.5) * zoomScale * unitsPerWidth  - renderBorderUnits)
         maxX = camX' + (0.5    * zoomScale * unitsPerWidth  + renderBorderUnits)
 
-        -- adds to RenderBuffer and increments if judged to be drawable; expands the buffer if needed
-        addToBuffer :: Int -> Vector (RenderSprite SpriteID) -> V2 Double -> SystemT' IO Int
-        addToBuffer !idx render !pos
+        -- adds to spriteBuffer and increments if judged to be drawable; expands the buffer if needed
+        addToBuffer :: Int -> Sprite -> V2 Double -> SystemT' IO Int
+        addToBuffer !idx !sprite !pos
             | isOffScreen pos = pure idx
             | otherwise       = lift $ do
                 let renderPos = worldToScreen pos
-                Vec.ifoldM'_ (\_ i spr -> writeToBuffer (idx + i) (renderPos, spr) renderBuffer) () render
-                pure $ idx + Vec.length render
+                sbeWrite spriteBuffer idx (SpriteBufferElement renderPos white sprite)
+                pure $ idx + 1
 
         -- this call to fieldFoldM is (as of when this is written) the most time intensive process in the program
         -- if we start to have too many problems, we should like into implementing caching each individual sprite into larger ones
@@ -129,31 +111,30 @@ runRender !renderer !renderBuffer !dT = do
         addTile :: V2 Int -> Int -> V2 Int -> TileState -> SystemT' IO Int
         addTile fpos i pos !t = getTile t >>= \tileInst ->
             -- foldFnField filters out empty tiles, so we know they are safe here; if it didn't, attempting to render an empty would error
-            let (Render layers) = getTileRender t tileInst
-             in addToBuffer i layers (worldCoordFromTileCoord fpos pos)
+            addToBuffer i (getTileSprite t tileInst) (worldCoordFromTileCoord fpos pos)
 
-        gatherEntityRender :: Int -> (Render SpriteID, Position) -> SystemT' IO Int
-        gatherEntityRender i (Render render, Position pos) = addToBuffer i render pos
+        gatherEntitySprite :: Int -> (Sprite, Position) -> SystemT' IO Int
+        gatherEntitySprite i (sprite, Position pos) = addToBuffer i sprite pos
 
-        gatherTileRender :: Int -> SystemT' IO Int
-        gatherTileRender i = foldM foldFnField i . fieldsSurrounding camX camY $ world 
+        gatherTileSprite :: Int -> SystemT' IO Int
+        gatherTileSprite i = foldM foldFnField i . fieldsSurrounding camX camY $ world 
 
-        -- this collects all renders into our buffer with their positions
-        gatherRender :: SystemT' IO Int
-        gatherRender = cfoldM gatherEntityRender 0 >>= gatherTileRender
+        -- this collects all sprites into our buffer with their positions
+        gatherSprites :: SystemT' IO Int
+        gatherSprites = cfoldM gatherEntitySprite 0 >>= gatherTileSprite
         
         renderEvery :: Int -> Int -> IO ()
-        renderEvery !i !len
-            | i == len    = pure ()
-            | otherwise   = do
-                let drawEach !pos !ren = blitRenderSprite renderer spriteManager (mkRenderRect edgeBleedScaling scale pos) ren
-                (!pos, !spr) <- readFromBuffer i renderBuffer
-                drawEach pos spr
-                renderEvery (i + 1) len
+        renderEvery !idx !len
+            | idx == len = pure ()
+            | otherwise  = do
+                SpriteBufferElement !pos !color !sprite <- sbeRead spriteBuffer idx
+                let mkDestRect = mkRenderRect edgeBleedScaling (scale * spriteScale sprite) pos
+                blitSprite renderer spriteManager sprite color mkDestRect
+                renderEvery (idx + 1) len
 
-    sprCount <- gatherRender
+    sprCount <- gatherSprites
     when (sprCount > 0) $
-        lift (sortRenderBuffer 0 sprCount renderBuffer >> renderEvery 0 sprCount)
+        lift (sortSpriteBuffer spriteBuffer 0 sprCount >> renderEvery 0 sprCount)
 
     playerAS <- cfold (\_ (as, Camera _) -> Just as) Nothing
     renderUI renderer scale playerAS

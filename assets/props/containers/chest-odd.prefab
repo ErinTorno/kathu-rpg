@@ -3,7 +3,12 @@ identity:
   name: odd chest
   description: a strange, large locked box
 tags: [container]
-render: ["chest-odd.png"]
+sprite:
+  atlas:  chest-odd.png
+  bounds: [20, 18]
+  animations:
+    locked: {row: 0, frames: 1, delay: 1000}
+    open:   {row: 1, frames: 1, delay: 1000}
 inventory:
   type: container
   equip-slots: []

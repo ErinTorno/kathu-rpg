@@ -124,7 +124,6 @@ fieldFoldM f !acc (Field fgTiles) = go fgTiles 0 0 acc
               | otherwise         = liftIO (UMVec.unsafeRead tiles $ indexFromCoord x y) >>= ignoreEmpty b (f b (V2 x y)) >>= go tiles (x + 1) y
           ignoreEmpty b action !t = if t^.tile == emptyTileID then pure b else action t
 
-
 {-# INLINE fieldFoldWithEmptyM #-}
 -- | Folds through all present tiles in the field monadically, with position
 fieldFoldWithEmptyM :: MonadIO m => (a -> V2 Int -> TileState -> m a) -> a -> Field -> m a
@@ -141,7 +140,7 @@ isFieldNotEmpty :: MonadIO m => Field -> m Bool
 isFieldNotEmpty = fieldFoldM (\_ _ _ -> pure True) False
 
 -- | Transforms a FieldSet into a list of V2 lists defining collision shapes
-mkCollisionPolygons :: MonadIO m => Tiles g -> FieldSet -> m (Vec.Vector [V2 Double])
+mkCollisionPolygons :: MonadIO m => Tiles -> FieldSet -> m (Vec.Vector [V2 Double])
 mkCollisionPolygons tiles = fmap (Vec.concat . fmap mkTriangles) . mapM isSolidVec . Map.assocs . unFieldSet
     where isSolidTS :: MonadIO m => TileState -> m Bool
           isSolidTS ts = view isSolid <$> (liftIO . fromTiles tiles $ ts)
@@ -162,7 +161,7 @@ mkCollisionPolygons tiles = fmap (Vec.concat . fmap mkTriangles) . mapM isSolidV
 -- Serialization --
 -------------------
 
-type MapLegend g = Map Char (Tile g)
+type MapLegend = Map Char Tile
 
 data FieldConfig = FieldConfig {fcPosition :: !(V2 Int), fcData :: !(Vec.Vector String)}
 
@@ -172,7 +171,7 @@ instance ToJSON FieldConfig where
 instance FromJSON FieldConfig where
     parseJSON = withObject "FieldConfig" $ \v -> FieldConfig <$> v .: "position" <*> v .: "data"
 
-applyFieldConfig :: MonadIO m => MapLegend g -> FieldSet -> FieldConfig -> m FieldSet
+applyFieldConfig :: MonadIO m => MapLegend -> FieldSet -> FieldConfig -> m FieldSet
 applyFieldConfig legend (FieldSet fieldMap) (FieldConfig pos fdata) = liftIO $ do
     Field field <- mkField
 
@@ -194,7 +193,7 @@ legendSolidTileKeys    = "#@=$%&/()0123456789£¢¥§©" ++ ['A'..'B']
 legendNonSolidTileKeys = ".,_-'`~+*:;<>!?¤°" ++ ['a'..'z']
 legendExtraTileKeys    = ['¿'..]
 
-mkLegend :: MonadIO m => Tiles g -> FieldSet -> m (MapLegend g)
+mkLegend :: MonadIO m => Tiles -> FieldSet -> m MapLegend
 mkLegend allTiles (FieldSet fieldMap) = mkMap <$> liftIO allUniqueTiles
     where mkMap = Map.fromList . view _1 . F.foldl' assignNext initialAcc
 
@@ -221,7 +220,7 @@ mkLegend allTiles (FieldSet fieldMap) = mkMap <$> liftIO allUniqueTiles
 -- | Serializes a FieldSet into pairs with a legend and many fields
 -- | The legend is map of characters to tile text IDs
 -- | The fields are a fieldDim-element list of fieldDim-character Strings
-serializeFieldSetPairs :: MonadIO m => Tiles g -> FieldSet -> m [Pair]
+serializeFieldSetPairs :: MonadIO m => Tiles -> FieldSet -> m [Pair]
 serializeFieldSetPairs allTiles fs@(FieldSet fieldMap) = do
     legend    <- mkLegend allTiles fs
     let nameLegend :: Map Char Identifier

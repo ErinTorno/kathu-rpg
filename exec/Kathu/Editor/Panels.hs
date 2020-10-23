@@ -15,7 +15,7 @@ import           Data.Vector                (Vector)
 import qualified Data.Vector                as Vec
 import qualified GI.Gtk                     as Gtk
 import qualified GI.GdkPixbuf               as Gdk
-import           Verda.Graphics.Sprites     (SpriteID(..))
+import           Verda.Graphics.Sprites     (SpriteID(..), spriteID)
 
 import           Kathu.App.Data.Dictionary  (dictParsingStore, dictTiles)
 import           Kathu.App.Data.KathuStore  (psCountingIDs)
@@ -25,12 +25,11 @@ import           Kathu.Editor.Dialogs
 import           Kathu.Editor.Resources
 import           Kathu.Editor.Types
 import           Kathu.Editor.Util.PropertyGrid
-import           Kathu.Graphics.Drawable    (getRenderGraphicsVector)
 import           Verda.Parsing.Counting
 import qualified Kathu.Scripting.Lua        as Lua
 import           Verda.Util.Containers      (fromJustElseError)
+import           Kathu.World.Tile           (TileRenderMode(..), emptyTile, emptyTileID, tileID, tileName, tileRenderMode)
 import           Kathu.World.WorldSpace
-import           Kathu.World.Tile           (emptyTile, emptyTileID, tileID, tileName, tileRender)
 
 mkTileIcon :: Text -> IO Gtk.Image
 mkTileIcon path = do
@@ -61,7 +60,9 @@ mkTileSelectorPanel EditorState{eventQueue = queue} = do
         libTiles          = dictionary^.dictTiles.to (filter (\t -> t^.tileID /= emptyTileID) . Map.elems)
         libTilesBySpriteID = Map.fromList . map (\t -> (getSpriteID t, t)) $ libTiles
         
-        getSpriteID t      = t^.tileRender.to (Vec.head . getRenderGraphicsVector)
+        getSpriteID t = case t^.tileRenderMode of 
+            TRMNormal s -> spriteID s
+            TRMRandom s -> spriteID $ Vec.head s
         isTileImage imgID  = Map.member imgID libTilesBySpriteID
 
         tileImageCounting = dictionary^.dictParsingStore.psCountingIDs.to ((Map.! "SpriteID") . unCounting)
@@ -140,7 +141,7 @@ mkWorldSpaceToolbar EditorState{eventQueue = queue, resources = res} = do
     pure toolbar
 
 -- | Creates a row that shows the script file, and has a button to edit or delete the script
-mkScriptPropertyRow :: Resources -> PropertyRowAdder (WorldSpace SpriteID)
+mkScriptPropertyRow :: Resources -> PropertyRowAdder WorldSpace
 mkScriptPropertyRow res rowNum grid wsRef = do
     box <- new Gtk.Box [#orientation := Gtk.OrientationHorizontal]
 

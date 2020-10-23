@@ -12,14 +12,14 @@ import           Data.Fixed (divMod')
 import           Data.Functor.Compose (getCompose)
 import           Linear.V2 (V2(..))
 import qualified SDL
+import           Verda.Graphics.Color            (white)
+import           Verda.Graphics.Drawing
 import           Verda.Graphics.Icons            (Icon)
 import           Verda.Graphics.SpriteManager    (SpriteManager)
-import           Verda.Graphics.Sprites          (SpriteID)
+import           Verda.Graphics.Sprites          (Sprite)
 
-import           Kathu.App.Graphics.Drawing
 import           Kathu.Entity.ActorState
 import           Kathu.Entity.Resource
-import           Kathu.Graphics.Drawable
 import           Verda.Parsing.Aeson
 import           Verda.Util.Dependency
 
@@ -28,17 +28,17 @@ data DisplayBar = DisplayBar
     -- for every N points that this bar measures, there will be a new unit of the image
     , pointsPerUnit   :: Double
     -- if present this will be drawn at the start and end of the bar
-    , barCapBeginning :: Maybe (RenderSprite SpriteID)
-    , barCapEnding    :: Maybe (RenderSprite SpriteID)
+    , barCapBeginning :: Maybe Sprite
+    , barCapEnding    :: Maybe Sprite
     , capWidth        :: Double
     , primaryWidth    :: Double
     , secondaryWidth  :: Double
-    , primaryFull     :: RenderSprite SpriteID
-    , primary3Q       :: RenderSprite SpriteID
-    , primaryHalf     :: RenderSprite SpriteID
-    , primary1Q       :: RenderSprite SpriteID
-    , secondaryFull   :: RenderSprite SpriteID
-    , secondaryEmpty  :: RenderSprite SpriteID
+    , primaryFull     :: Sprite
+    , primary3Q       :: Sprite
+    , primaryHalf     :: Sprite
+    , primary1Q       :: Sprite
+    , secondaryFull   :: Sprite
+    , secondaryEmpty  :: Sprite
     }
 
 data UIConfig = UIConfig
@@ -48,7 +48,7 @@ data UIConfig = UIConfig
     , manaBar   :: DisplayBar
     }
 
-instance (FromJSON (Dependency s m (RenderSprite SpriteID)), Monad m) => FromJSON (Dependency s m DisplayBar) where
+instance (FromJSON (Dependency s m Sprite), Monad m) => FromJSON (Dependency s m DisplayBar) where
     parseJSON (Object v) = getCompose $ DisplayBar
         <$> v .:^ "starts-at"
         <*> v .:^ "points-per-part"
@@ -60,9 +60,8 @@ instance (FromJSON (Dependency s m (RenderSprite SpriteID)), Monad m) => FromJSO
         <*> v .:- "secondary-full" <*> v .:- "secondary-empty"
     parseJSON v = typeMismatch "DisplayBar" v
 
-instance ( FromJSON (Dependency s m (RenderSprite SpriteID))
-         , FromJSON (Dependency s m Icon)
-         , FromJSON (Dependency s m SpriteID)
+instance ( FromJSON (Dependency s m Icon)
+         , FromJSON (Dependency s m Sprite)
          , Monad m
          ) => FromJSON (Dependency s m UIConfig) where
     parseJSON (Object v) = getCompose $ UIConfig True
@@ -103,6 +102,6 @@ drawBar renderer scale mgr dyn (DisplayBar startingPos ppu capBegin capEnd capw 
           fixPartial p = p
           emptyUnits = unitCount - fullUnits - 1
           primaryImg = case partialRem of {1 -> pi1; 2 -> pi2; 3 -> pi3; 4 -> pi4; _ -> pi4}
-          drawAt img w x = blitRenderSprite renderer mgr (mkRenderRectNoCenter barIconBleed scale (V2 x sy)) img >> pure (x + scale * w)
+          drawAt img w x = blitSprite renderer mgr img white (mkRenderRectNoCenter barIconBleed scale (V2 x sy)) >> pure (x + scale * w)
           drawN 0 _ _ x   = pure x
           drawN i img w x = drawAt img w x >>= drawN (i - 1) img w

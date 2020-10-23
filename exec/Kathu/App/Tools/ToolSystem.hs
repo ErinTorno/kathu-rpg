@@ -14,16 +14,15 @@ import           Control.Monad               (forM_, void, unless, when)
 import           Data.Maybe                  (fromJust, isJust)
 import qualified Data.Map                    as Map
 import           Data.Word
-import qualified Data.Vector                 as Vec
 import qualified SDL
 import           Verda.Event.Controls
-import           Verda.Graphics.Sprites      (SpriteID)
+import           Verda.Graphics.Drawing
+import           Verda.Graphics.Sprites      (Sprite, spriteRectangle)
 import           Verda.Logger
 import           Verda.Time
 
 import           Kathu.App.Data.Dictionary
 import           Kathu.App.Data.Settings
-import           Kathu.App.Graphics.Drawing
 import           Kathu.App.System
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
@@ -33,7 +32,6 @@ import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Graphics.Camera
 import           Verda.Graphics.Color
-import           Kathu.Graphics.Drawable
 import           Kathu.World.Field
 import           Kathu.World.Tile
 import           Kathu.World.WorldSpace
@@ -237,19 +235,17 @@ destroyEntityInfoCollisions =
 
 buildEntityInfoCollisions :: SystemT' IO ()
 buildEntityInfoCollisions = do
-    cmapM_ $ \(Render sprites :: Render SpriteID, _ :: EditorInstancedFromWorld, ety) ->
-        let area (V2 x y) = x * y
-            foldMaxArea maxVec sprite = let (# _, bounds #) = currentBounds sprite in if area maxVec < area bounds then bounds else maxVec
-            (V2 mx my)       = (/pixelsPerUnit) . fromIntegral <$> Vec.foldl' foldMaxArea (V2 2 2) sprites
+    cmapM_ $ \(sprite :: Sprite, _ :: EditorInstancedFromWorld, ety) ->
+        let (V2 mx my) = (/pixelsPerUnit) . fromIntegral <$> (let (SDL.Rectangle _ v) = spriteRectangle sprite in v)
             -- sprites are drawn centered above the logical coordinate, so we shift this new shape too
-            convex           = oRectangle (V2 (-(mx / 2)) (-my)) (V2 mx my)
+            convex     = oRectangle (V2 (-(mx / 2)) (-my)) (V2 mx my)
          in void $ newExistingEntity (Shape ety convex, editorInfoFilter, EditorRefTo ety)
 
 ----------------
 -- TilePlacer --
 ----------------
 
-runTilePlaceCommand :: CommandState -> Tile SpriteID -> V2 Int -> SystemT' IO ()
+runTilePlaceCommand :: CommandState -> Tile -> V2 Int -> SystemT' IO ()
 runTilePlaceCommand commandSt sTile hoveredTilePos = do
     controlSt    <- get global
     shiftSt      <- getInputState controlSt $ fromScanCode SDL.ScancodeLShift
@@ -272,7 +268,7 @@ runTilePlaceCommand commandSt sTile hoveredTilePos = do
                 command <- mkSingleTilePlaceCommand hoveredTilePos sTile prevTileSt
                 runCommand commandSt command
 
-mkSingleTilePlaceCommand :: V2 Int -> Tile SpriteID -> TileState -> SystemT' IO Command
+mkSingleTilePlaceCommand :: V2 Int -> Tile -> TileState -> SystemT' IO Command
 mkSingleTilePlaceCommand hoveredTilePos sTile prevTileSt = do
     maybeLastPos <- lastPlacedTilePos <$> get global
 
@@ -287,7 +283,7 @@ mkSingleTilePlaceCommand hoveredTilePos sTile prevTileSt = do
             global     $= univToolSt {lastPlacedTilePos = maybeLastPos}
         }
 
-mkLineTilePlaceCommand :: V2 Int -> V2 Int -> Tile SpriteID -> SystemT' IO Command
+mkLineTilePlaceCommand :: V2 Int -> V2 Int -> Tile -> SystemT' IO Command
 mkLineTilePlaceCommand lastPos hoveredTilePos sTile = do
     worldspace <- get global
     prevTileSt <- replicateLineM lastPos hoveredTilePos (\pos -> (,pos) <$> getTileState worldspace pos)
@@ -340,10 +336,10 @@ placeTileState :: TileState -> V2 Int -> SystemT' IO ()
 placeTileState tilest pos = do
     let fieldPos    = fieldContainingCoordV2 ((fromIntegral <$> pos) :: V2 Double)
         relativePos = localCoordFromGlobalV2 pos
-    field    <- mkFieldIfNotPresent (Proxy :: Proxy SpriteID) fieldPos
+    field    <- mkFieldIfNotPresent fieldPos
     setTileStateV2 relativePos tilest field
 
-getTileState :: WorldSpace SpriteID -> V2 Int -> SystemT' IO TileState
+getTileState :: WorldSpace -> V2 Int -> SystemT' IO TileState
 getTileState worldspace pos =
     let fieldPos    = fieldContainingCoordV2 ((fromIntegral <$> pos) :: V2 Double)
         relativePos = localCoordFromGlobalV2 pos

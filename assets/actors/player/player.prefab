@@ -17,18 +17,18 @@ physics:
   - {category: movement, shape: rectangle, bounds: [0.5, 0.25], origin: [-0.25, -0.25]}
   - {category: hitbox,   shape: circle,    radius: 0.15,        origin: [0, -0.5]}
 # - {shape: rectangle, bounds: [1, 1],   origin: [0.5, 0.75]}
-render:
-- atlas: "player.png"
+sprite:
+  atlas:  player.png
   bounds: [23, 32] # kind of irregular
-  strips:
-  - {id: walk-north,     frames: 4, row: 0, delay: 250} # in ms
-  - {id: walk-northeast, frames: 4, row: 1, delay: 250}
-  - {id: walk-east,      frames: 4, row: 2, delay: 250}
-  - {id: walk-southeast, frames: 4, row: 3, delay: 250}
-  - {id: walk-south,     frames: 4, row: 4, delay: 250}
-  - {id: walk-southwest, frames: 4, row: 5, delay: 250}
-  - {id: walk-west,      frames: 4, row: 6, delay: 250}
-  - {id: walk-northwest, frames: 4, row: 7, delay: 250}
+  animations: # the order matters right now for non-lua scripted walking
+    walk-north:     {row: 0, frames: 4, delay: 250} # in ms
+    walk-northeast: {row: 1, frames: 4, delay: 250}
+    walk-east:      {row: 2, frames: 4, delay: 250}
+    walk-southeast: {row: 3, frames: 4, delay: 250}
+    walk-south:     {row: 4, frames: 4, delay: 250}
+    walk-southwest: {row: 5, frames: 4, delay: 250}
+    walk-west:      {row: 6, frames: 4, delay: 250}
+    walk-northwest: {row: 7, frames: 4, delay: 250}
 actor-state:
   team:    ally
   health:  60.0 # 3 hearts at start

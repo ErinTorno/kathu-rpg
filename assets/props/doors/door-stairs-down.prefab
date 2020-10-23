@@ -1,9 +1,9 @@
 identity: door-stairs-down
 tags:     [door]
-render:
-- image: "door-stairs-down.png"
-- image: "door-stairs-down-background.png"
-  layer: -1
+sprite: door-stairs-down.png
+# TODO each prefab has only one sprite, need to move this to an attached prefab
+# image: "door-stairs-down-background.png"
+# layer: -1
 physics:
   type:   static
   shapes:

@@ -1,16 +1,16 @@
 identity: button
 script:
-  file:   "button.lua"
+  file:   button.lua
   events:
   - on-sensor-collision-begin
   - on-sensor-collision-end
-render:
-- atlas:  "button.png"
+sprite:
+  atlas:  button.png
   layer:  -1
   bounds: [16, 18]
-  strips:
-  - {id: unpressed, frames: 1, row: 0, delay: 1000}
-  - {id: pressed,   frames: 1, row: 1, delay: 1000}
+  animations:
+    unpressed: {row: 0, frames: 1, delay: 1000}
+    pressed:   {row: 1, frames: 1, delay: 1000}
 physics:
   type:   static
   shapes:

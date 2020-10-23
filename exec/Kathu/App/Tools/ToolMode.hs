@@ -3,7 +3,6 @@ module Kathu.App.Tools.ToolMode where
 import Apecs
 import Data.Word
 import Linear.V2                (V2(..))
-import Verda.Graphics.Sprites   (SpriteID)
 
 import Kathu.World.Tile
 
@@ -47,7 +46,7 @@ isSameMode _            _            = False
 
 data ToolModeUniversalState = ToolModeUniversalState
     { lastPlacedTilePos     :: !(Maybe (V2 Int))
-    , selectedTile          :: !(Tile SpriteID)
+    , selectedTile          :: !Tile
     , lastUndoRedoTime      :: !Word32
     , canEditEntityInstance :: !Bool
     }

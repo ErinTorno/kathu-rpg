@@ -2,14 +2,14 @@
 
 module Kathu.Entity.Item where
 
+import Apecs
 import Data.Aeson
 import Data.Aeson.Types        (typeMismatch, Parser)
 import Data.Functor.Compose
 import Data.Maybe              (fromMaybe)
 import Data.Text               (Text)
 import GHC.Generics
-
-import Kathu.Graphics.Drawable (Render)
+import Verda.Graphics.Sprites  (Sprite)
 import Verda.Parsing.Aeson
 import Verda.Util.Dependency
 import Verda.Util.Flow         ((>>>=))
@@ -23,34 +23,36 @@ data SpecialCategory
     | WorldSpaceShared -- Linked to the current worldspace, rather than the player
     deriving (Show, Eq, Generic)
 
-data Item g = Item
+data Item = Item
     { itemID      :: Identifier
     , itemName    :: Text
     , description :: Text
     , itemSlot    :: ItemSlot
-    , itemIcon    :: Render g
+    , itemIcon    :: Sprite
     , stackSize   :: Int
     , price       :: Int
     , specialCategory :: SpecialCategory
     -- Effects?
     }
 
-data ItemStack g = ItemStack {stackItem :: Item g, stackCount :: Int}
+data ItemStack = ItemStack {stackItem :: Item, stackCount :: Int}
 
-data ContainerSlot g = ContainerSlot {slotRestriction :: Maybe ItemSlot, heldItem :: Maybe (Item g)}
+data ContainerSlot = ContainerSlot {slotRestriction :: Maybe ItemSlot, heldItem :: Maybe Item}
 
-data Container g = Container
-    { invEquippedItems :: [ContainerSlot g]
-    , invMiscItems     :: [ContainerSlot g]
+data Container = Container
+    { invEquippedItems :: [ContainerSlot]
+    , invMiscItems     :: [ContainerSlot]
     }
 
-data DeathDrop g = DeathDrop
+data DeathDrop = DeathDrop
     { dropChance :: Double
-    , dropCount :: Range Int
-    , dropItem :: Item g
+    , dropCount  :: Range Int
+    , dropItem   :: Item
     }
 
-data Inventory g = InvContainer (Container g) | InvDeathDrops [DeathDrop g]
+data Inventory = InvContainer Container | InvDeathDrops [DeathDrop]
+
+instance Component Inventory where type Storage Inventory = Map Inventory
 
 -------------------
 -- Serialization --
@@ -93,7 +95,10 @@ instance FromJSON SpecialCategory where
 
 -- Item
 
-instance (s `CanStore` IDMap (Item g), FromJSON (Dependency s m (Render g)), Monad m) => FromJSON (Dependency s m (Item g)) where
+instance ( s `CanStore` IDMap Item
+         , FromJSON (Dependency s m Sprite)
+         , Monad m
+         ) => FromJSON (Dependency s m Item) where
     parseJSON (Object v) = itemPar >>>= storeWithKeyFn itemID
         where itemPar = getCompose $ Item
                   <$> v .:^ "item-id"
@@ -108,7 +113,7 @@ instance (s `CanStore` IDMap (Item g), FromJSON (Dependency s m (Render g)), Mon
 
 -- ItemStack
 
-instance (s `CanProvide` IDMap (Item g), Monad m) => FromJSON (Dependency s m (ItemStack g)) where
+instance (s `CanProvide` IDMap Item, Monad m) => FromJSON (Dependency s m ItemStack) where
     parseJSON (Object v) = getCompose $ ItemStack <$> item <*> v .:^? "count" .!=- 1
         where item    = Compose (fmap (fromMaybe failMsg) . dependencyMapLookup <$> (v .: "item" :: Parser Identifier))
               failMsg = error "Couldn't find item referenced by ItemStack"
@@ -116,7 +121,7 @@ instance (s `CanProvide` IDMap (Item g), Monad m) => FromJSON (Dependency s m (I
 
 -- ContainerSlot
 
-instance (s `CanProvide` IDMap (Item g), Monad m) => FromJSON (Dependency s m (ContainerSlot g)) where
+instance (s `CanProvide` IDMap Item, Monad m) => FromJSON (Dependency s m ContainerSlot) where
     parseJSON (Object v) = getCompose $ ContainerSlot <$> v .:^? "slot" <*> item
         where maybeLookup = maybe (pure Nothing) (fmap (maybe failMsg Just) . dependencyMapLookup)
               item = Compose $ maybeLookup <$> (v .:? "item" :: Parser (Maybe Identifier))
@@ -125,7 +130,7 @@ instance (s `CanProvide` IDMap (Item g), Monad m) => FromJSON (Dependency s m (C
 
 -- Container
 
-instance (FromJSON (Dependency s m (ContainerSlot g)), Monad m) => FromJSON (Dependency s m (Container g)) where
+instance (FromJSON (Dependency s m ContainerSlot), Monad m) => FromJSON (Dependency s m Container) where
     parseJSON (Object v) = getCompose $ Container <$> Compose equipSlots <*> Compose miscSlots
         where equipSlots = v .: "equip-slots" >>= concatSlots
               miscSlots  = v .: "misc-slots"  >>= concatSlots
@@ -137,7 +142,7 @@ instance (FromJSON (Dependency s m (ContainerSlot g)), Monad m) => FromJSON (Dep
 
 -- DeathDrop
 
-instance (s `CanProvide` IDMap (Item g), Monad m) => FromJSON (Dependency s m (DeathDrop g)) where
+instance (s `CanProvide` IDMap Item, Monad m) => FromJSON (Dependency s m DeathDrop) where
     parseJSON (Object v) = getCompose $ DeathDrop <$> v .:^ "chance" <*> v .:^ "count" <*> item
         where item    = Compose (fmap (fromMaybe failMsg) . dependencyMapLookup <$> (v .: "item" :: Parser Identifier))
               failMsg = error "Couldn't find item referenced by DeathDrop"
@@ -145,10 +150,10 @@ instance (s `CanProvide` IDMap (Item g), Monad m) => FromJSON (Dependency s m (D
 
 -- Inventory
 
-instance ( FromJSON (Dependency s m (Container g))
-         , FromJSON (Dependency s m (DeathDrop g))
+instance ( FromJSON (Dependency s m Container)
+         , FromJSON (Dependency s m DeathDrop)
          , Monad m
-         ) => FromJSON (Dependency s m (Inventory g)) where
+         ) => FromJSON (Dependency s m Inventory) where
     parseJSON obj@(Object v) = getCompose . parseInv =<< (v .: "type" :: Parser Text)
         where parseInv "container"   = Compose $ (>>=(pure . InvContainer)) <$> parseJSON obj
               parseInv "death-drops" = Compose $ (>>=(pure . InvDeathDrops)) <$> parseJSON obj

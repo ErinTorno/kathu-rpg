@@ -8,6 +8,7 @@ import           Data.Maybe                      (fromMaybe)
 import qualified Data.Text.IO                    as T
 import qualified SDL
 import           Verda.Event.Controls
+import           Verda.Graphics.Drawing
 import           Verda.Graphics.SpriteManager    (nextPaletteManager, setPaletteManager)
 import           Verda.Time
 import           Verda.Util.Apecs
@@ -15,7 +16,6 @@ import           Verda.Util.Types
 
 import           Kathu.App.Data.Controls
 import           Kathu.App.Data.Settings
-import           Kathu.App.Graphics.Drawing
 import           Kathu.App.System
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components

@@ -10,12 +10,11 @@ import qualified Data.Vector                         as Vec
 import qualified Data.Set                            as DSet
 import qualified Data.Text                           as T
 import           Foreign.Lua
-import           Verda.Graphics.Sprites              (SpriteID)
+import           Verda.Graphics.Sprites              (Sprite, setAnimation)
 import           Verda.Logger
 
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.CollisionGroup
-import           Kathu.Graphics.Drawable             (Render(..), RenderSprite(..), switchAnimationByID)
 import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
@@ -24,7 +23,7 @@ import           Verda.Util.Types
 import           Verda.Util.Apecs
 
 -- ExternalFunctions is unused in this, but is included here since it might be in the future, mirrors the Global's function signature, and acts as a Proxy for g
-registerComponentFunctions :: forall w. (Has w IO Physics, ReadWriteEach w IO '[ActiveScript, Force, Identity, Logger, Mass, MovingSpeed, Position, Render SpriteID, RunningScriptEntity, ScriptEventBuffer, Tags, Velocity, WireReceivers])
+registerComponentFunctions :: forall w. (Has w IO Physics, ReadWriteEach w IO '[ActiveScript, Force, Identity, Logger, Mass, MovingSpeed, Position, RunningScriptEntity, ScriptEventBuffer, Sprite, Tags, Velocity, WireReceivers])
                            => w -> ExternalFunctions w -> Lua ()
 registerComponentFunctions world _ = do
     registerHaskellFunction "getIdentifier"        $ getIdentifier world
@@ -33,7 +32,7 @@ registerComponentFunctions world _ = do
     registerHaskellFunction "getTags"              $ getTags world
     registerHaskellFunction "getMovingSpeed"       $ getMovingSpeed world
     registerHaskellFunction "setMovingSpeed"       $ setMovingSpeed world
-    registerHaskellFunction "setAnimation"         $ setAnimation world
+    registerHaskellFunction "setAnimation"         $ setSpriteAnimation world
     registerHaskellFunction "getMass"              $ getMass world
     registerHaskellFunction "setMass"              $ setMass world
     registerHaskellFunction "getPosition"          $ getPosition world
@@ -89,16 +88,13 @@ setMovingSpeed !world !etyID s = liftIO . Apecs.runWith world $
 -- Graphics --
 --------------
 
-setAnimation :: forall w. (ReadWrite w IO (Render SpriteID)) => w -> Int -> Text -> Lua ()
-setAnimation !world !etyID !animID = liftIO . Apecs.runWith world $ do
+setSpriteAnimation :: forall w. (ReadWrite w IO Sprite) => w -> Int -> Identifier -> Lua ()
+setSpriteAnimation !world !etyID !animIdt = liftIO . Apecs.runWith world $ do
     let ety = Entity etyID
-        changeAnim (RSAnimated anim) = RSAnimated $ switchAnimationByID (mkIdentifier animID) anim
-        changeAnim e                 = e
-
-    mrender :: Maybe (Render SpriteID) <- getIfExists ety
+    mrender :: Maybe Sprite <- getIfExists ety
     case mrender of
-        Nothing -> return ()
-        Just (Render layers) -> ety $= Render (changeAnim <$> layers)
+        Nothing     -> pure ()
+        Just sprite -> ety $= setAnimation animIdt sprite
 
 setCollisionCategory :: forall w. (Has w IO Physics, ReadWriteEach w IO [CollisionFilter, Tags]) => w -> Entity -> Text -> Optional Text -> Lua ()
 setCollisionCategory !world !ety colCategory (Optional tag) = liftIO . Apecs.runWith world $ do

@@ -4,13 +4,12 @@ import           Apecs
 import           Control.Lens
 import           Control.Monad                   (void)
 import           Verda.Graphics.SpriteManager
-import           Verda.Graphics.Sprites          (SpriteID)
 
 import           Kathu.App.System
 import qualified Kathu.Scripting.Lua             as Lua
 import           Kathu.World.WorldSpace
 
-loadWorldSpace :: WorldSpace SpriteID -> SystemT' IO ()
+loadWorldSpace :: WorldSpace -> SystemT' IO ()
 loadWorldSpace ws = do
     prevManager <- get global
     manager <- loadPalettes (ws^.worldPalettes) prevManager
@@ -23,6 +22,6 @@ loadWorldSpace ws = do
 
 rebuildCurrentTileCollisions :: SystemT' IO ()
 rebuildCurrentTileCollisions = do
-    worldspace :: WorldSpace SpriteID <- get global
+    worldspace :: WorldSpace <- get global
     destroyTileCollisions destroyEntity
     buildTileCollisions worldspace

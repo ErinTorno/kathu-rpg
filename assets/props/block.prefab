@@ -2,10 +2,10 @@ identity:
   id: block
   name: block
   description: an unanchored block that can be pushed around
-render: "block.png"
+sprite: block.png
 physics:
   type:       dynamic
-  mass:       90
+  mass:       60
   friction:   100
   elasticity: 0
   shapes:

@@ -26,7 +26,7 @@ import           Foreign.Lua                       hiding (call, error)
 import qualified Foreign.Lua.Core                  as Lua
 import qualified Foreign.Lua.FunctionCalling       as Lua
 import           Verda.Event.Controls              (CursorMotionState)
-import           Verda.Graphics.Sprites            (SpriteID)
+import           Verda.Graphics.Sprites            (Sprite)
 import           Verda.Logger
 import           Verda.Time
 import           Verda.Util.Types
@@ -35,7 +35,6 @@ import           Verda.Util.Apecs
 import           Kathu.Entity.Components
 import           Kathu.Entity.System
 import           Kathu.Graphics.Camera
-import           Kathu.Graphics.Drawable           (Render)
 import           Kathu.Scripting.Event
 import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Component
@@ -107,7 +106,7 @@ releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched signals singS
             Lua.close lstate
             putMVar stmvar $ error "Attempted to use a release ActiveScript"
 
-loadScript :: forall w. (Has w IO Physics, ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Debug, Force, Identity, Local, Logger, LogicTime, Mass, MovingSpeed, Position, Random, Render SpriteID, RenderTime, RunningScriptEntity, ScriptBank, ScriptEventBuffer, Tags, Variables, Velocity, WireReceivers])
+loadScript :: forall w. (Has w IO Physics, ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Debug, Force, Identity, Local, Logger, LogicTime, Mass, MovingSpeed, Position, Random, RenderTime, RunningScriptEntity, ScriptBank, ScriptEventBuffer, Sprite, Tags, Variables, Velocity, WireReceivers])
            => (ActiveScript -> ActiveScript) -> ExternalFunctions w -> Entity -> Script -> SystemT w IO ActiveScript
 loadScript mapper extFuns ety script
     | script^.isSingleton = runIfOnInit =<< fromBank

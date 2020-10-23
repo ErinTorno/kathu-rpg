@@ -6,7 +6,6 @@ import           Data.IORef
 import           Data.Maybe
 import qualified Data.Text                  as T
 import qualified GI.Gtk                     as Gtk
-import           Verda.Graphics.Sprites     (SpriteID)
 
 import           Kathu.App.Data.Dictionary
 import           Kathu.App.Tools.EventQueue
@@ -41,7 +40,7 @@ saveWorldSpace EditorState{ editorWindow = window
             writeIORef wsEditStRef $ wsSt {wsFilePath = Just filePath}
 
             -- the fields might have been changed by the ToolSystem, so we take whatever the game screen is using for it
-            (allTiles, gameWS :: WorldSpace SpriteID) <- runWithEntityWorld queue $
+            (allTiles, gameWS :: WorldSpace) <- runWithEntityWorld queue $
                 (,) <$> get global <*> get global
 
             worldspace <- (worldFields .~ gameWS^.worldFields) <$> readIORef wsRef
@@ -51,7 +50,7 @@ saveWorldSpace EditorState{ editorWindow = window
                 FormatYAML -> saveYamlToFileWithFieldOrder worldspaceFieldOrder filePath wsValue
                 format     -> saveToFile format filePath wsValue
 
-loadWorldSpace :: EventQueue -> FilePath -> IO (WorldSpace SpriteID)
+loadWorldSpace :: EventQueue -> FilePath -> IO WorldSpace
 loadWorldSpace queue file = runWithEntityWorld queue $ do
     dictionary  <- get global
     worldDep <- lift $ loadFromFileDP file

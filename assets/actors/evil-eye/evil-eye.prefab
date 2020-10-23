@@ -9,18 +9,18 @@ physics:
   elasticity: 0
   shapes:
   - {category: movement, shape: rectangle, bounds: [0.5, 0.25], origin: [-0.25, -0.25]}
-render:
-- atlas: "evil-eye.png"
+sprite:
+  atlas:  evil-eye.png
   bounds: [18, 20]
-  strips:
-  - {id: walk-north,     frames: 2, row: 0, delay: 400} # in ms
-  - {id: walk-northeast, frames: 2, row: 1, delay: 400}
-  - {id: walk-east,      frames: 2, row: 2, delay: 400}
-  - {id: walk-southeast, frames: 2, row: 3, delay: 400}
-  - {id: walk-south,     frames: 2, row: 4, delay: 400}
-  - {id: walk-southwest, frames: 2, row: 5, delay: 400}
-  - {id: walk-west,      frames: 2, row: 6, delay: 400}
-  - {id: walk-northwest, frames: 2, row: 7, delay: 400}
+  animations:
+    walk-north:     {row: 0, frames: 4, delay: 400} # in ms
+    walk-northeast: {row: 1, frames: 4, delay: 400}
+    walk-east:      {row: 2, frames: 4, delay: 400}
+    walk-southeast: {row: 3, frames: 4, delay: 400}
+    walk-south:     {row: 4, frames: 4, delay: 400}
+    walk-southwest: {row: 5, frames: 4, delay: 400}
+    walk-west:      {row: 6, frames: 4, delay: 400}
+    walk-northwest: {row: 7, frames: 4, delay: 400}
 actor-state:
   team:    enemy
   health:  20.0

@@ -40,7 +40,10 @@ instance Semigroup Random where (<>) = mappend
 instance Monoid Random where mempty  = Random $ R.mkStdGen 0 -- the IO portion of this is expected to initialize it with a seed
 instance Component Random where type Storage Random = Global Random
 
-newtype  Tiles g = Tiles (IOVector (Tile g))
+newtype  Tiles = Tiles (IOVector Tile)
+instance Semigroup Tiles where (<>) = mappend
+instance Monoid Tiles where mempty  = error "Attempted to use Tiles before it has been loaded"
+instance Component Tiles where type Storage Tiles = Global Tiles
 
 instance Semigroup WorldStases where (<>) = mappend
 instance Monoid WorldStases where mempty = WorldStases Map.empty
@@ -87,14 +90,14 @@ stepWorldTime !dT = modify global $ \(WorldTime t) -> WorldTime (t + fromIntegra
 -- Unsafe! --
 -------------
 
-fromTiles :: Tiles g -> TileState -> IO (Tile g)
+fromTiles :: Tiles -> TileState -> IO Tile
 fromTiles tiles (TileState tid _) = fromTilesID tiles tid
 -------------
 
-fromTilesID :: Tiles g -> TileID -> IO (Tile g)
+fromTilesID :: Tiles -> TileID -> IO Tile
 fromTilesID (Tiles vec) (TileID tid) = MVec.read vec . fromIntegral $ tid
 
-makeTiles :: Map k (Tile g) -> IO (Tiles g)
+makeTiles :: Map k Tile -> IO Tiles
 makeTiles elemMap = MVec.unsafeNew (Map.size elemMap) >>= \vec -> foldM (setElem vec) 0 allElems $> Tiles vec
     where allElems = sortBy (\x y -> (x^.tileID) `compare` (y^.tileID)) . Map.elems $ elemMap
           setElem !vec !idx !e = if e^.tileID.to (fromIntegral . unTileID) /= idx
