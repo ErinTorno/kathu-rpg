@@ -1,4 +1,4 @@
-module Kathu.App.Graphics.Debug (renderDebug) where
+module Kathu.App.Graphics.Debug (addDebugExtension) where
 
 import           Apecs                           hiding (($=))
 import           Apecs.Physics                   hiding (($=))
@@ -15,6 +15,7 @@ import           Verda.Graphics.Fonts            (renderText)
 import           Verda.Graphics.SpriteManager    (currentPalette)
 import           Verda.Util.Containers           (fromJustElseError)
 import           Verda.Util.Types                (unID)
+import           Verda.World                     (IsDebug(..), addRendererExtension)
 
 import           Kathu.App.System                (SystemT')
 import           Kathu.App.Tools.ToolMode        (isNoTool)
@@ -29,36 +30,38 @@ circleVertices = SVec.fromList [V2 (x i) (y i) | i <- [0..numPoints]]
           x i = cos $ 2 * pi * fromIntegral i / fromIntegral numPoints
           y i = sin $ 2 * pi * fromIntegral i / fromIntegral numPoints
 
-renderDebug :: SDL.Renderer -> (V2 Double -> V2 Double) -> SystemT' IO ()
-renderDebug renderer logicToRenderPos = do
-    -- in tool modes collision might be rapidly changing or out-of-date; don't bother to draw
-    shouldDrawCol <- isNoTool <$> get global
-    when (shouldDrawCol || not shouldDrawCol) $ do
-        let drawPoints colFil points = do
-                SDL.rendererDrawColor renderer $= unColor (collisionFilterDebugColor colFil)
-                -- we render in groups of 4 pixels to have thicker lines
-                SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 0 0)) points
-                SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 0 1)) points
-                SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 1 0)) points
-                SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 1 1)) points
-            renderCollision _ _ [] _                = pure ()
-            renderCollision colFil pos vecs@(v:_) 0 =
-                let convPos vpoint = logicToRenderPos (pos + vpoint)
-                    points = SVec.fromList (fmap floor . convPos <$> snoc vecs v)
-                 in drawPoints colFil points
-            renderCollision colFil pos (origin:_) radius =
-                let adjVert = fmap floor . logicToRenderPos . (+pos) . (+origin) . (* V2 radius radius)
-                    points  = SVec.map adjVert circleVertices
-                 in drawPoints colFil points
+addDebugExtension :: SystemT' IO ()
+addDebugExtension = addRendererExtension $ \renderer logicToRender _ -> do
+    IsDebug isDebug <- get global
+    when isDebug $ do
+        -- in tool modes collision might be rapidly changing or out-of-date; don't bother to draw
+        shouldDrawCol <- isNoTool <$> get global
+        when (shouldDrawCol || not shouldDrawCol) $ do
+            let drawPoints colFil points = do
+                    SDL.rendererDrawColor renderer $= unColor (collisionFilterDebugColor colFil)
+                    -- we render in groups of 4 pixels to have thicker lines
+                    SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 0 0)) points
+                    SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 0 1)) points
+                    SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 1 0)) points
+                    SDL.drawLines renderer $ SVec.map (SDL.P . (+ V2 1 1)) points
+                renderCollision _ _ [] _                = pure ()
+                renderCollision colFil pos vecs@(v:_) 0 =
+                    let convPos vpoint = logicToRender (pos + vpoint)
+                        points = SVec.fromList (fmap floor . convPos <$> snoc vecs v)
+                    in drawPoints colFil points
+                renderCollision colFil pos (origin:_) radius =
+                    let adjVert = fmap floor . logicToRender . (+pos) . (+origin) . (* V2 radius radius)
+                        points  = SVec.map adjVert circleVertices
+                    in drawPoints colFil points
 
-        cmapM_ $ \(Shape _ (Convex vecs radius), colFil :: CollisionFilter, Position pos) ->
-            renderCollision colFil pos vecs radius
-        -- attached boxes don't have a position, as they exist on a separate entity with just a shape
-        cmapM_ $ \(Shape parentEty (Convex vecs radius), colFil :: CollisionFilter, _ :: Not Position)   -> do
-            hasPos <- exists parentEty (Proxy :: Proxy Position)
-            when hasPos $ 
-                get parentEty >>= \(Position pos) -> renderCollision colFil pos vecs radius
-    renderDebugText renderer
+            cmapM_ $ \(Shape _ (Convex vecs radius), colFil :: CollisionFilter, Position pos) ->
+                renderCollision colFil pos vecs radius
+            -- attached boxes don't have a position, as they exist on a separate entity with just a shape
+            cmapM_ $ \(Shape parentEty (Convex vecs radius), colFil :: CollisionFilter, _ :: Not Position)   -> do
+                hasPos <- exists parentEty (Proxy :: Proxy Position)
+                when hasPos $ 
+                    get parentEty >>= \(Position pos) -> renderCollision colFil pos vecs radius
+        renderDebugText renderer
 
 renderDebugText :: SDL.Renderer -> SystemT' IO ()
 renderDebugText renderer = do

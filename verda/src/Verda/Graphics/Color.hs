@@ -49,8 +49,7 @@ import           Data.Word
 import           GHC.Generics
 import           Linear.V4                    (V4(..))
 import           Numeric                      (readHex, showHex)
-import           Verda.Util.Flow              (readElseFail)
-
+import           Text.Read                    (readMaybe)
 -----------
 -- Color --
 -----------
@@ -84,8 +83,9 @@ instance Read Color where
 instance ToJSON Color where
     toJSON = toJSON . show
 instance FromJSON Color where
-    parseJSON (String s) = readElseFail failMsg . T.unpack $ s
-        where failMsg = concat ["Couldn't parse String \"", show s, "\" into Color"]
+    parseJSON (String s) = case readMaybe (T.unpack s) of
+        Just color -> pure color
+        Nothing    -> fail $ concat ["Couldn't parse String \"", show s, "\" into Color"]
     parseJSON e          = typeMismatch "Color" e
 
 mkColor :: Word8 -> Word8 -> Word8 -> Word8 -> Color
@@ -96,10 +96,10 @@ mkColor r g b a = Color $ V4 r g b a
 ---------------
 
 data HSVColor = HSVColor
-    { hue        :: Float
-    , saturation :: Float
-    , value      :: Float
-    , hsvAlpha   :: Float
+    { hue        :: !Float
+    , saturation :: !Float
+    , value      :: !Float
+    , hsvAlpha   :: !Float
     } deriving (Show, Eq, Generic)
 
 --------------------

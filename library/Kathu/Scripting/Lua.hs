@@ -32,6 +32,7 @@ import           Verda.Logger
 import           Verda.Time
 import           Verda.Util.Types
 import           Verda.Util.Apecs
+import           Verda.World                        (IsDebug)
 
 import           Kathu.Entity.Components
 import           Kathu.Entity.System
@@ -106,7 +107,7 @@ releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched signals singS
             Lua.close lstate
             putMVar stmvar $ error "Attempted to use a release ActiveScript"
 
-loadScript :: forall w. (Has w IO Physics, ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Debug, Force, Identity, Local, Logger, LogicTime, Mass, MovingSpeed, Position, Random, RenderTime, RunningScriptEntity, ScriptBank, ScriptEventBuffer, Sprite, Tags, Variables, Velocity, WireReceivers])
+loadScript :: forall w. (Has w IO Physics, ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Force, Identity, IsDebug, Local, Logger, LogicTime, Mass, MovingSpeed, Position, Random, RenderTime, RunningScriptEntity, ScriptBank, ScriptEventBuffer, Sprite, Tags, Variables, Velocity, WireReceivers])
            => (ActiveScript -> ActiveScript) -> ExternalFunctions w -> Entity -> Script -> SystemT w IO ActiveScript
 loadScript mapper extFuns ety script
     | script^.isSingleton = runIfOnInit =<< fromBank

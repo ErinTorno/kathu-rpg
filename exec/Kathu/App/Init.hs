@@ -16,15 +16,16 @@ import qualified SDL.Raw.Basic                   as SDLRaw
 import qualified SDL.Raw.Enum                    as SDLRaw
 import qualified SDL.Video                       as SDLV
 import qualified System.Random                   as R
-import           Verda.Event.Controls            (mkControlState)
 import           Verda.Graphics.Components       (Resolution(..), defaultCamera)
 import           Verda.Graphics.Fonts            (fontID, initFontCache)
 import           Verda.Graphics.Icons            (setWindowIcon)
 import           Verda.Util.Containers           (fromJustElseError)
 import           Verda.Util.Types                (unID)
+import           Verda.World                     (initVerdaWorld)
 
 import           Kathu.App.Data.Dictionary
 import           Kathu.App.Data.Settings
+import           Kathu.App.Graphics.Debug        (addDebugExtension)
 import           Kathu.App.Graphics.UI
 import           Kathu.App.System
 import           Kathu.App.World                 (loadWorldSpace)
@@ -75,11 +76,11 @@ initLanguage window renderer settings dictionary = do
 
 system :: SDL.Window -> SDL.Renderer -> Settings -> SystemT' IO ()
 system window renderer settings = do
+    initVerdaWorld
     (dictionary, manager) <- liftIO $ loadDictionary renderer
     seed       <- lift . maybe (R.randomIO :: IO Int) pure . randomSeed $ settings
     tilesV     <- lift . makeTiles . view dictTiles $ dictionary
     variables  <- initVariables
-    controlST  <- mkControlState
     initScripting
     global $= variables
     global $= dictionary
@@ -87,10 +88,10 @@ system window renderer settings = do
     global $= Random (R.mkStdGen seed)
     global $= tilesV
     global $= settings
-    global $= controlST
     global $= dictionary^.dictUIConfig
     global $= (Gravity $ V2 0 0) -- no gravity, as the game is top-down
     global $= Resolution (fromIntegral <$> resolution settings)
+    addDebugExtension
 
     initLanguage window renderer settings dictionary
 

@@ -1,9 +1,6 @@
 module Verda.Util.Flow where
 
 import           Control.Applicative (liftA2)
-import           Control.Monad.State
-import qualified Control.Monad.Fail  as Fail
-import           Text.Read           (readMaybe)
 
 -- Functor and similar
 
@@ -35,14 +32,6 @@ partitionM fn (x:xs) = fn x >>= app
     where next       = partitionM fn xs
           app True   = (\(u, v) -> (x:u, v)) <$> next
           app False  = (\(u, v) -> (u, x:v)) <$> next
-
-putReturn :: (s, m) -> State s m
-putReturn (s, m) = put s >> pure m
-
-readElseFail :: (MonadFail m, Read a) => String -> String -> m a
-readElseFail failMsg = ensure . readMaybe
-    where ensure Nothing  = Fail.fail failMsg
-          ensure (Just x) = pure x
 
 ireplicateM_ :: Monad m => Int -> (Int -> m a) -> m ()
 ireplicateM_ nTimes action = go nTimes

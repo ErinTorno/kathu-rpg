@@ -16,11 +16,6 @@ type family ReadWriteEach w m cs :: Constraint where
 getUnique :: forall w m c. (Members w m c, Get w m c) => SystemT w m (Maybe c)
 getUnique = cfold (\_ c -> Just c) Nothing
 
-getUniqueElseError :: forall w m c. (Members w m c, Get w m c) => String -> SystemT w m c
-getUniqueElseError errMsg = errIfNothing <$> getUnique
-    where errIfNothing Nothing  = error errMsg
-          errIfNothing (Just v) = v
-
 getIfExists :: forall w m c. Get w m c => Entity -> SystemT w m (Maybe c)
 getIfExists !ety = do
     doesExist <- exists ety (Proxy :: Proxy c)

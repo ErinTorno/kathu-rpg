@@ -62,12 +62,6 @@ instance Component Variables where type Storage Variables = Global Variables
 -- Debug-related globals --
 ---------------------------
 
--- | A general debug flag that prompts for additional game information to be visible by the user
-newtype  Debug = Debug {unDebug :: Bool}
-instance Semigroup Debug where (<>) = mappend
-instance Monoid Debug where mempty  = Debug False
-instance Component Debug where type Storage Debug = Global Debug
-
 -- Similar to Debug, but not meant to be toggled frequently
 -- | Additional editor information should be added to entities when this is True
 newtype  IncludeEditorInfo = IncludeEditorInfo {unEditorInfo :: Bool}

@@ -14,6 +14,7 @@ import           Verda.Time
 import           Verda.Util.Containers     (fromJustElseError)
 import           Verda.Util.Types
 import           Verda.Util.Apecs
+import           Verda.World               (IsDebug(..))
 
 import           Kathu.Entity.Components
 import           Kathu.Entity.System
@@ -21,7 +22,7 @@ import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
 
-registerGlobalFunctions :: forall w. (ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Debug, Local, Logger, LogicTime, Random, RenderTime, RunningScriptEntity, ScriptEventBuffer, Variables]) => w -> ExternalFunctions w -> Lua ()
+registerGlobalFunctions :: forall w. (ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, IsDebug, Local, Logger, LogicTime, Random, RenderTime, RunningScriptEntity, ScriptEventBuffer, Variables]) => w -> ExternalFunctions w -> Lua ()
 registerGlobalFunctions world extFuns = do
     registerHaskellFunction "log"               $ logLua world
     registerHaskellFunction "getCursorPosition" $ getCursorPosition world
@@ -108,7 +109,7 @@ setCameraEntity !world !etyID = liftIO . Apecs.runWith world $ do
 getScriptEntity :: forall w. (ReadWrite w IO RunningScriptEntity) => w -> Lua (Optional Int)
 getScriptEntity !world = liftIO . Apecs.runWith world $ (Optional . fmap unEntity . runningScript <$> get global)
 
-isDebug :: forall w. (ReadWrite w IO Debug) => w -> Lua Bool
+isDebug :: forall w. (ReadWrite w IO IsDebug) => w -> Lua Bool
 isDebug !world = liftIO . Apecs.runWith world $ (unDebug <$> get global)
 
 getRandomInt :: forall w. (ReadWrite w IO Random) => w -> Int -> Int -> Lua Int

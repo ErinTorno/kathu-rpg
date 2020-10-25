@@ -83,7 +83,7 @@ makeWorld "EntityWorld"
    ++ baseVerdaComponentNames
    ++ [''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''ActorState, ''Inventory, ''EditorInstancedFromWorld, ''ActionSet]
    ++ [''Local, ''Player]
-   ++ [''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles, ''Variables, ''Debug, ''IncludeEditorInfo]
+   ++ [''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles, ''Variables, ''IncludeEditorInfo]
    ++ [''Settings, ''UIConfig, ''WorldSpace, ''Dictionary, ''Language, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
    ++ [''ToolMode, ''ToolModeUniversalState]
 

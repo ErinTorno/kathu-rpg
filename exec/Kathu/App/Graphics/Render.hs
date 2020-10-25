@@ -5,19 +5,20 @@ import           Apecs.Physics                   hiding (($=))
 import           Control.Lens                    hiding (Identity)
 import           Control.Monad                   (foldM, when)
 import           Data.Maybe                      (fromMaybe)
+import           Control.Monad.IO.Class          (MonadIO)
+import qualified Data.Vector                     as Vec
 import qualified Data.Vector.Mutable             as MVec
 import           Data.Word
 import           SDL                             (($=))
 import qualified SDL
 import           Verda.Graphics.Color            (unColor, white)
-import           Verda.Graphics.Components       (BackgroundColor(..), Camera(..), Tint(..))
+import           Verda.Graphics.Components       (BackgroundColor(..), Camera(..), RendererExtension(..), RenderExtensions(..), SpriteRenderExtension(..), Tint(..))
 import           Verda.Graphics.SpriteBuffer
 import           Verda.Graphics.Sprites
 import           Verda.Util.Containers           (forMVec)
 import           Verda.Util.Apecs
 
 import           Kathu.App.Data.Settings
-import           Kathu.App.Graphics.Debug        (renderDebug)
 import           Verda.Graphics.Drawing
 import           Kathu.App.Graphics.UI
 import           Kathu.App.System                (SystemT')
@@ -62,13 +63,12 @@ runRender !renderer !spriteBuffer !dT = do
 
     spriteManager    <- get global
     settings         <- get global
-    Debug isDebug    <- get global
     Tiles tileVector <- get global
     let getTile :: TileState -> SystemT' IO Tile
         getTile = lift . MVec.read tileVector . fromIntegral .  unTileID . view tile
 
     world :: WorldSpace <- get global
-    (Position (V2 camX camY), Camera zoomScale) <- fromMaybe (Position (V2 0 0), Camera 1) <$> getUnique
+    (Position camPos@(V2 camX camY), Camera zoomScale) <- fromMaybe (Position (V2 0 0), Camera 1) <$> getUnique
 
     -- clears background
     BackgroundColor bkgColor <- get global
@@ -93,12 +93,12 @@ runRender !renderer !spriteBuffer !dT = do
         maxX = camX' + (0.5    * zoomScale * unitsPerWidth  + renderBorderUnits)
 
         -- adds to spriteBuffer and increments if judged to be drawable; expands the buffer if needed
-        addToBuffer :: Int -> Sprite -> V2 Double -> Tint -> SystemT' IO Int
+        addToBuffer :: MonadIO m => Int -> Sprite -> V2 Double -> Tint -> m Int
         addToBuffer !idx !sprite !pos (Tint tint)
             | isOffScreen pos = pure idx
-            | otherwise       = lift $ do
+            | otherwise       = do
                 let renderPos = worldToScreen pos
-                sbeWrite spriteBuffer idx (SpriteBufferElement renderPos tint sprite)
+                liftIO $ sbeWrite spriteBuffer idx (SpriteBufferElement renderPos tint sprite)
                 pure $ idx + 1
 
         -- this call to fieldFoldM is (as of when this is written) the most time intensive process in the program
@@ -115,11 +115,7 @@ runRender !renderer !spriteBuffer !dT = do
         gatherEntitySprite i (Position pos, sprite, t :: Maybe Tint) = addToBuffer i sprite pos (fromMaybe (Tint white) t)
 
         gatherTileSprite :: Int -> SystemT' IO Int
-        gatherTileSprite i = foldM foldFnField i . fieldsSurrounding camX camY $ world 
-
-        -- this collects all sprites into our buffer with their positions
-        gatherSprites :: SystemT' IO Int
-        gatherSprites = cfoldM gatherEntitySprite 0 >>= gatherTileSprite
+        gatherTileSprite !idx = foldM foldFnField idx . fieldsSurrounding camX camY $ world
         
         renderEvery :: Int -> Int -> IO ()
         renderEvery !idx !len
@@ -130,16 +126,22 @@ runRender !renderer !spriteBuffer !dT = do
                 blitSprite renderer spriteManager sprite color mkDestRect
                 renderEvery (idx + 1) len
 
-    sprCount <- gatherSprites
+        runExtensions :: Vec.Vector SpriteRenderExtension -> Int -> IO Int
+        runExtensions exts idx = Vec.foldM' (\acc (SpriteRenderExtension ext) -> ext addToBuffer camPos acc) idx exts
+
+    RenderExtensions spriteExts renExts <- get global
+    sprCount <- cfoldM gatherEntitySprite 0
+            >>= gatherTileSprite
+            >>= liftIO . runExtensions spriteExts
+    
     when (sprCount > 0) $
         lift (sortSpriteBuffer spriteBuffer 0 sprCount >> renderEvery 0 sprCount)
 
     playerAS <- cfold (\_ (as, Camera _) -> Just as) Nothing
     renderUI renderer scale playerAS
 
-    renderToolMode renderer worldToScreen
+    liftIO $ Vec.mapM_ (\(RendererExtension ext) -> ext renderer worldToScreen camPos) renExts
 
-    when isDebug $
-        renderDebug renderer worldToScreen
+    renderToolMode renderer worldToScreen
 
     SDL.present renderer

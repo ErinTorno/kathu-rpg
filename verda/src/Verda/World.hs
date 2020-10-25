@@ -4,16 +4,24 @@ module Verda.World
     ( DeletableBaseVerdaComponents
     , Existance(..)
     , FollowParent(..)
+    , IsDebug(..)
     , IsQuitting(..)
     , VerdaWorld
+    , addRendererExtension
+    , addSpriteRenderExtension
     , baseVerdaComponentNames
+    , initVerdaWorld
     -- re-exported
     , Position(..)
     ) where
 
 import           Apecs
 import           Apecs.Physics                (Position(..))
+import           Control.Monad.IO.Class       (MonadIO)
+import qualified Data.Vector                  as Vec
 import           Language.Haskell.TH.Syntax   (Name)
+import           Linear.V2
+import qualified SDL
 
 import           Verda.Event.Controls
 import           Verda.Graphics.Components
@@ -40,7 +48,13 @@ instance Component FollowParent where type Storage FollowParent = Cache CacheSiz
 -- Global --
 ------------
 
-newtype IsQuitting = IsQuitting Bool
+-- | A general debug flag that prompts for additional game information to be visible by the user
+newtype IsDebug = IsDebug {unDebug :: Bool}
+instance Semigroup IsDebug where (<>) = mappend
+instance Monoid IsDebug where mempty = IsDebug False
+instance Component IsDebug where type Storage IsDebug = Global IsDebug
+
+newtype IsQuitting = IsQuitting {unQuitting :: Bool}
 instance Semigroup IsQuitting where (<>) = mappend
 instance Monoid IsQuitting where mempty = IsQuitting False
 instance Component IsQuitting where type Storage IsQuitting = Global IsQuitting
@@ -52,14 +66,14 @@ instance Component IsQuitting where type Storage IsQuitting = Global IsQuitting
 
 -- | For use as a constraint to ensure all components required by Verda are available
 type VerdaWorld w m = ReadWriteEach w m
-   '[ BackgroundColor, ControlState, CursorMotionState, FontCache, IsQuitting, Logger, LogicTime, RenderTime, Resolution, SpriteManager
+   '[ BackgroundColor, ControlState, CursorMotionState, FontCache, IsDebug, IsQuitting, Logger, LogicTime, RenderExtensions, RenderTime, Resolution, SpriteManager
     , Camera
     , Existance, FollowParent, Position, Sprite, Tint
     ]
 
 baseVerdaComponentNames :: [Name]
 baseVerdaComponentNames =
-    [ ''BackgroundColor, ''ControlState, ''CursorMotionState, ''FontCache, ''IsQuitting, ''Logger, ''LogicTime, ''RenderTime, ''Resolution, ''SpriteManager
+    [ ''BackgroundColor, ''ControlState, ''CursorMotionState, ''FontCache, ''IsDebug, ''IsQuitting, ''Logger, ''LogicTime, ''RenderExtensions, ''RenderTime, ''Resolution, ''SpriteManager
     , ''Camera
     , ''Existance, ''FollowParent, ''Sprite, ''Tint
     ]
@@ -69,3 +83,26 @@ type DeletableBaseVerdaComponents =
     , FollowParent
     , (Sprite, Tint)
     )
+
+------------------
+-- Utils / Init --
+------------------
+
+initVerdaWorld :: (MonadIO m, VerdaWorld w m) => SystemT w m ()
+initVerdaWorld =
+    set global =<< mkControlState
+
+addSpriteRenderExtension :: VerdaWorld w IO => (RenderSpriteFn -> V2 Double -> Int -> SystemT w IO Int) -> SystemT w IO ()
+addSpriteRenderExtension systemExtension = do
+    world <- ask
+    RenderExtensions spriteExts rendererExts <- get global
+    let extension = SpriteRenderExtension $ \renderSprite camPos idx -> runWith world (systemExtension renderSprite camPos idx)
+    global $= RenderExtensions (Vec.snoc spriteExts extension) rendererExts
+
+addRendererExtension :: VerdaWorld w IO => (SDL.Renderer -> LogicToRenderFn -> V2 Double -> SystemT w IO ()) -> SystemT w IO ()
+addRendererExtension systemExtension = do
+    world <- ask
+    RenderExtensions spriteExts rendererExts <- get global
+    let extension = RendererExtension $ \renderer logicToRender camPos ->
+            runWith world (systemExtension renderer logicToRender camPos)
+    global $= RenderExtensions spriteExts (Vec.snoc rendererExts extension)

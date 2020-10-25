@@ -11,13 +11,13 @@ import           Verda.Graphics.Components       (Camera(..))
 import           Verda.Graphics.SpriteManager    (nextPaletteManager, setPaletteManager)
 import           Verda.Time
 import           Verda.Util.Types
+import           Verda.World                     (IsDebug(..))
 
 import           Kathu.App.Data.Controls
 import           Kathu.App.Data.Settings
 import           Kathu.App.System
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
-import           Kathu.Entity.System
 
 runEvents :: System' ()
 runEvents = do
@@ -57,10 +57,10 @@ updateDebugControls = do
 
         debugKeySt <- getInputState controlSt (inputToggleDebug cs)
         when (debugKeySt == BtnPressed) $ do
-            Debug isDebug <- get global
-            global        $= Debug (not isDebug) -- toggle debug
+            IsDebug isDebug <- get global
+            global          $= IsDebug (not isDebug) -- toggle debug
 
-        Debug isDebug <- get global
+        IsDebug isDebug <- get global
         when isDebug $ do
             let whenPressed code action = getInputState controlSt code >>= \st -> when (st == BtnPressed) action
 
