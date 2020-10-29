@@ -10,6 +10,7 @@ import           Apecs
 import           Apecs.Physics
 import           Control.Monad                   (forM_, void)
 import           Verda.Graphics.SpriteManager    (setPaletteManager)
+import           Verda.System.Tile.Components    (Chunks)
 import           Verda.Util.Apecs
 import           Verda.World                     (DeletableBaseVerdaComponents, Existance(..), baseVerdaComponentNames)
 
@@ -33,6 +34,7 @@ import           Kathu.Scripting.Lua.Types       (ActiveScript, RunningScriptEnt
 import           Kathu.Scripting.Variables       (Variables)
 import           Kathu.Scripting.Wire
 import           Kathu.World.Stasis              (WorldStases)
+import           Kathu.World.Tile                (AllTiles')
 import           Kathu.World.Time                (WorldTime)
 import           Kathu.World.WorldSpace          (EditorInstancedFromWorld, WorldSpace)
 
@@ -83,7 +85,7 @@ makeWorld "EntityWorld"
    ++ baseVerdaComponentNames
    ++ [''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''ActorState, ''Inventory, ''EditorInstancedFromWorld, ''ActionSet]
    ++ [''Local, ''Player]
-   ++ [''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Tiles, ''Variables, ''IncludeEditorInfo]
+   ++ [''AllTiles', ''Chunks, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Variables, ''IncludeEditorInfo]
    ++ [''Settings, ''UIConfig, ''WorldSpace, ''Dictionary, ''Language, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
    ++ [''ToolMode, ''ToolModeUniversalState]
 

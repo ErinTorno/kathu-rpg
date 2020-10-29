@@ -66,7 +66,7 @@ library
                     Kathu.Graphics.Palette
                     Kathu.Graphics.UI
                     -- World
-                    Kathu.World.Field
+                    Kathu.World.ChunkBuilder
                     Kathu.World.Stasis
                     Kathu.World.Tile
                     Kathu.World.Time

@@ -22,7 +22,7 @@ legend:
   "%": brick-wall
   "#": rough-stone-wall-single
   "&": brick-wall-vibrant
-fields:
+chunks:
 - position: [0, 0]
   data:
   - "%%  %%%%%%%   . .. % %% . ...   "

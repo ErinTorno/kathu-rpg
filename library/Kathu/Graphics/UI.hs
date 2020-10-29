@@ -82,7 +82,7 @@ instance ( FromJSON (Dependency s m Icon)
 -- TODO convert to plain old UI when that gets added to Verda library
 addUIExtension :: (ReadWriteEach w IO '[ActorState, Local, UIConfig], VerdaWorld w IO) => SystemT w IO ()
 addUIExtension =
-    addSpriteRenderExtension $ \renderSprite camPos screenDim idx -> do
+    addSpriteRenderExtension $ \_ renderSprite camPos screenDim idx -> do
         config  <- get global
         localAS <- getUnique
         let topLeft = camPos - ((*0.5) <$> screenDim)

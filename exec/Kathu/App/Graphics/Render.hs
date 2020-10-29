@@ -3,11 +3,10 @@ module Kathu.App.Graphics.Render where
 import           Apecs                           hiding (($=))
 import           Apecs.Physics                   hiding (($=))
 import           Control.Lens                    hiding (Identity)
-import           Control.Monad                   (foldM, when)
+import           Control.Monad                   (when)
 import           Data.Maybe                      (fromMaybe)
 import           Control.Monad.IO.Class          (MonadIO)
 import qualified Data.Vector                     as Vec
-import qualified Data.Vector.Mutable             as MVec
 import           Data.Word
 import           SDL                             (($=))
 import qualified SDL
@@ -16,16 +15,12 @@ import           Verda.Graphics.Components
 import           Verda.Graphics.Drawing
 import           Verda.Graphics.SpriteBuffer
 import           Verda.Graphics.Sprites
-import           Verda.Util.Containers           (forMVec)
 import           Verda.Util.Apecs
 
 import           Kathu.App.System                (SystemT')
 import           Kathu.App.Tools.ToolSystem      (renderToolMode)
 import           Kathu.Entity.Action
 import           Kathu.Entity.System
-import           Kathu.World.Field
-import           Kathu.World.Tile                hiding (Vector, MVector)
-import           Kathu.World.WorldSpace
 
 -- if sprite position is more than this many units from left or right, or from bottom, we don't draw
 -- we don't draw anything above the top of the screen, however, since sprites draw out and upwards
@@ -46,9 +41,6 @@ updateAnimations dT = do
 
     cmap (\(sprite, _ :: Not ActionSet) -> updateFrames dT sprite)
     cmap updateAnimated
-    -- since tile graphics information isn't stored as entities, we instead just grab all tiles and update their animations
-    Tiles tileVector <- get global :: SystemT' IO Tiles
-    lift $ forMVec tileVector (updateTileAnimation dT)
 
 ----------------------
 -- main render loop --
@@ -61,11 +53,7 @@ runRender !renderer !spriteBuffer !dT = do
 
     Resolution resolution@(V2 _ resY) <- get global
     spriteManager    <- get global
-    Tiles tileVector <- get global
-    let getTile :: TileState -> SystemT' IO Tile
-        getTile = lift . MVec.read tileVector . fromIntegral .  unTileID . view tile
 
-    world :: WorldSpace <- get global
     (Position camPos@(V2 camX camY), Camera zoomScale) <- fromMaybe (Position (V2 0 0), Camera 1) <$> getUnique
 
     -- clears background
@@ -98,21 +86,7 @@ runRender !renderer !spriteBuffer !dT = do
                 liftIO $ sbeWrite spriteBuffer idx (SpriteBufferElement renderPos tint sprite)
                 pure $ idx + 1
 
-        -- this call to fieldFoldM is (as of when this is written) the most time intensive process in the program
-        -- if we start to have too many problems, we should like into implementing caching each individual sprite into larger ones
-        -- although to preserve z-depth we might want to split each field into "strips" of tiles with same y and z positions
-        -- close to this was "surfaceBlitScaled", which would dramatically have its number of calls cut down by this too
-        foldFnField :: Int -> (V2 Int, Field) -> SystemT' IO Int
-        foldFnField !idx (!pos, !field) = fieldFoldM (addTile pos) idx field
-        addTile :: V2 Int -> Int -> V2 Int -> TileState -> SystemT' IO Int
-        addTile fpos i pos !t = getTile t >>= \tileInst ->
-            -- foldFnField filters out empty tiles, so we know they are safe here; if it didn't, attempting to render an empty would error
-            addToBuffer i (getTileSprite t tileInst) (worldCoordFromTileCoord fpos pos) (Tint white)
-
         gatherEntitySprite i (Position pos, sprite, t :: Maybe Tint) = addToBuffer i sprite pos (fromMaybe (Tint white) t)
-
-        gatherTileSprite :: Int -> SystemT' IO Int
-        gatherTileSprite !idx = foldM foldFnField idx . fieldsSurrounding camX camY $ world
         
         renderEvery :: Int -> Int -> IO ()
         renderEvery !idx !len
@@ -124,11 +98,10 @@ runRender !renderer !spriteBuffer !dT = do
                 renderEvery (idx + 1) len
 
         runExtensions :: Vec.Vector SpriteRenderExtension -> Int -> IO Int
-        runExtensions exts idx = Vec.foldM' (\acc (SpriteRenderExtension ext) -> ext addToBuffer camPos (V2 unitsPerWidth unitsPerHeight) acc) idx exts
+        runExtensions exts idx = Vec.foldM' (\acc (SpriteRenderExtension ext) -> ext dT addToBuffer camPos (V2 unitsPerWidth unitsPerHeight) acc) idx exts
 
     RenderExtensions spriteExts renExts <- get global
     sprCount <- cfoldM gatherEntitySprite 0
-            >>= gatherTileSprite
             >>= liftIO . runExtensions spriteExts
     
     when (sprCount > 0) $

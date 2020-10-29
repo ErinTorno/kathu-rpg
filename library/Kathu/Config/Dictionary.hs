@@ -19,7 +19,7 @@ import           Kathu.Entity.Physics.Floor      (FloorProperty(..))
 import           Kathu.Entity.Prefab             (Prefab, prefabID)
 import           Kathu.Graphics.Palette          (Palette, paletteID)
 import           Kathu.Graphics.UI
-import           Kathu.World.Tile                hiding (Vector, MVector)
+import           Kathu.World.Tile
 import           Kathu.World.WorldSpace
 
 data Dictionary = Dictionary

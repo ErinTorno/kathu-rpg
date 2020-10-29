@@ -12,7 +12,6 @@ import           Apecs.Physics
 import           Control.Lens
 import           Control.Monad               (forM_, void, unless, when)
 import           Data.Maybe                  (fromJust, isJust)
-import qualified Data.Map                    as Map
 import           Data.Word
 import qualified SDL
 import           Verda.Event.Controls
@@ -20,6 +19,8 @@ import           Verda.Graphics.Components   (Camera(..), defaultCamera)
 import           Verda.Graphics.Drawing
 import           Verda.Graphics.Sprites      (Sprite, spriteRectangle)
 import           Verda.Logger
+import           Verda.System.Tile.Chunks
+import           Verda.System.Tile.Components (tsTileID)
 import           Verda.Time
 
 import           Kathu.App.System
@@ -32,7 +33,6 @@ import           Kathu.Config.Settings
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.CollisionGroup
 import           Verda.Graphics.Color
-import           Kathu.World.Field
 import           Kathu.World.Tile
 import           Kathu.World.WorldSpace
 import           Verda.Util.Flow             (ireplicateM_)
@@ -258,10 +258,9 @@ runTilePlaceCommand commandSt sTile hoveredTilePos = do
             command <- mkLineTilePlaceCommand (fromJust maybeLastPos) hoveredTilePos sTile
             runCommand commandSt command
         else do
-            worldspace <- get global
-            prevTileSt <- getTileState worldspace hoveredTilePos
+            prevTileSt <- getChunksTileState hoveredTilePos
             let isClick  = leftMouseSt == BtnPressed
-                diffTile = prevTileSt^.tile /= sTile^.tileID
+                diffTile = prevTileSt^.tsTileID /= sTile^.tileID
                 diffPos  = maybeLastPos /= Just hoveredTilePos
             -- only generate a new command if we click again, the tile is different from the square, or the position is different from last time
             when (isClick || diffTile || diffPos) $ do
@@ -274,27 +273,26 @@ mkSingleTilePlaceCommand hoveredTilePos sTile prevTileSt = do
 
     pure $ Command
         { applyCommand = do
-            placeTileState (mkTileState sTile) hoveredTilePos
+            setChunksTileState hoveredTilePos (mkTileState sTile)
             univToolSt <- get global
             global     $= univToolSt {lastPlacedTilePos = Just hoveredTilePos}
         , removeCommand = do
-            placeTileState prevTileSt hoveredTilePos
+            setChunksTileState hoveredTilePos prevTileSt
             univToolSt <- get global
             global     $= univToolSt {lastPlacedTilePos = maybeLastPos}
         }
 
 mkLineTilePlaceCommand :: V2 Int -> V2 Int -> Tile -> SystemT' IO Command
 mkLineTilePlaceCommand lastPos hoveredTilePos sTile = do
-    worldspace <- get global
-    prevTileSt <- replicateLineM lastPos hoveredTilePos (\pos -> (,pos) <$> getTileState worldspace pos)
+    prevTileSt <- replicateLineM lastPos hoveredTilePos (\pos -> (,pos) <$> getChunksTileState pos)
 
     pure $ Command 
         { applyCommand = do
-            void $ replicateLineM lastPos hoveredTilePos (placeTileState $ mkTileState sTile)
+            void $ replicateLineM lastPos hoveredTilePos (flip setChunksTileState $ mkTileState sTile)
             univToolSt <- get global
             global     $= univToolSt {lastPlacedTilePos = Just hoveredTilePos}
         , removeCommand = do
-            forM_ prevTileSt $ uncurry placeTileState
+            forM_ prevTileSt $ uncurry (flip setChunksTileState)
             univToolSt <- get global
             global     $= univToolSt {lastPlacedTilePos = Just lastPos}
         }
@@ -331,19 +329,3 @@ replicateLineHighM x0 y0 x1 y1 action = go [] x0 y0 (2 * dx - dy)
                         >>= \a -> if d > 0
                                   then go (a:acc) (x + xIncr) (y + 1) ((d - 2 * dy) + 2 * dx)
                                   else go (a:acc) x (y + 1) (d + 2 * dx)
-
-placeTileState :: TileState -> V2 Int -> SystemT' IO ()
-placeTileState tilest pos = do
-    let fieldPos    = fieldContainingCoordV2 ((fromIntegral <$> pos) :: V2 Double)
-        relativePos = localCoordFromGlobalV2 pos
-    field    <- mkFieldIfNotPresent fieldPos
-    setTileStateV2 relativePos tilest field
-
-getTileState :: WorldSpace -> V2 Int -> SystemT' IO TileState
-getTileState worldspace pos =
-    let fieldPos    = fieldContainingCoordV2 ((fromIntegral <$> pos) :: V2 Double)
-        relativePos = localCoordFromGlobalV2 pos
-        fieldMap    = worldspace^.worldFields.to unFieldSet
-     in case Map.lookup fieldPos fieldMap of
-        Just field -> fetchTileStateV2 relativePos field
-        Nothing    -> pure emptyTileState

@@ -43,7 +43,7 @@ saveWorldSpace EditorState{ editorWindow = window
             (allTiles, gameWS :: WorldSpace) <- runWithEntityWorld queue $
                 (,) <$> get global <*> get global
 
-            worldspace <- (worldFields .~ gameWS^.worldFields) <$> readIORef wsRef
+            worldspace <- (worldChunks .~ gameWS^.worldChunks) <$> readIORef wsRef
             wsValue <- encodeValueForWorldSpace allTiles worldspace
 
             case fileFormatPrefix filePath of

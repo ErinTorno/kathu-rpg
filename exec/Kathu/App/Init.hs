@@ -19,6 +19,7 @@ import qualified System.Random                   as R
 import           Verda.Graphics.Components       (Resolution(..), defaultCamera)
 import           Verda.Graphics.Fonts            (fontID, initFontCache)
 import           Verda.Graphics.Icons            (setWindowIcon)
+import           Verda.System.Tile.Renderer      (addTileRendererExtension)
 import           Verda.Util.Containers           (fromJustElseError)
 import           Verda.Util.Types                (unID)
 import           Verda.World                     (initVerdaWorld)
@@ -37,6 +38,7 @@ import           Kathu.Graphics.UI               (addUIExtension, gameIcon)
 import           Kathu.Language
 import           Kathu.Scripting.Lua             (initScripting)
 import           Kathu.Scripting.Variables       (initVariables)
+import           Kathu.World.Tile                (Tile, makeAllTiles)
 import           Kathu.World.WorldSpace          (emptyWorldSpace)
 
 entityWorld :: IO EntityWorld
@@ -79,7 +81,7 @@ system window renderer settings = do
     initVerdaWorld
     (dictionary, manager) <- liftIO $ loadDictionary renderer
     seed       <- lift . maybe (R.randomIO :: IO Int) pure . randomSeed $ settings
-    tilesV     <- lift . makeTiles . view dictTiles $ dictionary
+    tilesV     <- lift . makeAllTiles . view dictTiles $ dictionary
     variables  <- initVariables
     initScripting
     global $= variables
@@ -91,6 +93,7 @@ system window renderer settings = do
     global $= dictionary^.dictUIConfig
     global $= (Gravity $ V2 0 0) -- no gravity, as the game is top-down
     global $= Resolution (fromIntegral <$> resolution settings)
+    addTileRendererExtension (Proxy :: Proxy Tile)
     addDebugExtension
     addUIExtension
 

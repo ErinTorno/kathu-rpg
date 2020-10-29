@@ -4,15 +4,8 @@
 module Kathu.Entity.System where
 
 import           Apecs hiding (Map)
-import           Control.Monad (foldM)
 import           Control.Monad.IO.Class (MonadIO)
-import           Control.Lens
-import           Data.List (sortBy)
-import           Data.Functor (($>))
-import           Data.Map (Map)
 import qualified Data.Map as Map
-import qualified Data.Vector.Mutable as MVec
-import           Data.Vector.Mutable (IOVector)
 import           Data.Word
 import qualified System.Random as R
 import           Verda.Time
@@ -22,7 +15,6 @@ import           Kathu.Entity.Physics.Floor (FloorPropEntity)
 import           Kathu.Graphics.Palette (PaletteManager, staticManager)
 import           Kathu.Scripting.Variables (Variables)
 import           Kathu.World.Stasis
-import           Kathu.World.Tile (Tile(..), TileID(..), tileID, TileState(..), tileTextID, unTileID)
 import           Kathu.World.Time (WorldTime(..))
 
 -- New Globals
@@ -39,11 +31,6 @@ newtype  Random = Random R.StdGen
 instance Semigroup Random where (<>) = mappend
 instance Monoid Random where mempty  = Random $ R.mkStdGen 0 -- the IO portion of this is expected to initialize it with a seed
 instance Component Random where type Storage Random = Global Random
-
-newtype  Tiles = Tiles (IOVector Tile)
-instance Semigroup Tiles where (<>) = mappend
-instance Monoid Tiles where mempty  = error "Attempted to use Tiles before it has been loaded"
-instance Component Tiles where type Storage Tiles = Global Tiles
 
 instance Semigroup WorldStases where (<>) = mappend
 instance Monoid WorldStases where mempty = WorldStases Map.empty
@@ -83,17 +70,3 @@ stepWorldTime !dT = modify global $ \(WorldTime t) -> WorldTime (t + fromIntegra
 -------------
 -- Unsafe! --
 -------------
-
-fromTiles :: Tiles -> TileState -> IO Tile
-fromTiles tiles (TileState tid _) = fromTilesID tiles tid
--------------
-
-fromTilesID :: Tiles -> TileID -> IO Tile
-fromTilesID (Tiles vec) (TileID tid) = MVec.read vec . fromIntegral $ tid
-
-makeTiles :: Map k Tile -> IO Tiles
-makeTiles elemMap = MVec.unsafeNew (Map.size elemMap) >>= \vec -> foldM (setElem vec) 0 allElems $> Tiles vec
-    where allElems = sortBy (\x y -> (x^.tileID) `compare` (y^.tileID)) . Map.elems $ elemMap
-          setElem !vec !idx !e = if e^.tileID.to (fromIntegral . unTileID) /= idx
-                                 then error . concat $ ["Tile ", e^.tileTextID.to show, " had tile id ", e^.tileID.to show, " but was stored in index ", show idx, " in Kathu.Entity.System.makeTiles"]
-                                 else MVec.unsafeWrite vec idx e $> (idx + 1)

@@ -1,24 +1,47 @@
 {-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Kathu.World.Tile where
+module Kathu.World.Tile
+    ( AllTiles'
+    , BreakBehavior(..)
+    , Tile(..)
+    , TileRenderMode(..)
+    , ToolType(..)
+    , makeAllTiles
+    , mkTileState
+    , mkTileStateWithMetadata
+    , reservedTileIDMap
+    , updateTileAnimation
+    -- Lens
+    , breakBehavior, durability, isSolid, minimumPower, tileID, tileName, tileRenderMode, tileTextID, toolType
+    -- re-exported
+    , TileID
+    , TileState(..)
+    , emptyTile
+    , emptyTileID
+    , emptyTileState
+    ) where
 
 import           Control.Lens
+import           Control.Monad                (foldM)
 import           Control.Monad.IO.Class       (liftIO, MonadIO)
 import           Data.Aeson
 import           Data.Aeson.Types             (Parser, typeMismatch)
+import           Data.Functor                 (($>))
 import           Data.Functor.Compose
+import           Data.List                    (sortBy)
 import           Data.Map                     (Map)
 import qualified Data.Map                     as Map
 import           Data.Text                    (Text)
 import           Data.Vector                  (Vector)
 import qualified Data.Vector                  as Vec
-import           Data.Vector.Unboxed.Deriving
+import qualified Data.Vector.Mutable          as MVec
 import           Data.Word
 import qualified System.Random                as R
 import           Verda.Graphics.Sprites       (Sprite, updateFrames)
 import           Verda.Parsing.Aeson
 import           Verda.Parsing.Counting
+import           Verda.System.Tile.Components
 import           Verda.Util.Dependency
 import           Verda.Util.Flow              ((>>>=))
 import           Verda.Util.Types             (Identifier, IDMap)
@@ -28,22 +51,6 @@ import           Kathu.Entity.Resource
 -----------------------
 -- Tile Config Types --
 -----------------------
-
-newtype TileID = TileID {unTileID :: Word32} deriving (Show, Eq, Ord)
-derivingUnbox "TileID"
-    [t| TileID -> Word32 |]
-    [| unTileID          |]
-    [| TileID            |]
-
-instance (s `CanStore` CountingIDs, Monad m) => FromJSON (Dependency s m TileID) where
-    parseJSON = parseAndLookupOrAddIncrementalID TileID "TileID"
-
-emptyTileID :: TileID
-emptyTileID = TileID 0
-
--- | CountingIDs is initialized with this key and default map, instead of empty, so that it starts counting after reserved tile IDs
-reservedTileIDMap :: (Text, Map Text Int)
-reservedTileIDMap = ("TileID", Map.fromList [("empty", 0)])
 
 newtype ToolType = ToolType Int deriving (Show, Eq, Ord)
 
@@ -74,6 +81,10 @@ instance ( FromJSON (Dependency s m Sprite)
         Just e        -> fail $ "Unknown TileRenderMode " ++ show e
     parseJSON e = typeMismatch "TileRenderMode" e
 
+-- | CountingIDs is initialized with this key and default map, instead of empty, so that it starts counting after reserved tile IDs
+reservedTileIDMap :: (Text, Map Text Int)
+reservedTileIDMap = ("TileID", Map.fromList [("empty", 0)])
+
 ----------
 -- Tile --
 ----------
@@ -87,6 +98,22 @@ data Tile = Tile
     , _breakBehavior  :: !BreakBehavior
     }
 makeLenses ''Tile
+
+instance VerdaTile Tile where
+    emptyTile = Tile
+        { _tileID         = emptyTileID
+        , _tileTextID     = "empty"
+        , _tileName       = "empty tile"
+        , _tileRenderMode = error "Attempted to use an empty tile's TileRenderMode"
+        , _isSolid        = False
+        , _breakBehavior  = Unbreakable
+        }
+    getTileSprite !tileState !tileInst = case tileInst^.tileRenderMode of
+        TRMNormal sprite  -> sprite
+        TRMRandom sprites -> sprites Vec.! (tileState^.tsMetadata.to fromIntegral)
+    updateTileAnimation !dT = over tileRenderMode $ \case
+        TRMNormal s -> TRMNormal $ updateFrames dT s
+        TRMRandom s -> TRMRandom $ updateFrames dT <$> s
 
 instance ( s `CanStore` (IDMap Tile)
          , FromJSON (Dependency s m BreakBehavior)
@@ -105,32 +132,10 @@ instance ( s `CanStore` (IDMap Tile)
                   <*> v .:- "break-behavior"
     parseJSON v          = typeMismatch "Tile" v
 
-emptyTile :: Tile
-emptyTile = Tile
-    { _tileID         = emptyTileID
-    , _tileTextID     = "empty"
-    , _tileName       = "empty tile"
-    , _tileRenderMode = error "Attempted to use an empty tile's TileRenderMode"
-    , _isSolid        = False
-    , _breakBehavior  = Unbreakable
-    }
-
--- Target Size: 8 bytes (for better alignment)
-data TileState = TileState
-    { _tile             :: {-# UNPACK #-} !TileID
-    , _metadata         :: {-# UNPACK #-} !Word32
-    } deriving (Show, Eq)
-makeLenses ''TileState
-derivingUnbox "TileState"
-    [t| TileState -> (TileID, Word32) |]
-    [| \(TileState tl mt) -> (tl, mt) |]
-    [| uncurry TileState              |]
+type AllTiles' = AllTiles Tile
 
 mkTileState :: Tile -> TileState
 mkTileState t = TileState (t^.tileID) 0
-
-emptyTileState :: TileState
-emptyTileState = mkTileState emptyTile
 
 -- | Uses randomIO to initialize metadata for tiles that make use of random properties through its metadata
 mkTileStateWithMetadata :: MonadIO m => Tile -> m TileState
@@ -138,14 +143,11 @@ mkTileStateWithMetadata t
     | t^.tileID == emptyTileID = pure emptyTileState
     | otherwise                = case t^.tileRenderMode of
         TRMNormal _       -> pure $ mkTileState t
-        TRMRandom sprites -> TileState (t^.tileID) . (`mod` fromIntegral (Vec.length sprites)) <$> liftIO (R.randomIO :: IO Word32)
+        TRMRandom sprites -> TileState (t^.tileID) . (`mod` fromIntegral (Vec.length sprites)) <$> liftIO (R.randomIO :: IO Word64)
 
-getTileSprite :: TileState -> Tile -> Sprite
-getTileSprite !tileState !tileInst = case tileInst^.tileRenderMode of
-    TRMNormal sprite  -> sprite
-    TRMRandom sprites -> sprites Vec.! (tileState^.metadata.to fromIntegral)
-
-updateTileAnimation :: Word32 -> Tile -> Tile
-updateTileAnimation !dT = over tileRenderMode $ \case
-    TRMNormal s -> TRMNormal $ updateFrames dT s
-    TRMRandom s -> TRMRandom $ updateFrames dT <$> s
+makeAllTiles :: Map k Tile -> IO (AllTiles Tile)
+makeAllTiles elemMap = MVec.unsafeNew (Map.size elemMap) >>= \vec -> foldM (setElem vec) 0 allElems $> AllTiles vec
+    where allElems = sortBy (\x y -> (x^.tileID) `compare` (y^.tileID)) . Map.elems $ elemMap
+          setElem !vec !idx !e = if e^.tileID /= emptyTileID && e^.tileID.to (fromIntegral . unTileID) /= idx
+                                 then error . concat $ ["Tile ", e^.tileTextID.to show, " had tile id ", e^.tileID.to show, " but was stored in index ", show idx, " in Kathu.Entity.System.makeTiles"]
+                                 else MVec.unsafeWrite vec idx e $> (idx + 1)

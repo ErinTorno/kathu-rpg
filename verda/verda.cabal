@@ -37,6 +37,10 @@ library
                     Verda.Parsing.Aeson
                     Verda.Parsing.Counting
                     Verda.Parsing.Yaml
+                    -- System
+                    Verda.System.Tile.Chunks
+                    Verda.System.Tile.Components
+                    Verda.System.Tile.Renderer
                     -- Util
                     Verda.Util.Apecs
                     Verda.Util.Containers

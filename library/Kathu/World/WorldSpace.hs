@@ -13,7 +13,6 @@ import           Control.Monad.IO.Class    (MonadIO)
 import           Data.Aeson
 import           Data.Aeson.Types          (Parser, typeMismatch)
 import qualified Data.Map                  as Map
-import           Data.Maybe                (catMaybes)
 import           Data.Text                 (Text)
 import qualified Data.Text                 as T
 import           Data.Vector               (Vector)
@@ -21,6 +20,8 @@ import qualified Data.Vector               as Vec
 import           Verda.Graphics.Sprites    (Sprite)
 import           Verda.IO.Directory        (WorkingDirectory)
 import           Verda.Parsing.Yaml        (FieldOrder, mkFieldOrderFromList)
+import           Verda.System.Tile.Chunks  (unitsPerTile)
+import           Verda.System.Tile.Components
 import           Verda.Util.Apecs
 import           Verda.Util.Dependency
 import           Verda.Util.Types          (Identifier, IDMap)
@@ -31,15 +32,15 @@ import           Kathu.Entity.Item
 import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Prefab       (Prefab, prefabID)
-import           Kathu.Entity.System       (IncludeEditorInfo(..), Tiles)
+import           Kathu.Entity.System       (IncludeEditorInfo(..))
 import           Kathu.Graphics.Palette
 import           Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua       as Lua
 import           Kathu.Scripting.Variables
 import           Kathu.Scripting.Wire
-import           Kathu.World.Field
+import           Kathu.World.ChunkBuilder
 import           Kathu.World.Stasis
-import           Kathu.World.Tile          (Tile)
+import           Kathu.World.Tile          (AllTiles', Tile)
 
 data InstancedPrefab = InstancedPrefab
     { _instanceID         :: !Identifier
@@ -77,7 +78,7 @@ data WorldSpace = WorldSpace
     , _worldScript        :: !(Maybe Lua.Script)
     , _worldEntities      :: !(Vector InstancedPrefab)
     , _worldItems         :: !(Vector InstancedItem)
-    , _worldFields        :: !FieldSet
+    , _worldChunks        :: !Chunks
     }
 makeLenses ''WorldSpace
 
@@ -86,38 +87,13 @@ instance Monoid WorldSpace  where mempty = emptyWorldSpace
 instance Component WorldSpace  where type Storage WorldSpace  = Global WorldSpace
 
 emptyWorldSpace :: WorldSpace
-emptyWorldSpace = WorldSpace "" "the void..." "" Map.empty (V2 0 0) False Map.empty Nothing Vec.empty Vec.empty emptyFieldSet
-
--- right now we only consider horizontal fields; ones with different z depths are ignored
-fieldsSurrounding :: RealFrac a => a -> a -> WorldSpace -> [(V2 Int, Field)]
-fieldsSurrounding wx wy ws = catMaybes $ readFields [] (ox - 1) (oy - 1)
-    where fields    = unFieldSet $ ws^.worldFields
-          (# ox, oy #) = fieldContainingCoord wx wy
-          readFields !acc !x !y | y > oy + 1 = acc
-                                | x > ox + 1 = readFields acc (ox - 1) (y + 1)
-                                | otherwise  = readFields (((curV,) <$> Map.lookup curV fields):acc) (x + 1) y
-              where curV = V2 x y -- only consider same z level right now
-
--- | Returned the given Field, creating a new one and inserting into the current worldspace if the given field is missing
-mkFieldIfNotPresent :: forall w. (ReadWrite w IO WorldSpace) => V2 Int -> SystemT w IO Field
-mkFieldIfNotPresent fieldPos = do
-    ws :: WorldSpace <- get global
-
-    let fieldMap = ws^.worldFields.to unFieldSet
-
-    case Map.lookup fieldPos fieldMap of
-        Just field -> pure field
-        Nothing    -> do
-            field <- mkField
-            let fieldMap' = FieldSet $ Map.insert fieldPos field fieldMap
-            global $= (worldFields .~ fieldMap' $ ws)
-            pure field
+emptyWorldSpace = WorldSpace "" "the void..." "" Map.empty (V2 0 0) False Map.empty Nothing Vec.empty Vec.empty emptyChunks
 
 --------------------
 -- System Related --
 --------------------
 
-initWorldSpace :: forall w. (Get w IO EntityCounter, Get w IO Tiles, Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[EditorInstancedFromWorld, Existance, IncludeEditorInfo, LifeTime, Player, SpecialEntity, Sprite, Variables, WireReceivers, WorldSpace, WorldStases])
+initWorldSpace :: forall w. (Get w IO EntityCounter, Get w IO AllTiles', Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[Chunks, EditorInstancedFromWorld, Existance, IncludeEditorInfo, LifeTime, Player, SpecialEntity, Sprite, Variables, WireReceivers, WorldSpace, WorldStases])
                => (Entity -> SystemT w IO ())
                -> ((Lua.ActiveScript -> Lua.ActiveScript) -> Prefab -> SystemT w IO Entity)
                -> (Entity -> Lua.Script -> SystemT w IO Lua.ActiveScript)
@@ -140,6 +116,7 @@ initWorldSpace destroyEty mkEntity loadScript ws = do
     forM_ (ws^.worldItems) $ \(InstancedItem item pos) -> newEntityFromItem item pos
     forM_ (ws^.worldEntities) $ placeInstancedPrefab includeEditorInfo mkEntity
 
+    global $= ws^.worldChunks
     buildTileCollisions ws
 
     case ws^.worldScript of
@@ -177,11 +154,11 @@ destroyTileCollisions :: forall w. (ReadWrite w IO SpecialEntity) => (Entity -> 
 destroyTileCollisions destroyEty =
     cmapM_ $ \(specialEty, ety) -> when (specialEty == WorldCollision) $ destroyEty ety
 
-buildTileCollisions :: forall w. (Get w IO EntityCounter, Get w IO Tiles, Has w IO Physics, ReadWriteEach w IO '[Existance, SpecialEntity])
+buildTileCollisions :: forall w. (Get w IO EntityCounter, Get w IO AllTiles', Has w IO Physics, ReadWriteEach w IO '[Existance, SpecialEntity])
                       => WorldSpace
                       -> SystemT w IO ()
 buildTileCollisions ws = do
-    tiles :: Tiles <- get global
+    tiles :: AllTiles' <- get global
     let worldCollisionFilter = groupCollisionFilter Movement
         addWorldCollision polygons
             | Vec.null polygons = pure ()
@@ -190,7 +167,7 @@ buildTileCollisions ws = do
                 ety $= (Shape ety (Convex (Vec.head polygons) 0), worldCollisionFilter)
                 
                 mapM_ (\p -> newExistingEntity (WorldCollision, Shape ety $ Convex p 0)) . Vec.tail $ polygons
-    colPolys <- mkCollisionPolygons tiles $ ws^.worldFields
+    colPolys <- mkCollisionPolygons tiles $ ws^.worldChunks
 
     addWorldCollision colPolys
 
@@ -260,7 +237,7 @@ instance (FromJSON (Dependency s m ItemStack), Functor m) => FromJSON (Dependenc
 -- WorldSpace --
 ----------------
 
-encodeValueForWorldSpace :: MonadIO m => Tiles -> WorldSpace -> m Value
+encodeValueForWorldSpace :: MonadIO m => AllTiles' -> WorldSpace -> m Value
 encodeValueForWorldSpace allTiles (WorldSpace wid wname initPal palettes loadPos shouldSavePos vars script etys items fields) = do
     fieldPairs <- serializeFieldSetPairs allTiles fields
     pure . object $
@@ -293,7 +270,7 @@ instance ( s `CanProvide` IDMap Prefab
         variables  <- v .:? "variables" .!= Map.empty
 
         shouldSerializePosition <- v .:? "should-save-exact-position" .!= False
-        fieldConfigs :: Vector FieldConfig <- v .: "fields"
+        chunkConfigs :: Vector ChunkConfig <- v .: "chunks"
         
         wScript :: Dependency s m (Maybe Lua.Script) <- flattenDependency <$> v .:? "script"
 
@@ -310,13 +287,13 @@ instance ( s `CanProvide` IDMap Prefab
 
         let palettes = dependencyMapLookupMap (paletteIDs :: Vector Identifier)
 
-            newFieldSet :: Dependency s m FieldSet
-            newFieldSet = do
+            newChunks :: Dependency s m Chunks
+            newChunks = do
                 legend <- dLegend
                 liftDependency $
-                    foldM (applyFieldConfig legend) emptyFieldSet fieldConfigs
+                    foldM (applyChunkConfig legend) emptyChunks chunkConfigs
 
-        pure $ WorldSpace worldId wName initPal <$> palettes <*> pure loadPnt <*> pure shouldSerializePosition <*> pure variables <*> wScript <*> entities <*> items <*> newFieldSet
+        pure $ WorldSpace worldId wName initPal <$> palettes <*> pure loadPnt <*> pure shouldSerializePosition <*> pure variables <*> wScript <*> entities <*> items <*> newChunks
     parseJSON e          = typeMismatch "WorldSpace" e
 
 -- | When we serialize the WorldSpace, we serialize the fields in the following order
@@ -331,7 +308,7 @@ worldspaceFieldOrder = mkFieldOrderFromList
     , "should-save-exact-position"
     , "variables"
     , "legend"
-    , "fields"
+    , "chunks"
     , "entities"
     , "items"
     -- Sub Configs
