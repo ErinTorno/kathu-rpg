@@ -20,6 +20,7 @@ module Verda.Graphics.Sprites
     ) where
 
 import           Apecs
+import           Control.Lens
 import           Control.Monad.IO.Class       (MonadIO)
 import           Data.Aeson
 import           Data.Aeson.Types             (Parser, typeMismatch)
@@ -99,15 +100,27 @@ data Sprite = AnimSprite !Double !Double !AnimatedSprite
 
 instance Component Sprite where type Storage Sprite = Map Sprite
 
-spriteLayer :: Sprite -> Double
-spriteLayer (AnimSprite l _ _) = l
-spriteLayer (StatSprite l _ _) = l
-spriteLayer (ScrlSprite l _ _) = l
+spriteLayer :: Lens' Sprite Double
+spriteLayer = lens getter setter
+    where getter sprite = case sprite of
+              AnimSprite l _ _ -> l
+              StatSprite l _ _ -> l
+              ScrlSprite l _ _ -> l
+          setter sprite l = case sprite of 
+              AnimSprite _ s spr -> AnimSprite l s spr
+              StatSprite _ s spr -> StatSprite l s spr
+              ScrlSprite _ s spr -> ScrlSprite l s spr
 
-spriteScale :: Sprite -> Double
-spriteScale (AnimSprite _ s _) = s
-spriteScale (StatSprite _ s _) = s
-spriteScale (ScrlSprite _ s _) = s
+spriteScale :: Lens' Sprite Double
+spriteScale = lens getter setter
+    where getter sprite = case sprite of
+              AnimSprite _ s _ -> s
+              StatSprite _ s _ -> s
+              ScrlSprite _ s _ -> s
+          setter sprite s = case sprite of 
+              AnimSprite l _ spr -> AnimSprite l s spr
+              StatSprite l _ spr -> StatSprite l s spr
+              ScrlSprite l _ spr -> ScrlSprite l s spr
 
 spriteID :: Sprite -> SpriteID
 spriteID (StatSprite _ _ StaticSprite{staticSprite}) = staticSprite

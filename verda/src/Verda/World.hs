@@ -92,11 +92,11 @@ initVerdaWorld :: (MonadIO m, VerdaWorld w m) => SystemT w m ()
 initVerdaWorld =
     set global =<< mkControlState
 
-addSpriteRenderExtension :: VerdaWorld w IO => (RenderSpriteFn -> V2 Double -> Int -> SystemT w IO Int) -> SystemT w IO ()
+addSpriteRenderExtension :: VerdaWorld w IO => (RenderSpriteFn -> V2 Double -> V2 Double -> Int -> SystemT w IO Int) -> SystemT w IO ()
 addSpriteRenderExtension systemExtension = do
     world <- ask
     RenderExtensions spriteExts rendererExts <- get global
-    let extension = SpriteRenderExtension $ \renderSprite camPos idx -> runWith world (systemExtension renderSprite camPos idx)
+    let extension = SpriteRenderExtension $ \renderSprite camPos screenDim idx -> runWith world (systemExtension renderSprite camPos screenDim idx)
     global $= RenderExtensions (Vec.snoc spriteExts extension) rendererExts
 
 addRendererExtension :: VerdaWorld w IO => (SDL.Renderer -> LogicToRenderFn -> V2 Double -> SystemT w IO ()) -> SystemT w IO ()

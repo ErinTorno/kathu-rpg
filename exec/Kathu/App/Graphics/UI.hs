@@ -4,21 +4,21 @@ module Kathu.App.Graphics.UI where
 
 import           Apecs
 import           Control.Lens
-import           Control.Monad.IO.Class (MonadIO)
 import           Data.Aeson
-import           Data.Aeson.Types (typeMismatch)
-import           Data.Bifunctor              as Bi
-import           Data.Fixed (divMod')
-import           Data.Functor.Compose (getCompose)
-import           Linear.V2 (V2(..))
-import qualified SDL
-import           Verda.Graphics.Color            (white)
-import           Verda.Graphics.Drawing
+import           Data.Aeson.Types                (typeMismatch)
+import           Data.Bifunctor                  as Bi
+import           Data.Fixed                      (divMod')
+import           Data.Functor.Compose            (getCompose)
+import           Linear.V2                       (V2(..))
+import           Verda.Graphics.Components
+import           Verda.Graphics.Drawing          (pixelsPerUnit)
 import           Verda.Graphics.Icons            (Icon)
-import           Verda.Graphics.SpriteManager    (SpriteManager)
-import           Verda.Graphics.Sprites          (Sprite)
+import           Verda.Graphics.Sprites
+import           Verda.Util.Apecs
+import           Verda.World                     (VerdaWorld, addSpriteRenderExtension)
 
 import           Kathu.Entity.ActorState
+import           Kathu.Entity.Components         (Local)
 import           Kathu.Entity.Resource
 import           Verda.Parsing.Aeson
 import           Verda.Util.Dependency
@@ -50,14 +50,19 @@ data UIConfig = UIConfig
 
 instance (FromJSON (Dependency s m Sprite), Monad m) => FromJSON (Dependency s m DisplayBar) where
     parseJSON (Object v) = getCompose $ DisplayBar
-        <$> v .:^ "starts-at"
+        <$> fmap pos (v .:^ "starts-at")
         <*> v .:^ "points-per-part"
-        <*> v .:-? "cap-beginning"
-        <*> v .:-? "cap-ending"
-        <*> (v .:^? "cap-width" .!=- 0)
-        <*> v .:^ "primary-width" <*> v .:^ "secondary-width"
-        <*> v .:- "primary-full" <*> v .:- "primary-3q" <*> v .:- "primary-half" <*> v .:- "primary-1q"
-        <*> v .:- "secondary-full" <*> v .:- "secondary-empty"
+        <*> maybeSpr "cap-beginning"
+        <*> maybeSpr "cap-ending"
+        <*> pos (v .:^? "cap-width" .!=- 0)
+        <*> pos (v .:^ "primary-width") <*> pos (v .:^ "secondary-width")
+        <*> spr "primary-full" <*> spr "primary-3q" <*> spr "primary-half" <*> spr "primary-1q"
+        <*> spr "secondary-full" <*> spr "secondary-empty"
+        where incrLayer    = over spriteLayer (+1000) -- ensure floating above all other screen elems
+              spr      idt = incrLayer <$> (v .:- idt)
+              maybeSpr idt = fmap incrLayer <$> (v .:-? idt)
+              pos :: Functor f => f Double -> f Double
+              pos = fmap (/pixelsPerUnit) -- configured with pixels, converted to units here
     parseJSON v = typeMismatch "DisplayBar" v
 
 instance ( FromJSON (Dependency s m Icon)
@@ -74,34 +79,32 @@ instance ( FromJSON (Dependency s m Icon)
 -- Functions --
 ---------------
 
-barIconBleed :: Floating a => a
-barIconBleed = 1.01
+-- TODO convert to plain old UI when that gets added to Verda library
+addUIExtension :: (ReadWriteEach w IO '[ActorState, Local, UIConfig], VerdaWorld w IO) => SystemT w IO ()
+addUIExtension =
+    addSpriteRenderExtension $ \renderSprite camPos screenDim idx -> do
+        config  <- get global
+        localAS <- getUnique
+        let topLeft = camPos - ((*0.5) <$> screenDim)
+        case localAS of
+            Nothing -> pure idx
+            Just (as, _ :: Local) -> liftIO $ drawBar renderSprite topLeft (as^.health) (healthBar config) idx
+                                 >>= liftIO . drawBar renderSprite topLeft (as^.mana) (manaBar config)
 
-renderUI :: forall w m. (MonadIO m, Get w m UIConfig, Get w m SpriteManager) => SDL.Renderer -> Double -> Maybe ActorState -> SystemT w m ()
-renderUI _ _ Nothing = pure ()
-renderUI renderer scale (Just as) = do
-    config <- get global
-    manager <- get global
-    
-    drawBar renderer scale manager (as^.health) (healthBar config)
-    drawBar renderer scale manager (as^.mana)   (manaBar config)
-    pure ()
-
-drawBar :: MonadIO m => SDL.Renderer -> Double -> SpriteManager -> Dynamic Double -> DisplayBar -> m ()
-drawBar renderer scale mgr dyn (DisplayBar startingPos ppu capBegin capEnd capw pw sw pi4 pi3 pi2 pi1 sif sie) = go >> pure ()
-    where go = drawCap capBegin sx >>= goInner >>= drawCap capEnd
-          goInner x = drawN fullUnits sif sw x >>= drawAt primaryImg pw >>= drawN emptyUnits sie sw
-          drawCap cap x = maybe (pure x) (\i -> drawAt i capw x) cap
-          (V2 sx sy) = (*scale) <$> startingPos
+drawBar :: RenderSpriteFn -> V2 Double -> Dynamic Double -> DisplayBar -> Int -> IO Int
+drawBar renderSprite (V2 absX absY) dyn (DisplayBar (V2 sx sy) ppu capBegin capEnd capw pw sw pi4 pi3 pi2 pi1 sif sie) initIdx = snd <$> go
+    where go = drawCap capBegin (absX + sx, initIdx) >>= goInner >>= drawCap capEnd
+          goInner xIdxPair = drawN fullUnits sif sw xIdxPair >>= drawAt primarySpr pw >>= drawN emptyUnits sie sw
+          drawCap cap xIdxPair = maybe (pure xIdxPair) (\spr -> drawAt spr capw xIdxPair) cap
           unitCount :: Int
           unitCount  = ceiling $ totalMaximum dyn / ppu
           fullUnits, partialRem :: Int
-          (fullUnits, partialRem) = fixPartial . Bi.second (ceiling . (*4) . (/ppu)) $ (dyn ^. dynCur) `divMod'` ppu
+          (fullUnits, partialRem) = fixPartial . Bi.second (ceiling . (*4) . (/ppu)) $ (dyn^.dynCur) `divMod'` ppu
           -- if we have perfectly rounded, we drop the full units by one to draw a large one of four quarters
           fixPartial (n, 0) = (n - 1, 4)
           fixPartial p = p
           emptyUnits = unitCount - fullUnits - 1
-          primaryImg = case partialRem of {1 -> pi1; 2 -> pi2; 3 -> pi3; 4 -> pi4; _ -> pi4}
-          drawAt img w x = blitSprite renderer mgr img white (mkRenderRectNoCenter barIconBleed scale (V2 x sy)) >> pure (x + scale * w)
-          drawN 0 _ _ x   = pure x
-          drawN i img w x = drawAt img w x >>= drawN (i - 1) img w
+          primarySpr = case partialRem of {1 -> pi1; 2 -> pi2; 3 -> pi3; 4 -> pi4; _ -> pi4}
+          drawN 0 _ _   xIdxPair = pure xIdxPair
+          drawN i spr w xIdxPair = drawAt spr w xIdxPair >>= drawN (i - 1) spr w
+          drawAt  spr w (x, idx) = renderSprite idx spr (V2 (x + 0.5 * w) (sy + absY)) noTint >>= \idx' -> pure (x + w, idx')

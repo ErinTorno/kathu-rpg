@@ -1,5 +1,6 @@
 module Verda.Graphics.SpriteBuffer where
 
+import           Control.Lens
 import           Control.Monad                (when)
 import           Data.IORef
 import           Data.Vector.Algorithms.Intro (sortByBounds)
@@ -19,7 +20,7 @@ data SpriteBufferElement = SpriteBufferElement
 sbeCompare :: SpriteBufferElement -> SpriteBufferElement -> Ordering
 sbeCompare a b = pos a `compare` pos b
     where -- when object is on a different layer, we sort it as if it had a much higher position
-          pos (SpriteBufferElement (V2 _ !y) _ sprite) = y + 1000 * spriteLayer sprite
+          pos (SpriteBufferElement (V2 _ !y) _ sprite) = y + 1000 * sprite^.spriteLayer
 
 -- | This stores each sprite to draw and its properties, which will be sorted before drawing for y depth
 type SpriteBuffer = IORef (IOVector SpriteBufferElement)

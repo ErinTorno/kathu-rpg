@@ -26,7 +26,7 @@ import           Verda.World                     (initVerdaWorld)
 import           Kathu.App.Data.Dictionary
 import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Debug        (addDebugExtension)
-import           Kathu.App.Graphics.UI
+import           Kathu.App.Graphics.UI           (addUIExtension, gameIcon)
 import           Kathu.App.System
 import           Kathu.App.World                 (loadWorldSpace)
 import           Kathu.Entity.Action
@@ -92,6 +92,7 @@ system window renderer settings = do
     global $= (Gravity $ V2 0 0) -- no gravity, as the game is top-down
     global $= Resolution (fromIntegral <$> resolution settings)
     addDebugExtension
+    addUIExtension
 
     initLanguage window renderer settings dictionary
 

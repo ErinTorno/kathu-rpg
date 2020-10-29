@@ -44,8 +44,8 @@ type RenderSpriteFn = Int -> Sprite -> V2 Double -> Tint -> IO Int
 
 type LogicToRenderFn = V2 Double -> V2 Double
 
--- | sprite render function -> camera position -> first buffer index -> buffer index after operations
-newtype SpriteRenderExtension = SpriteRenderExtension (RenderSpriteFn -> V2 Double -> Int -> IO Int)
+-- | sprite render function -> camera position -> screen dimensions in units -> first buffer index -> buffer index after operations
+newtype SpriteRenderExtension = SpriteRenderExtension (RenderSpriteFn -> V2 Double -> V2 Double -> Int -> IO Int)
 
 -- | renderer -> logic pos to screen converter -> first buffer index -> buffer index after operations
 newtype RendererExtension = RendererExtension (SDL.Renderer -> LogicToRenderFn -> V2 Double -> IO ())

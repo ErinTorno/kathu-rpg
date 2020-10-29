@@ -1,6 +1,6 @@
 game-icon: "/icon-large.png"
 health-bar:
-  starts-at:        [5, 10]
+  starts-at:        [5, 0]
   points-per-part:  20
   primary-width:    10 # size plus 1 pixel for space
   secondary-width:  8
@@ -11,14 +11,14 @@ health-bar:
   secondary-full:   heart-small-4q.png
   secondary-empty:  heart-small-0q.png
 mana-bar:
-  starts-at:        [5, 15]
+  starts-at:        [4, 6]
   points-per-part:  20
   # for mana, the primary and secondary are same so that it looks like one continuous bar
-  cap-width:        2 # two pixels for the cap
+  cap-width:        2
   cap-beginning:    mana-cap-beginning.png
   cap-ending:       mana-cap-ending.png
-  primary-width:    7
-  secondary-width:  7
+  primary-width:    6.9 # slightly less than 7 pixels so no streaks over over-lap areas
+  secondary-width:  6.9
   primary-full:     mana-4q.png
   primary-3q:       mana-3q.png
   primary-half:     mana-2q.png

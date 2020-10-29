@@ -20,7 +20,6 @@ import           Verda.Util.Apecs
 
 import           Kathu.App.Data.Settings
 import           Verda.Graphics.Drawing
-import           Kathu.App.Graphics.UI
 import           Kathu.App.System                (SystemT')
 import           Kathu.App.Tools.ToolSystem      (renderToolMode)
 import           Kathu.Entity.Action
@@ -122,12 +121,12 @@ runRender !renderer !spriteBuffer !dT = do
             | idx == len = pure ()
             | otherwise  = do
                 SpriteBufferElement !pos !color !sprite <- sbeRead spriteBuffer idx
-                let mkDestRect = mkRenderRect edgeBleedScaling (scale * spriteScale sprite) pos
+                let mkDestRect = mkRenderRect edgeBleedScaling (scale * sprite^.spriteScale) pos
                 blitSprite renderer spriteManager sprite color mkDestRect
                 renderEvery (idx + 1) len
 
         runExtensions :: Vec.Vector SpriteRenderExtension -> Int -> IO Int
-        runExtensions exts idx = Vec.foldM' (\acc (SpriteRenderExtension ext) -> ext addToBuffer camPos acc) idx exts
+        runExtensions exts idx = Vec.foldM' (\acc (SpriteRenderExtension ext) -> ext addToBuffer camPos (V2 unitsPerWidth unitsPerHeight) acc) idx exts
 
     RenderExtensions spriteExts renExts <- get global
     sprCount <- cfoldM gatherEntitySprite 0
@@ -136,9 +135,6 @@ runRender !renderer !spriteBuffer !dT = do
     
     when (sprCount > 0) $
         lift (sortSpriteBuffer spriteBuffer 0 sprCount >> renderEvery 0 sprCount)
-
-    playerAS <- cfold (\_ (as, Camera _) -> Just as) Nothing
-    renderUI renderer scale playerAS
 
     liftIO $ Vec.mapM_ (\(RendererExtension ext) -> ext renderer worldToScreen camPos) renExts
 
