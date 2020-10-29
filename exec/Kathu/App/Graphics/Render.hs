@@ -15,12 +15,10 @@ import           Verda.Graphics.Components
 import           Verda.Graphics.Drawing
 import           Verda.Graphics.SpriteBuffer
 import           Verda.Graphics.Sprites
+import           Verda.Time                      (stepRenderTime)
 import           Verda.Util.Apecs
 
 import           Kathu.App.System                (SystemT')
-import           Kathu.App.Tools.ToolSystem      (renderToolMode)
-import           Kathu.Entity.Action
-import           Kathu.Entity.System
 
 -- if sprite position is more than this many units from left or right, or from bottom, we don't draw
 -- we don't draw anything above the top of the screen, however, since sprites draw out and upwards
@@ -30,18 +28,6 @@ renderBorderUnits = 3.0
 logicCoordToRender :: Floating a => a -> V2 a -> V2 a -> V2 a
 logicCoordToRender scale (V2 topX topY) (V2 tarX tarY) = V2 ((tarX - topX) * scale) ((tarY - topY) * scale)
 
-updateAnimations :: Word32 -> SystemT' IO ()
-updateAnimations dT = do
-    let updateAnimated (sprite, ActionSet {_moving = mv, _facingDirection = fac}) = case mv of
-            Nothing -> setAnimationID (dirToAnimIndex fac) sprite
-            Just dir -> if
-                | dirIdx == getAnimationID sprite -> updateFrames dT sprite
-                | otherwise                       -> setAnimationID dirIdx sprite
-                where dirIdx = dirToAnimIndex dir
-
-    cmap (\(sprite, _ :: Not ActionSet) -> updateFrames dT sprite)
-    cmap updateAnimated
-
 ----------------------
 -- main render loop --
 ----------------------
@@ -49,7 +35,9 @@ updateAnimations dT = do
 runRender :: SDL.Renderer -> SpriteBuffer -> Word32 -> SystemT' IO ()
 runRender !renderer !spriteBuffer !dT = do
     stepRenderTime dT
-    updateAnimations dT
+    RenderExtensions spriteExts renExts beforeExts <- get global
+    cmap $ \sprite -> updateFrames dT sprite
+    liftIO $ mapM_ (\(BeginRenderExtension ext) -> ext dT renderer) beforeExts
 
     Resolution resolution@(V2 _ resY) <- get global
     spriteManager    <- get global
@@ -100,7 +88,6 @@ runRender !renderer !spriteBuffer !dT = do
         runExtensions :: Vec.Vector SpriteRenderExtension -> Int -> IO Int
         runExtensions exts idx = Vec.foldM' (\acc (SpriteRenderExtension ext) -> ext dT addToBuffer camPos (V2 unitsPerWidth unitsPerHeight) acc) idx exts
 
-    RenderExtensions spriteExts renExts <- get global
     sprCount <- cfoldM gatherEntitySprite 0
             >>= liftIO . runExtensions spriteExts
     
@@ -108,7 +95,5 @@ runRender !renderer !spriteBuffer !dT = do
         lift (sortSpriteBuffer spriteBuffer 0 sprCount >> renderEvery 0 sprCount)
 
     liftIO $ Vec.mapM_ (\(RendererExtension ext) -> ext renderer worldToScreen camPos) renExts
-
-    renderToolMode renderer worldToScreen
 
     SDL.present renderer

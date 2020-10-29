@@ -1,7 +1,7 @@
 {-# LANGUAGE UnboxedTuples #-}
 
 module Kathu.App.Tools.ToolSystem
-    ( renderToolMode
+    ( addToolSystemExtension
     , runToolMode
     , handleUseToolModeEvent
     , rebuildEntityInfoCollisions
@@ -22,6 +22,9 @@ import           Verda.Logger
 import           Verda.System.Tile.Chunks
 import           Verda.System.Tile.Components (tsTileID)
 import           Verda.Time
+import           Verda.Util.Flow             (ireplicateM_)
+import           Verda.Util.Apecs
+import           Verda.World                 (addRendererExtension)
 
 import           Kathu.App.System
 import           Kathu.App.Tools.Commands
@@ -35,8 +38,6 @@ import           Kathu.Entity.Physics.CollisionGroup
 import           Verda.Graphics.Color
 import           Kathu.World.Tile
 import           Kathu.World.WorldSpace
-import           Verda.Util.Flow             (ireplicateM_)
-import           Verda.Util.Apecs
 
 gridColor :: Color
 gridColor = mkColor 100 80 100 255
@@ -47,8 +48,8 @@ placeLineColor = mkColor 150 120 150 255
 timeBetweenUndoRedo :: Word32
 timeBetweenUndoRedo = 200 -- ms
 
-renderToolMode :: SDL.Renderer -> (V2 Double -> V2 Double) -> SystemT' IO ()
-renderToolMode renderer logicToRenderPos = do
+addToolSystemExtension :: SystemT' IO ()
+addToolSystemExtension = addRendererExtension $ \renderer logicToRenderPos _ -> do
     toolmode <- get global
     when (shouldShowGrid toolmode) $ do
         V2 resW resH <- fmap fromIntegral . resolution <$> get global
@@ -70,7 +71,6 @@ renderToolMode renderer logicToRenderPos = do
                 --  add 0.5 after flooring as tiles are normally centered, and we want to offset that
                 let colScreenCoord = floor . view _x . logicToRenderPos . flip V2 0 . (+0.5) . floorF $ (camX - 0.5 * unitWidthToDraw + fromIntegral col)
                  in SDL.drawLine renderer (SDL.P (V2 colScreenCoord 0)) (SDL.P (V2 colScreenCoord resH))
-    
     case toolmode of
         TilePlacer _ -> do
             controlSt <- get global

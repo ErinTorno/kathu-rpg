@@ -23,6 +23,7 @@ import           System.FilePath            (takeFileName)
 import qualified Kathu.App.Main             as Kathu
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
+import           Kathu.App.Tools.ToolSystem (addToolSystemExtension)
 import           Kathu.Config.Settings
 import           Kathu.Editor.Dialogs
 import           Kathu.Editor.Dialogs.Entity
@@ -173,8 +174,9 @@ start args = do
         void $ Gio.applicationRun app Nothing
 
     Kathu.startWith updateSettings $ \(Kathu.RenderInfo _ renderer buffer settings) world -> do
-        Apecs.runWith world $
+        Apecs.runWith world $ do
             Apecs.set Apecs.global (IncludeEditorInfo True)
+            addToolSystemExtension
         -- need to put this first or else it will get stuct waiting for the MVar to be filled
         putEntityWorld world queue
         Kathu.runForEventQueue queue commandState (Kathu.renderDelay settings) renderer buffer curTime curTime

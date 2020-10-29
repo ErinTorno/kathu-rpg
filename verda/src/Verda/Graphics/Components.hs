@@ -1,5 +1,6 @@
 module Verda.Graphics.Components
     ( BackgroundColor(..)
+    , BeginRenderExtension(..)
     , Camera(..)
     , LogicToRenderFn
     , RendererExtension(..)
@@ -51,13 +52,16 @@ newtype SpriteRenderExtension = SpriteRenderExtension (Word32 -> RenderSpriteFn 
 -- | renderer -> logic pos to screen converter -> first buffer index -> buffer index after operations
 newtype RendererExtension = RendererExtension (SDL.Renderer -> LogicToRenderFn -> V2 Double -> IO ())
 
+newtype BeginRenderExtension = BeginRenderExtension (Word32 -> SDL.Renderer -> IO ())
+
 data RenderExtensions = RenderExtensions
-    { spriteExtensions   :: !(Vector SpriteRenderExtension)
-    , rendererExtensions :: !(Vector RendererExtension)
+    { spriteExtensions      :: !(Vector SpriteRenderExtension)
+    , rendererExtensions    :: !(Vector RendererExtension)
+    , beginRenderExtensions :: !(Vector BeginRenderExtension)
     }
 
 instance Semigroup RenderExtensions where (<>) = mappend
-instance Monoid RenderExtensions where mempty = RenderExtensions Vec.empty Vec.empty
+instance Monoid RenderExtensions where mempty = RenderExtensions Vec.empty Vec.empty Vec.empty
 instance Component RenderExtensions where type Storage RenderExtensions = Global RenderExtensions
 
 newtype Resolution = Resolution {unResolution :: V2 Int}

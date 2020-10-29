@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Verda.World
@@ -7,6 +8,7 @@ module Verda.World
     , IsDebug(..)
     , IsQuitting(..)
     , VerdaWorld
+    , addBeforeRenderExtension
     , addRendererExtension
     , addSpriteRenderExtension
     , baseVerdaComponentNames
@@ -93,17 +95,24 @@ initVerdaWorld :: (MonadIO m, VerdaWorld w m) => SystemT w m ()
 initVerdaWorld =
     set global =<< mkControlState
 
+addBeforeRenderExtension :: VerdaWorld w IO => (Word32 -> SDL.Renderer -> SystemT w IO ()) -> SystemT w IO ()
+addBeforeRenderExtension systemExtension = do
+    world <- ask
+    exts@RenderExtensions{..} <- get global
+    let extension = BeginRenderExtension $ \dT renderer -> runWith world (systemExtension dT renderer)
+    global $= exts{beginRenderExtensions = Vec.snoc beginRenderExtensions extension}
+
 addSpriteRenderExtension :: VerdaWorld w IO => (Word32 -> RenderSpriteFn -> V2 Double -> V2 Double -> Int -> SystemT w IO Int) -> SystemT w IO ()
 addSpriteRenderExtension systemExtension = do
     world <- ask
-    RenderExtensions spriteExts rendererExts <- get global
+    exts@RenderExtensions{..} <- get global
     let extension = SpriteRenderExtension $ \dT renderSprite camPos screenDim idx -> runWith world (systemExtension dT renderSprite camPos screenDim idx)
-    global $= RenderExtensions (Vec.snoc spriteExts extension) rendererExts
+    global $= exts{spriteExtensions = Vec.snoc spriteExtensions extension}
 
 addRendererExtension :: VerdaWorld w IO => (SDL.Renderer -> LogicToRenderFn -> V2 Double -> SystemT w IO ()) -> SystemT w IO ()
 addRendererExtension systemExtension = do
     world <- ask
-    RenderExtensions spriteExts rendererExts <- get global
+    exts@RenderExtensions{..} <- get global
     let extension = RendererExtension $ \renderer logicToRender camPos ->
             runWith world (systemExtension renderer logicToRender camPos)
-    global $= RenderExtensions spriteExts (Vec.snoc rendererExts extension)
+    global $= exts{rendererExtensions = Vec.snoc rendererExtensions extension}

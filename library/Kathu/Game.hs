@@ -7,9 +7,9 @@ import           Control.Monad                       (forM_, when)
 import           Control.Monad.IO.Class              (MonadIO)
 import           Data.Maybe
 import           Data.Word
-import           Verda.Time
 import           Verda.Util.Apecs
 import           Verda.Util.Types
+import           Verda.Time                          (LogicTime, stepLogicTime)
 import           Verda.World                         (Existance)
 
 import           Kathu.Entity.Action

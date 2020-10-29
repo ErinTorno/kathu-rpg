@@ -8,7 +8,6 @@ import           Control.Monad.IO.Class (MonadIO)
 import qualified Data.Map as Map
 import           Data.Word
 import qualified System.Random as R
-import           Verda.Time
 import           Verda.Util.Types (IDMap)
 
 import           Kathu.Entity.Physics.Floor (FloorPropEntity)
@@ -57,12 +56,6 @@ instance Monoid IncludeEditorInfo where mempty  = IncludeEditorInfo False
 instance Component IncludeEditorInfo where type Storage IncludeEditorInfo = Global IncludeEditorInfo
 
 -- Entity functions
-
-stepLogicTime :: forall w m. (Has w m LogicTime, MonadIO m) => Word32 -> SystemT w m ()
-stepLogicTime !dT = modify global $ \(LogicTime t) -> LogicTime (t + dT)
-
-stepRenderTime :: forall w m. (Has w m RenderTime, MonadIO m) => Word32 -> SystemT w m ()
-stepRenderTime !dT = modify global $ \(RenderTime t) -> RenderTime (t + dT)
 
 stepWorldTime :: forall w m. (Has w m WorldTime, MonadIO m) => Word32 -> SystemT w m ()
 stepWorldTime !dT = modify global $ \(WorldTime t) -> WorldTime (t + fromIntegral dT)

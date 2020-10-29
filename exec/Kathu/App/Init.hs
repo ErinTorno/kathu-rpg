@@ -19,10 +19,11 @@ import qualified System.Random                   as R
 import           Verda.Graphics.Components       (Resolution(..), defaultCamera)
 import           Verda.Graphics.Fonts            (fontID, initFontCache)
 import           Verda.Graphics.Icons            (setWindowIcon)
+import           Verda.Graphics.Sprites
 import           Verda.System.Tile.Renderer      (addTileRendererExtension)
 import           Verda.Util.Containers           (fromJustElseError)
 import           Verda.Util.Types                (unID)
-import           Verda.World                     (initVerdaWorld)
+import           Verda.World                     (addBeforeRenderExtension, initVerdaWorld)
 
 import           Kathu.App.Graphics.Debug        (addDebugExtension)
 import           Kathu.App.System
@@ -96,6 +97,7 @@ system window renderer settings = do
     addTileRendererExtension (Proxy :: Proxy Tile)
     addDebugExtension
     addUIExtension
+    addAnimationExtension
 
     initLanguage window renderer settings dictionary
 
@@ -121,3 +123,13 @@ sdlWindowConfig =
     withCString "SDL_MOUSE_FOCUS_CLICKTHROUGH" $ \hintStr ->
         withCString "1" $ \enabledStr ->
             void $ SDLRaw.setHintWithPriority hintStr enabledStr SDLRaw.SDL_HINT_OVERRIDE
+
+-- TODO move ot Kathu.Graphics once exec and library are merged
+addAnimationExtension :: SystemT' IO ()
+addAnimationExtension = addBeforeRenderExtension $ \_ _ ->
+    cmap $ \(sprite, ActionSet {_moving = mv, _facingDirection = fac}) -> case mv of
+            Nothing -> setAnimationID (dirToAnimIndex fac) sprite
+            Just dir -> if
+                | dirIdx == getAnimationID sprite -> sprite
+                | otherwise                       -> setAnimationID dirIdx sprite
+                where dirIdx = dirToAnimIndex dir
