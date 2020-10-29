@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Kathu.App.Data.Dictionary where
+module Kathu.Config.Dictionary where
 
 import           Control.Lens
 import qualified Data.Map                        as Map
@@ -13,12 +13,12 @@ import           Verda.IO.Directory              (assetPath)
 import           Verda.Util.Types
 
 import           Kathu.Language
-import           Kathu.App.Data.KathuStore
-import           Kathu.App.Graphics.UI
+import           Kathu.Config.KathuStore
 import           Kathu.Entity.Item
 import           Kathu.Entity.Physics.Floor      (FloorProperty(..))
 import           Kathu.Entity.Prefab             (Prefab, prefabID)
 import           Kathu.Graphics.Palette          (Palette, paletteID)
+import           Kathu.Graphics.UI
 import           Kathu.World.Tile                hiding (Vector, MVector)
 import           Kathu.World.WorldSpace
 

@@ -23,17 +23,17 @@ import           Verda.Util.Containers           (fromJustElseError)
 import           Verda.Util.Types                (unID)
 import           Verda.World                     (initVerdaWorld)
 
-import           Kathu.App.Data.Dictionary
-import           Kathu.App.Data.Settings
 import           Kathu.App.Graphics.Debug        (addDebugExtension)
-import           Kathu.App.Graphics.UI           (addUIExtension, gameIcon)
 import           Kathu.App.System
 import           Kathu.App.World                 (loadWorldSpace)
+import           Kathu.Config.Dictionary
+import           Kathu.Config.Settings
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.Floor
 import           Kathu.Entity.System
 import           Kathu.Game                      (initPhysics)
+import           Kathu.Graphics.UI               (addUIExtension, gameIcon)
 import           Kathu.Language
 import           Kathu.Scripting.Lua             (initScripting)
 import           Kathu.Scripting.Variables       (initVariables)

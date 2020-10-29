@@ -11,8 +11,8 @@ import qualified Data.Map                       as Map
 import qualified Data.Text                      as T
 import qualified GI.Gtk                         as Gtk
 
-import           Kathu.App.Data.Dictionary
 import           Kathu.App.Tools.EventQueue
+import           Kathu.Config.Dictionary
 import           Kathu.Editor.Util.GtkMisc
 import           Kathu.Editor.Types
 import           Kathu.Editor.Util.PropertyGrid

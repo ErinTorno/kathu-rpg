@@ -6,13 +6,13 @@ import           Control.Monad               (when)
 import qualified Data.Map                    as Map
 import           Verda.World                 (IsDebug(..), IsQuitting(..))
 
-import           Kathu.App.Data.Dictionary
 import           Kathu.App.System
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
 import           Kathu.App.Tools.ToolSystem
 import           Kathu.App.World             (loadWorldSpace)
+import           Kathu.Config.Dictionary
 import           Kathu.World.WorldSpace
 
 -- Polls for all events in the EventQueue, and returns True if the normal game runner should run after this

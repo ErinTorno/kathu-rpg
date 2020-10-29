@@ -14,6 +14,7 @@ import           Verda.Graphics.Sprites              (Sprite, setAnimation)
 import           Verda.Logger
 
 import           Kathu.Entity.Components
+import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Types
@@ -23,7 +24,7 @@ import           Verda.Util.Types
 import           Verda.Util.Apecs
 
 -- ExternalFunctions is unused in this, but is included here since it might be in the future, mirrors the Global's function signature, and acts as a Proxy for g
-registerComponentFunctions :: forall w. (Has w IO Physics, ReadWriteEach w IO '[ActiveScript, Force, Identity, Logger, Mass, MovingSpeed, Position, RunningScriptEntity, ScriptEventBuffer, Sprite, Tags, Velocity, WireReceivers])
+registerComponentFunctions :: forall w. (Has w IO Physics, ReadWriteEach w IO '[ActiveScript, Force, Identity, LifeTime, Logger, Mass, MovingSpeed, Position, RunningScriptEntity, ScriptEventBuffer, Sprite, Tags, Velocity, WireReceivers])
                            => w -> ExternalFunctions w -> Lua ()
 registerComponentFunctions world _ = do
     registerHaskellFunction "getIdentifier"        $ getIdentifier world
@@ -32,6 +33,7 @@ registerComponentFunctions world _ = do
     registerHaskellFunction "getTags"              $ getTags world
     registerHaskellFunction "getMovingSpeed"       $ getMovingSpeed world
     registerHaskellFunction "setMovingSpeed"       $ setMovingSpeed world
+    registerHaskellFunction "destroyEntity"        $ destroyEntity world
     registerHaskellFunction "setAnimation"         $ setSpriteAnimation world
     registerHaskellFunction "getMass"              $ getMass world
     registerHaskellFunction "setMass"              $ setMass world
@@ -83,6 +85,15 @@ getMovingSpeed !world !etyID = liftIO . Apecs.runWith world $ do
 setMovingSpeed :: forall w. (ReadWrite w IO MovingSpeed) => w -> Int -> Double -> Lua ()
 setMovingSpeed !world !etyID s = liftIO . Apecs.runWith world $
     Entity etyID $= MovingSpeed s
+
+destroyEntity :: forall w. (ReadWrite w IO LifeTime) => w -> Int -> Lua ()
+destroyEntity !world !etyID = liftIO . Apecs.runWith world $ do
+    let ety    = Entity etyID
+        zeroLT = ety $= LifeTimeTimer 0 -- will be removed at next update loop
+    maybeLT :: Maybe LifeTime <- get ety
+    case maybeLT of
+        Nothing -> zeroLT
+        Just lt -> when (lt /= Persistant) zeroLT
 
 --------------
 -- Graphics --

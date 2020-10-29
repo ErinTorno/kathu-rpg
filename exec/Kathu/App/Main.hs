@@ -18,7 +18,6 @@ import           SDL                             (($=))
 import           Verda.Graphics.SpriteBuffer     (SpriteBuffer, mkSpriteBuffer)
 import           Verda.World                     (IsQuitting(..))
 
-import           Kathu.App.Data.Settings
 import           Kathu.App.Events
 import           Kathu.App.Graphics.Render       (runRender)
 import           Kathu.App.Tools.Commands
@@ -28,6 +27,7 @@ import           Kathu.App.Tools.ToolMode
 import           Kathu.App.Tools.ToolSystem      (runToolMode)
 import qualified Kathu.App.Init                  as Init
 import           Kathu.App.System
+import           Kathu.Config.Settings
 import           Kathu.Game                      (runGame, updateDelay)
 
 appName :: Text

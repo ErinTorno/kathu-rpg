@@ -17,10 +17,10 @@ import qualified GI.Gtk                     as Gtk
 import qualified GI.GdkPixbuf               as Gdk
 import           Verda.Graphics.Sprites     (SpriteID(..), spriteID)
 
-import           Kathu.App.Data.Dictionary  (dictParsingStore, dictTiles)
-import           Kathu.App.Data.KathuStore  (psCountingIDs)
 import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
+import           Kathu.Config.Dictionary   (dictParsingStore, dictTiles)
+import           Kathu.Config.KathuStore   (psCountingIDs)
 import           Kathu.Editor.Dialogs
 import           Kathu.Editor.Resources
 import           Kathu.Editor.Types

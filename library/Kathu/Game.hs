@@ -3,7 +3,7 @@ module Kathu.Game (initPhysics, runGame, updateDelay) where
 import           Apecs                               hiding (set)
 import           Apecs.Physics                       hiding (set)
 import           Control.Lens
-import           Control.Monad                       (when)
+import           Control.Monad                       (forM_, when)
 import           Control.Monad.IO.Class              (MonadIO)
 import           Data.Maybe
 import           Data.Word
@@ -35,17 +35,16 @@ initPhysics = do
                     Nothing     -> pure ()
 
     begin <- mkBeginCB $ \(Collision _ bodyA bodyB shapeA _) -> do
-        colFilA :: CollisionFilter <- get shapeA
-        
+        colFilA <- get shapeA
         -- only check for A as sensor, since the collision event will get called a second time with flipped entities
         callSensorCollide onSensorCollisionBegin "onSensorCollisionBegin" colFilA bodyA bodyB
-
         pure True
 
     separate <- mkSeparateCB $ \(Collision _ bodyA bodyB shapeA _) -> do
-        colFilA :: CollisionFilter <- get shapeA
-        
-        callSensorCollide onSensorCollisionEnd "onSensorCollisionEnd" colFilA bodyA bodyB
+        maybeColFilA :: Maybe CollisionFilter <- get shapeA
+        -- need to maybe check since entity might be deleted mid-collision
+        forM_ maybeColFilA $ \colFilA ->
+            callSensorCollide onSensorCollisionEnd "onSensorCollisionEnd" colFilA bodyA bodyB
 
     global $= defaultHandler
         { beginCB    = Just begin

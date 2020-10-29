@@ -1,4 +1,4 @@
-module Kathu.App.Data.Settings where
+module Kathu.Config.Settings where
 
 import           Data.Aeson
 import           Data.Bool
@@ -8,11 +8,11 @@ import           Data.Text
 import           Data.Word
 import           GHC.Generics
 import           Linear.V2
-
-import           Kathu.App.Data.Controls
 import           Verda.IO.Files
 import           Verda.Parsing.Aeson
 import           Verda.Util.Types        (Identifier)
+
+import           Kathu.Config.Controls
 
 data Settings = Settings
     { targetFPS      :: !Float

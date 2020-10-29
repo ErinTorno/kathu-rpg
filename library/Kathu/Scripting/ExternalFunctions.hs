@@ -10,5 +10,4 @@ data ExternalFunctions w = ExternalFunctions
     { setPalette      :: Identifier -> SystemT w IO Bool -- Identifier to change to -> True if successful change
     , getEntityPrefab :: Identifier -> SystemT w IO (Maybe Prefab)
     , newFromPrefab   :: Prefab -> SystemT w IO Entity
-    , destroyEntity   :: Entity -> SystemT w IO ()
     }

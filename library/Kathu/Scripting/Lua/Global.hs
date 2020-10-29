@@ -50,7 +50,6 @@ registerGlobalFunctions world extFuns = do
 
     registerHaskellFunction "setPalette"        $ setPaletteLua extFuns world
     registerHaskellFunction "newEntity"         $ newFromPrototypeLua extFuns world
-    registerHaskellFunction "destroyEntity"     $ destroyEntityLua extFuns world
 
     registerHaskellFunction "registerGlobalVarListener" $ registerListener addGlobalListener world
     registerHaskellFunction "registerWorldVarListener"  $ registerListener addWorldListener world
@@ -72,9 +71,6 @@ newFromPrototypeLua extFuns !world !protoID = liftIO . Apecs.runWith world $ mkE
     where mkEntity = getEntityPrefab extFuns (mkIdentifier protoID) >>= mkIfPres
           mkIfPres Nothing   = return $ Optional Nothing
           mkIfPres (Just pr) = Optional . Just . unEntity <$> newFromPrefab extFuns pr
-    
-destroyEntityLua :: ExternalFunctions w -> w -> Int -> Lua ()
-destroyEntityLua extFuns !world !ety = liftIO . Apecs.runWith world $ destroyEntity extFuns (Entity ety)
 
 -----------------------
 -- Unique Components --

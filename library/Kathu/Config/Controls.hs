@@ -1,4 +1,4 @@
-module Kathu.App.Data.Controls where
+module Kathu.Config.Controls where
 
 import           Data.Aeson
 import           GHC.Generics

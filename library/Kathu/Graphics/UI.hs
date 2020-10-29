@@ -1,6 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-module Kathu.App.Graphics.UI where
+module Kathu.Graphics.UI where
 
 import           Apecs
 import           Control.Lens
@@ -14,14 +14,14 @@ import           Verda.Graphics.Components
 import           Verda.Graphics.Drawing          (pixelsPerUnit)
 import           Verda.Graphics.Icons            (Icon)
 import           Verda.Graphics.Sprites
+import           Verda.Parsing.Aeson
 import           Verda.Util.Apecs
+import           Verda.Util.Dependency
 import           Verda.World                     (VerdaWorld, addSpriteRenderExtension)
 
 import           Kathu.Entity.ActorState
 import           Kathu.Entity.Components         (Local)
 import           Kathu.Entity.Resource
-import           Verda.Parsing.Aeson
-import           Verda.Util.Dependency
 
 data DisplayBar = DisplayBar
     { startsAt        :: V2 Double

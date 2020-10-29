@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Kathu.App.Data.KathuStore where
+module Kathu.Config.KathuStore where
 
 import           Control.Lens
 import qualified Data.Map                   as Map

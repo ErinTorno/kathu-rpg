@@ -13,10 +13,9 @@ import           Verda.Graphics.SpriteManager    (setPaletteManager)
 import           Verda.Util.Apecs
 import           Verda.World                     (DeletableBaseVerdaComponents, Existance(..), baseVerdaComponentNames)
 
-import           Kathu.App.Data.Dictionary       (Dictionary, emptyDictionary)
-import           Kathu.App.Data.Settings
-import           Kathu.App.Graphics.UI
 import           Kathu.App.Tools.ToolMode
+import           Kathu.Config.Dictionary         (Dictionary, emptyDictionary)
+import           Kathu.Config.Settings
 import           Kathu.Entity.Action
 import           Kathu.Entity.ActorState
 import           Kathu.Entity.Components
@@ -27,6 +26,7 @@ import           Kathu.Entity.Physics.Floor      (WorldFloor)
 import           Kathu.Entity.Prefab
 import           Kathu.Entity.System
 import           Kathu.Graphics.Palette          (PaletteManager)
+import           Kathu.Graphics.UI
 import           Kathu.Language                  (Language)
 import qualified Kathu.Scripting.Lua             as Lua
 import           Kathu.Scripting.Lua.Types       (ActiveScript, RunningScriptEntity(..), ScriptBank, ScriptEventBuffer(..))
@@ -98,7 +98,6 @@ externalFunctions = Lua.ExternalFunctions
     { Lua.setPalette      = setPaletteManager
     , Lua.getEntityPrefab = error "getEntityPrototype not implemented"
     , Lua.newFromPrefab   = newFromPrefab
-    , Lua.destroyEntity   = error "destroyEntity not implemented" -- destroyEntity -- don't use yet, game halts with "<<loop>>" with just this
     }
 
 destroyEntity :: Entity -> SystemT' IO ()

@@ -21,9 +21,9 @@ import qualified SDL
 import           System.FilePath            (takeFileName)
 
 import qualified Kathu.App.Main             as Kathu
-import           Kathu.App.Data.Settings
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
+import           Kathu.Config.Settings
 import           Kathu.Editor.Dialogs
 import           Kathu.Editor.Dialogs.Entity
 import           Kathu.Editor.File

@@ -22,13 +22,13 @@ import           Verda.Graphics.Sprites      (Sprite, spriteRectangle)
 import           Verda.Logger
 import           Verda.Time
 
-import           Kathu.App.Data.Dictionary
-import           Kathu.App.Data.Settings
 import           Kathu.App.System
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
 import           Kathu.App.Tools.ToolMode
 import           Kathu.App.World
+import           Kathu.Config.Dictionary
+import           Kathu.Config.Settings
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.CollisionGroup
 import           Verda.Graphics.Color

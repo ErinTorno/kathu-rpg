@@ -12,14 +12,13 @@ import           Data.Word
 import           SDL                             (($=))
 import qualified SDL
 import           Verda.Graphics.Color            (unColor, white)
-import           Verda.Graphics.Components       (BackgroundColor(..), Camera(..), RendererExtension(..), RenderExtensions(..), SpriteRenderExtension(..), Tint(..))
+import           Verda.Graphics.Components
+import           Verda.Graphics.Drawing
 import           Verda.Graphics.SpriteBuffer
 import           Verda.Graphics.Sprites
 import           Verda.Util.Containers           (forMVec)
 import           Verda.Util.Apecs
 
-import           Kathu.App.Data.Settings
-import           Verda.Graphics.Drawing
 import           Kathu.App.System                (SystemT')
 import           Kathu.App.Tools.ToolSystem      (renderToolMode)
 import           Kathu.Entity.Action
@@ -60,8 +59,8 @@ runRender !renderer !spriteBuffer !dT = do
     stepRenderTime dT
     updateAnimations dT
 
+    Resolution resolution@(V2 _ resY) <- get global
     spriteManager    <- get global
-    settings         <- get global
     Tiles tileVector <- get global
     let getTile :: TileState -> SystemT' IO Tile
         getTile = lift . MVec.read tileVector . fromIntegral .  unTileID . view tile
@@ -74,8 +73,7 @@ runRender !renderer !spriteBuffer !dT = do
     SDL.rendererDrawColor renderer $= unColor bkgColor
     SDL.clear renderer
 
-    let V2 _ resY      = resolution settings
-        res            = fromIntegral <$> resolution settings
+    let res            = fromIntegral <$> resolution
         unitsPerHeight = getUnitsPerHeight resY
         unitsPerWidth  = unitsPerHeight * getAspectRatio res
 
