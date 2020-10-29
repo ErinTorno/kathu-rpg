@@ -113,7 +113,6 @@ executable kathu
                     Kathu.App.World
                     -- Graphics
                     Kathu.App.Graphics.Debug
-                    Kathu.App.Graphics.Render
                     -- Tools
                     Kathu.App.Tools.Commands
                     Kathu.App.Tools.EventHandler

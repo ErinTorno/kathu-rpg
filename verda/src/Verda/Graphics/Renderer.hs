@@ -1,4 +1,4 @@
-module Kathu.App.Graphics.Render where
+module Verda.Graphics.Renderer where
 
 import           Apecs                           hiding (($=))
 import           Apecs.Physics                   hiding (($=))
@@ -17,22 +17,18 @@ import           Verda.Graphics.SpriteBuffer
 import           Verda.Graphics.Sprites
 import           Verda.Time                      (stepRenderTime)
 import           Verda.Util.Apecs
-
-import           Kathu.App.System                (SystemT')
+import           Verda.World
 
 -- if sprite position is more than this many units from left or right, or from bottom, we don't draw
 -- we don't draw anything above the top of the screen, however, since sprites draw out and upwards
 renderBorderUnits :: Floating a => a
 renderBorderUnits = 3.0
 
-logicCoordToRender :: Floating a => a -> V2 a -> V2 a -> V2 a
-logicCoordToRender scale (V2 topX topY) (V2 tarX tarY) = V2 ((tarX - topX) * scale) ((tarY - topY) * scale)
-
 ----------------------
 -- main render loop --
 ----------------------
 
-runRender :: SDL.Renderer -> SpriteBuffer -> Word32 -> SystemT' IO ()
+runRender :: VerdaWorld w IO => SDL.Renderer -> SpriteBuffer -> Word32 -> SystemT w IO ()
 runRender !renderer !spriteBuffer !dT = do
     stepRenderTime dT
     RenderExtensions spriteExts renExts beforeExts <- get global

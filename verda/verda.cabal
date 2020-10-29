@@ -26,6 +26,7 @@ library
                     Verda.Graphics.Drawing
                     Verda.Graphics.Fonts
                     Verda.Graphics.Icons
+                    Verda.Graphics.Renderer
                     Verda.Graphics.SpriteBuffer
                     Verda.Graphics.SpriteManager
                     Verda.Graphics.Sprites

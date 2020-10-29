@@ -16,10 +16,10 @@ import qualified SDL
 import qualified SDL.Font                        as SDLF
 import           SDL                             (($=))
 import           Verda.Graphics.SpriteBuffer     (SpriteBuffer, mkSpriteBuffer)
+import           Verda.Graphics.Renderer         (runRender)
 import           Verda.World                     (IsQuitting(..))
 
 import           Kathu.App.Events
-import           Kathu.App.Graphics.Render       (runRender)
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventHandler
 import           Kathu.App.Tools.EventQueue
