@@ -77,8 +77,10 @@ initLanguage window renderer settings dictionary = do
     fontCache <- initFontCache renderer curFonts
     global    $= fontCache
 
-system :: SDL.Window -> SDL.Renderer -> Settings -> SystemT' IO ()
-system window renderer settings = do
+system :: Settings -> SDL.Window -> SDL.Renderer -> SystemT' IO ()
+system settings window renderer = do
+    SDL.HintRenderScaleQuality SDL.$= SDL.ScaleNearest
+    lift sdlWindowConfig
     initVerdaWorld
     (dictionary, manager) <- liftIO $ loadDictionary renderer
     seed       <- lift . maybe (R.randomIO :: IO Int) pure . randomSeed $ settings

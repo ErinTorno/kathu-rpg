@@ -36,7 +36,7 @@ addDebugExtension = addRendererExtension $ \renderer logicToRender _ -> do
     when isDebug $ do
         -- in tool modes collision might be rapidly changing or out-of-date; don't bother to draw
         shouldDrawCol <- isNoTool <$> get global
-        when (shouldDrawCol || not shouldDrawCol) $ do
+        when shouldDrawCol $ do
             let drawPoints colFil points = do
                     SDL.rendererDrawColor renderer $= unColor (collisionFilterDebugColor colFil)
                     -- we render in groups of 4 pixels to have thicker lines

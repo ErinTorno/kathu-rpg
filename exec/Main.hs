@@ -2,12 +2,7 @@ module Main where
 
 import           System.Environment
 
-import qualified Kathu.App.Main     as Kathu
-import qualified Kathu.Editor.Main  as Editor
+import qualified Kathu.App          as Kathu
 
 main :: IO ()
-main = do
-    args <- getArgs
-    if   Editor.shouldRunEditor args
-    then Editor.start args
-    else Kathu.start
+main = getArgs >>= Kathu.start

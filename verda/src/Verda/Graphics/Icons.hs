@@ -16,8 +16,11 @@ newtype Icon = Icon {unIcon :: SDL.Surface}
 
 instance (s `CanProvide` WorkingDirectory, MonadIO m) => FromJSON (Dependency s m Icon) where
     parseJSON (String s) = pure $ (resolveAssetPathDP . T.unpack) s
-                       >>= liftDependency . fmap Icon . SDLI.load
+                       >>= liftDependency . loadIcon
     parseJSON v          = typeMismatch "Icon" v
+
+loadIcon :: MonadIO m => FilePath -> m Icon
+loadIcon = fmap Icon . SDLI.load
 
 setWindowIcon :: MonadIO m => SDL.Window -> Icon -> m ()
 setWindowIcon (SDLInternal.Window window) (Icon (SDL.Surface surPtr _)) = SDLVRaw.setWindowIcon window surPtr

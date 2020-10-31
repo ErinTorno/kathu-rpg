@@ -4,7 +4,7 @@ import           Apecs
 import           Control.Lens
 import           Control.Monad               (when)
 import qualified Data.Map                    as Map
-import           Verda.World                 (IsDebug(..), IsQuitting(..))
+import           Verda.World                 (IsDebug(..), RunState(..))
 
 import           Kathu.App.System
 import           Kathu.App.Tools.Commands
@@ -25,7 +25,7 @@ handleEvents queue  _ = do
 handleEvent :: AppEvent -> SystemT' IO ()
 handleEvent event = case event of
     TryToQuitGame ->
-        global $= IsQuitting True
+        global $= Quitting
     ToggleDebug -> do
         IsDebug isDebug <- get global
         global        $= IsDebug (not isDebug)

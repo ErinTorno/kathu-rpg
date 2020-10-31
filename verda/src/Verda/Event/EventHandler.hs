@@ -38,7 +38,7 @@ handleEvents = do
 handleEvent :: (MonadIO m, VerdaWorld w m) => ControlState -> Double -> SDL.Event -> SystemT w m ()
 handleEvent controlSt scale event =
     case SDL.eventPayload event of
-        SDL.QuitEvent -> global $= IsQuitting True
+        SDL.QuitEvent -> global $= Quitting
         -- marks key with its state
         SDL.KeyboardEvent (SDL.KeyboardEventData _ motion _ keysym) ->
             let key = fromScanCode $ SDL.keysymScancode keysym

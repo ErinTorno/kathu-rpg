@@ -6,7 +6,6 @@ import           Control.Lens                    hiding (Identity)
 import           Control.Monad                   (void, when)
 import qualified Data.Text.IO                    as T
 import           Verda.Event.Controls
-import           Verda.Event.EventHandler        (handleEvents)
 import           Verda.Graphics.Components       (Camera(..))
 import           Verda.Graphics.SpriteManager    (nextPaletteManager, setPaletteManager)
 import           Verda.Time
@@ -21,7 +20,6 @@ import           Kathu.Entity.Components
 
 runEvents :: System' ()
 runEvents = do
-    handleEvents
     updateControls
     updateDebugControls
 

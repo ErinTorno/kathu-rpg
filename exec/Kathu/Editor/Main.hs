@@ -5,10 +5,11 @@
 
 module Kathu.Editor.Main (shouldRunEditor, start) where
 
+import           Apecs                      (($=), ask, global, lift)
 import qualified Apecs
 import           Control.Concurrent         (forkIO)
 import           Control.Lens               hiding (set)
-import           Control.Monad              (forM_, void)
+import           Control.Monad              (forM_, void, when)
 import           Data.GI.Base
 import           Data.IORef
 import           Data.List                  (isSuffixOf)
@@ -17,13 +18,16 @@ import qualified Data.Text                  as T
 import qualified GI.Gio                     as Gio
 import qualified GI.GLib                    as GLib
 import qualified GI.Gtk                     as Gtk
-import qualified SDL
 import           System.FilePath            (takeFileName)
+import           Verda.App
+import           Verda.World
 
-import qualified Kathu.App.Main             as Kathu
+import           Kathu.App.System           (EntityWorld)
 import           Kathu.App.Tools.Commands
+import           Kathu.App.Tools.EventHandler
 import           Kathu.App.Tools.EventQueue
-import           Kathu.App.Tools.ToolSystem (addToolSystemExtension)
+import           Kathu.App.Tools.ToolMode
+import           Kathu.App.Tools.ToolSystem (addToolSystemExtension, runToolMode)
 import           Kathu.Config.Settings
 import           Kathu.Editor.Dialogs
 import           Kathu.Editor.Dialogs.Entity
@@ -49,7 +53,7 @@ mkMenuBarDescription es@EditorState{editorWindow = window, eventQueue = queue} =
 onApplicationClose :: EditorState -> IO ()
 onApplicationClose EditorState{editorApp = app, eventQueue = queue} = do
     Gio.applicationQuit app
-    -- We let the game close itself, as it is running on the main threat we forked from
+    -- We let the game close itself, as it is running on the main thread we forked from
     pushAppEvent queue TryToQuitGame
 
 onNewFile :: EditorState -> IO ()
@@ -70,7 +74,7 @@ onFileLoad es@EditorState{eventQueue = queue, wsEditState = wsEditStRef} maybeFi
 
 setActiveWorldSpace :: EditorState -> Text -> WorldSpace -> IO ()
 setActiveWorldSpace EditorState{editorWindow = window, eventQueue = queue, wsEditState = wsStateRef} name worldspace = do
-    let windowName = T.concat [Kathu.appName, " ~ ", name]
+    let windowName = T.concat ["Kathu ~ ", name]
     set window [#title := windowName]
 
     pushAppEvent queue (LoadWorldSpace worldspace)
@@ -112,7 +116,7 @@ activateApp app queue args = do
 
     window <- new Gtk.ApplicationWindow
         [ #application   := app
-        , #title         := Kathu.appName
+        , #title         := "Kathu Editor"
         , #defaultHeight := 420
         , #defaultWidth  := 340
         ]
@@ -155,15 +159,12 @@ getWorldFile [] = Nothing
 getWorldFile (x:xs) | ".world" `isSuffixOf` x = Just x
                     | otherwise               = getWorldFile xs
 
-start :: [String] -> IO ()
-start args = do
+start :: [String] -> AppConfig EntityWorld -> IO ()
+start args baseAppConfig = do
     queue <- newEventQueue
-
+    commandState <- newCommandState
     -- don't load any world yet, and force debug to be usable
     let updateSettings s = s {initialWorld = Nothing, canUseDebug = True}
-
-    curTime <- SDL.ticks
-    commandState <- newCommandState
 
     forkIO $ do
         app <- new Gtk.Application [ #applicationId := "haskell-gi.kathu"
@@ -173,12 +174,22 @@ start args = do
 
         void $ Gio.applicationRun app Nothing
 
-    Kathu.startWith updateSettings $ \(Kathu.RenderInfo _ renderer buffer settings) world -> do
-        Apecs.runWith world $ do
+    Verda.App.run $ baseAppConfig
+        { concurrentWorldVar = do
+            world <- ask
+            lift $ putEntityWorld world queue
+            pure $ Just (entityWorld queue)
+        , initWorld = \window renderer -> do
+            initWorld baseAppConfig window renderer
             Apecs.set Apecs.global (IncludeEditorInfo True)
             addToolSystemExtension
-        -- need to put this first or else it will get stuct waiting for the MVar to be filled
-        putEntityWorld world queue
-        Kathu.runForEventQueue queue commandState (Kathu.renderDelay settings) renderer buffer curTime curTime
-
+        , runGame = \dT -> do
+            handleEvents queue commandState
+            runToolMode queue commandState
+            runState  <- Apecs.get global
+            shouldRun <- not . usesFreeCam <$> Apecs.get global
+            when (runState /= Quitting) $
+                global $= if shouldRun then Running else Paused
+            runGame baseAppConfig dT
+        }
     pure ()

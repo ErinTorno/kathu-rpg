@@ -6,13 +6,14 @@ module Verda.World
     , Existance(..)
     , FollowParent(..)
     , IsDebug(..)
-    , IsQuitting(..)
+    , RunState(..)
     , VerdaWorld
     , addBeforeRenderExtension
     , addRendererExtension
     , addSpriteRenderExtension
     , baseVerdaComponentNames
     , initVerdaWorld
+    , updateVerdaWorld
     -- re-exported
     , Position(..)
     ) where
@@ -57,10 +58,10 @@ instance Semigroup IsDebug where (<>) = mappend
 instance Monoid IsDebug where mempty = IsDebug False
 instance Component IsDebug where type Storage IsDebug = Global IsDebug
 
-newtype IsQuitting = IsQuitting {unQuitting :: Bool}
-instance Semigroup IsQuitting where (<>) = mappend
-instance Monoid IsQuitting where mempty = IsQuitting False
-instance Component IsQuitting where type Storage IsQuitting = Global IsQuitting
+data RunState = Running | Paused | Quitting deriving (Show, Eq)
+instance Semigroup RunState where (<>) = mappend
+instance Monoid RunState where mempty = Running
+instance Component RunState where type Storage RunState = Global RunState
 
 ----------
 -- Misc --
@@ -69,14 +70,14 @@ instance Component IsQuitting where type Storage IsQuitting = Global IsQuitting
 
 -- | For use as a constraint to ensure all components required by Verda are available
 type VerdaWorld w m = ReadWriteEach w m
-   '[ BackgroundColor, ControlState, CursorMotionState, FontCache, IsDebug, IsQuitting, Logger, LogicTime, RenderExtensions, RenderTime, Resolution, SpriteManager
+   '[ BackgroundColor, ControlState, CursorMotionState, FontCache, IsDebug, Logger, LogicTime, RenderExtensions, RenderTime, Resolution, RunState, SpriteManager
     , Camera
     , Existance, FollowParent, Position, Sprite, Tint
     ]
 
 baseVerdaComponentNames :: [Name]
 baseVerdaComponentNames =
-    [ ''BackgroundColor, ''ControlState, ''CursorMotionState, ''FontCache, ''IsDebug, ''IsQuitting, ''Logger, ''LogicTime, ''RenderExtensions, ''RenderTime, ''Resolution, ''SpriteManager
+    [ ''BackgroundColor, ''ControlState, ''CursorMotionState, ''FontCache, ''IsDebug, ''Logger, ''LogicTime, ''RenderExtensions, ''RenderTime, ''Resolution, ''RunState, ''SpriteManager
     , ''Camera
     , ''Existance, ''FollowParent, ''Sprite, ''Tint
     ]
@@ -94,6 +95,15 @@ type DeletableBaseVerdaComponents =
 initVerdaWorld :: (MonadIO m, VerdaWorld w m) => SystemT w m ()
 initVerdaWorld =
     set global =<< mkControlState
+
+updateVerdaWorld :: (MonadIO m, VerdaWorld w m) => SystemT w m ()
+updateVerdaWorld = do
+    -- updates the Position of all followers
+    cmapM $ \(lastPos :: Position, FollowParent ety) -> do
+        posExists <- exists ety (Proxy @Position)
+        if posExists
+        then get ety
+        else pure lastPos
 
 addBeforeRenderExtension :: VerdaWorld w IO => (Word32 -> SDL.Renderer -> SystemT w IO ()) -> SystemT w IO ()
 addBeforeRenderExtension systemExtension = do

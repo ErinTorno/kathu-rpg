@@ -13,7 +13,8 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 
 library
-  exposed-modules:  Verda.Audio
+  exposed-modules:  Verda.App
+                    Verda.Audio
                     Verda.Logger
                     Verda.Time
                     Verda.World
@@ -65,6 +66,7 @@ library
                     mono-traversable     ^>=1.0.15,
                     mtl                  ^>=2.2.2,
                     primitive            ^>=0.7,
+                    OpenGL               ^>=3.0.3,
                     sdl2                 ^>=2.5.2,
                     sdl2-image           ^>=2.0,
                     sdl2-mixer           ^>=1.1,

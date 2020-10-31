@@ -12,12 +12,10 @@ controls:
   input-move-north: 26
 modded-save-dir: /modded-saves
 can-use-debug: true
-resolution:
-- 1280
-- 720
+resolution: [1280, 720]
 misc: {}
 language: english
 base-save-dir: /saves
 is-v-sync-enabled: false
-target-fps: 60.0
+target-fps: 60
 initial-world: test-world

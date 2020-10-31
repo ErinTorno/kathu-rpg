@@ -4,7 +4,7 @@ sprite:
   atlas:  spikes.png
   layer:  -1
   bounds: [16, 16]
-  animation:
-    idle: {row: 0, frames: 2, delay: 250}
+  animations:
+    idle: {row: 0, frames: 2, delay: 250} # in ms
 is-solid: false
 break-behavior: unbreakable

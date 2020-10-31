@@ -15,7 +15,7 @@ import           Verda.Util.Types        (Identifier)
 import           Kathu.Config.Controls
 
 data Settings = Settings
-    { targetFPS      :: !Float
+    { targetFPS      :: !Double
     , resolution     :: !(V2 Word32)
     , isVSyncEnabled :: !Bool
     , language       :: !Identifier
@@ -37,7 +37,7 @@ instance FromJSON Settings where
 
 defaultSettings :: Settings
 defaultSettings = Settings
-    { targetFPS      = 60.0
+    { targetFPS      = 60
     , resolution     = V2 1280 720
     , isVSyncEnabled = False
     , language       = "english"

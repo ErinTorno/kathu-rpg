@@ -238,8 +238,8 @@ instance (FromJSON (Dependency s m ItemStack), Functor m) => FromJSON (Dependenc
 ----------------
 
 encodeValueForWorldSpace :: MonadIO m => AllTiles' -> WorldSpace -> m Value
-encodeValueForWorldSpace allTiles (WorldSpace wid wname initPal palettes loadPos shouldSavePos vars script etys items fields) = do
-    fieldPairs <- serializeFieldSetPairs allTiles fields
+encodeValueForWorldSpace allTiles (WorldSpace wid wname initPal palettes loadPos shouldSavePos vars script etys items chunks) = do
+    fieldPairs <- serializeFieldSetPairs allTiles chunks
     pure . object $
         [ "world-id"                   .= wid
         , "name"                       .= wname

@@ -106,9 +106,9 @@ library
 executable kathu
   import:           kathu-extensions
   main-is:          Main.hs
-  other-modules:    Kathu.App.Events
+  other-modules:    Kathu.App
+                    Kathu.App.Events
                     Kathu.App.Init
-                    Kathu.App.Main
                     Kathu.App.System
                     Kathu.App.World
                     -- Graphics
