@@ -159,6 +159,10 @@ data PaletteManager = PaletteManager
     , runManager  :: forall w m. PaletteManagerConstraints w m => (Int -> SystemT w m ()) -> (Identifier -> SystemT w m ()) -> PaletteManager -> SystemT w m ()
     }
 
+instance Semigroup PaletteManager where (<>) = mappend
+instance Monoid PaletteManager where mempty  = staticManager 0
+instance Component PaletteManager where type Storage PaletteManager = Global PaletteManager
+
 data AnimatedPaletteState = AnimatedPaletteState
     { animPalette     :: {-# UNPACK #-} !AnimatedPalette
     , minPaletteIdx   :: !Int -- inclusive

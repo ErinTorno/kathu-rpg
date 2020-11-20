@@ -1,9 +1,11 @@
 module Kathu.World.Time where
 
-import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
-import Data.Word
-import GHC.Generics
+import           Apecs
+import           Control.Monad.IO.Class (MonadIO)
+import           Data.Aeson
+import           Data.Aeson.Types       (typeMismatch)
+import           Data.Word
+import           GHC.Generics
 
 import Verda.Parsing.Aeson (standardProjectOptions)
 
@@ -12,6 +14,10 @@ timeScale :: Num a => a
 timeScale = 30
 
 newtype WorldTime = WorldTime Word64 deriving (Show, Eq, Generic)
+
+instance Semigroup WorldTime where (<>) = mappend
+instance Monoid WorldTime where mempty  = WorldTime 0
+instance Component WorldTime where type Storage WorldTime = Global WorldTime
 
 data TimeOfDay = Dawn | Afternoon | Dusk | Night
 
@@ -28,8 +34,6 @@ instance FromJSON TimeOfDay where
     parseJSON (String s)           = error . concat $ ["Attempted to parse time of day with invalid time \"", show s, "\""]
     parseJSON v = typeMismatch "TimeOfDay" v
 
-
-
 data DaylightConfig = DaylightConfig
     { timeOfDawn      :: Double
     , timeOfAfternoon :: Double
@@ -42,8 +46,6 @@ instance ToJSON DaylightConfig where
 instance FromJSON DaylightConfig where
     parseJSON = genericParseJSON standardProjectOptions
 
-
-    
 defaultDaylightConfig :: DaylightConfig
 defaultDaylightConfig = DaylightConfig
     { timeOfDawn      = 6
@@ -51,6 +53,9 @@ defaultDaylightConfig = DaylightConfig
     , timeOfDusk      = 19
     , timeOfNight     = 21
     }
+
+stepWorldTime :: forall w m. (Has w m WorldTime, MonadIO m) => Word32 -> SystemT w m ()
+stepWorldTime !dT = modify global $ \(WorldTime t) -> WorldTime (t + fromIntegral dT)
 
 getTimeOfDay :: DaylightConfig -> WorldTime -> TimeOfDay
 getTimeOfDay (DaylightConfig dawn noon dusk night) wt

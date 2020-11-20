@@ -93,10 +93,22 @@ instance Component ActiveScript where type Storage ActiveScript = Map ActiveScri
 
 newtype ScriptBank = ScriptBank {unScriptBank :: IDHashTable ActiveScript }
 
+instance Semigroup ScriptBank where (<>) = mappend
+instance Monoid ScriptBank where mempty = error "Attempted to use ScriptBank before it has been loaded"
+instance Component ScriptBank where type Storage ScriptBank = Global ScriptBank
+
 newtype RunningScriptEntity = RunningScriptEntity {runningScript :: Maybe Entity}
+
+instance Semigroup RunningScriptEntity where (<>) = mappend
+instance Monoid RunningScriptEntity where mempty = RunningScriptEntity Nothing
+instance Component RunningScriptEntity where type Storage RunningScriptEntity = Global RunningScriptEntity
 
 -- | A buffer for IO events that scripts generate; these are executed after the script runs to prevent concurrency issues with same script instances
 newtype ScriptEventBuffer = ScriptEventBuffer {unBuffer :: [IO ()]}
+
+instance Semigroup ScriptEventBuffer where (<>) = mappend
+instance Monoid ScriptEventBuffer where mempty = ScriptEventBuffer []
+instance Component ScriptEventBuffer where type Storage ScriptEventBuffer = Global ScriptEventBuffer
 
 handleLua :: a -> Lua a -> Lua a
 handleLua !def !lua = do

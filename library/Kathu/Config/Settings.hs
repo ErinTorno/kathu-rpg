@@ -1,5 +1,6 @@
 module Kathu.Config.Settings where
 
+import           Apecs                   hiding (Map)
 import           Data.Aeson
 import           Data.Bool
 import           Data.Map                (Map)
@@ -34,6 +35,10 @@ instance ToJSON Settings where
     toJSON = genericToJSON standardProjectOptions
 instance FromJSON Settings where
     parseJSON = genericParseJSON standardProjectOptions
+
+instance Semigroup Settings where (<>) = mappend
+instance Monoid Settings where mempty = defaultSettings
+instance Component Settings where type Storage Settings = Global Settings
 
 defaultSettings :: Settings
 defaultSettings = Settings

@@ -29,7 +29,7 @@ import           Verda.World                 (addRendererExtension)
 import           Kathu.App.System
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
-import           Kathu.App.Tools.ToolMode
+import           Kathu.Editor.Tools.ToolMode
 import           Kathu.App.World
 import           Kathu.Config.Dictionary
 import           Kathu.Config.Settings

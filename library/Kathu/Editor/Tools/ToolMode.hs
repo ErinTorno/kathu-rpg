@@ -1,4 +1,4 @@
-module Kathu.App.Tools.ToolMode where
+module Kathu.Editor.Tools.ToolMode where
 
 import Apecs
 import Data.Word

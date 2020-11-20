@@ -49,6 +49,8 @@ library
                     Kathu.Config.KathuStore
                     Kathu.Config.Dictionary
                     Kathu.Config.Settings
+                    -- Editor
+                    Kathu.Editor.Tools.ToolMode
                     -- Entity
                     Kathu.Entity.Action
                     Kathu.Entity.ActorState
@@ -117,7 +119,6 @@ executable kathu
                     Kathu.App.Tools.Commands
                     Kathu.App.Tools.EventHandler
                     Kathu.App.Tools.EventQueue
-                    Kathu.App.Tools.ToolMode
                     Kathu.App.Tools.ToolSystem
                     -- Editor
                     Kathu.Editor.Dialogs

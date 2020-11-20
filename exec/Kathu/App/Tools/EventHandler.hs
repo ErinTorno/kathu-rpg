@@ -9,7 +9,7 @@ import           Verda.World                 (IsDebug(..), RunState(..))
 import           Kathu.App.System
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
-import           Kathu.App.Tools.ToolMode
+import           Kathu.Editor.Tools.ToolMode
 import           Kathu.App.Tools.ToolSystem
 import           Kathu.App.World             (loadWorldSpace)
 import           Kathu.Config.Dictionary

@@ -1,7 +1,8 @@
 module Kathu.Scripting.Variables where
 
+import           Apecs
 import           Control.Monad           (forM_)
-import           Control.Monad.IO.Class  (MonadIO, liftIO)
+import           Control.Monad.IO.Class  (MonadIO)
 import           Control.Monad.ST        (stToIO)
 import           Data.Aeson
 import           Data.Aeson.Types        (Parser, typeMismatch)
@@ -80,6 +81,10 @@ data Variables = Variables
     { globalVariables     :: !(IDHashTable WatchableVariable)
     , worldspaceVariables :: !(IDHashTable WatchableVariable)
     }
+
+instance Semigroup Variables where (<>) = mappend
+instance Monoid Variables where mempty = error "Attempted to access Variables global component before it has been initialized"
+instance Component Variables where type Storage Variables = Global Variables
 
 initVariables :: MonadIO m => m Variables
 initVariables = do

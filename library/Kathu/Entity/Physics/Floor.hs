@@ -15,7 +15,7 @@ import qualified Data.Map                as Map
 import           Data.Text               (Text)
 import           Data.Word
 import           Verda.Util.Dependency
-import           Verda.Util.Types        (Identifier)
+import           Verda.Util.Types        (Identifier, IDMap)
 import           Verda.Util.Apecs
 import           Verda.World             (Existance)
 
@@ -81,6 +81,12 @@ instance (FromJSON (Dependency s m FloorID), Monad m) => FromJSON (Dependency s 
         <*> v .:^ "floor-id"
         <*> v .:^ "max-force"
     parseJSON v          = typeMismatch "FloorProperty" v
+
+data FloorProperties = FloorProperties {propsDefault :: FloorPropEntity, propsAll :: IDMap FloorPropEntity}
+
+instance Semigroup FloorProperties where (<>) = mappend
+instance Monoid FloorProperties where mempty  = error "Attempted to access the FloorProperties before it has been initialized"
+instance Component FloorProperties where type Storage FloorProperties = Global FloorProperties
 
 -- Floor properties are small entities that should be kept in memory at all times, so we mark it persistant
 initFloorProperty :: forall w m. (MonadIO m, Get w m EntityCounter, ReadWriteEach w m '[Body, Existance, LifeTime, Position])

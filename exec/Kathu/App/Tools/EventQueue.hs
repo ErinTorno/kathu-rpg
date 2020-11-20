@@ -4,7 +4,7 @@ import           Apecs
 import           Control.Concurrent.MVar
 
 import           Kathu.App.System
-import           Kathu.App.Tools.ToolMode
+import           Kathu.Editor.Tools.ToolMode
 import           Kathu.World.Tile            (Tile)
 import           Kathu.World.WorldSpace      (InstancedPrefab, WorldSpace)
 

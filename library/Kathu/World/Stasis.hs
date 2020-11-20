@@ -1,5 +1,6 @@
 module Kathu.World.Stasis where
 
+import           Apecs                     hiding (Get, get)
 import           Data.Int
 import qualified Data.Map                  as Map
 import           Data.Serialize
@@ -23,6 +24,10 @@ data WorldStasis = WorldStasis
     , removedItems     :: UVec.Vector Int32     -- Same but for items
     --, leftItems       :: ?
     }
+
+instance Semigroup WorldStases where (<>) = mappend
+instance Monoid WorldStases where mempty = WorldStases Map.empty
+instance Component WorldStases where type Storage WorldStases = Global WorldStases
 
 emptyWorldStasis :: WorldStasis
 emptyWorldStasis = WorldStasis Map.empty (V2 0 0) UVec.empty UVec.empty

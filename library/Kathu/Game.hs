@@ -17,10 +17,9 @@ import           Kathu.Entity.Components
 import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Physics.Floor
-import           Kathu.Entity.System
 import           Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua                 as Lua
-import           Kathu.World.Time                    (WorldTime)
+import           Kathu.World.Time                    (WorldTime, stepWorldTime)
 
 updateDelay :: Word32
 updateDelay = floor $ 1000 / (60 :: Double) -- 60 ticks per second is ideal

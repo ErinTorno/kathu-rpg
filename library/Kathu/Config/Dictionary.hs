@@ -2,6 +2,7 @@
 
 module Kathu.Config.Dictionary where
 
+import           Apecs
 import           Control.Lens
 import qualified Data.Map                        as Map
 import           Data.Maybe
@@ -35,6 +36,10 @@ data Dictionary = Dictionary
     , _dictWorldSpaces     :: !(IDMap WorldSpace)
     }
 makeLenses ''Dictionary
+
+instance Semigroup Dictionary where (<>) = mappend
+instance Monoid Dictionary where mempty = emptyDictionary
+instance Component Dictionary where type Storage Dictionary = Global Dictionary
 
 emptyDictionary :: Dictionary
 emptyDictionary = Dictionary

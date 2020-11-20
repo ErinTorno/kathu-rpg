@@ -14,16 +14,16 @@ import           Verda.System.Tile.Components    (Chunks)
 import           Verda.Util.Apecs
 import           Verda.World                     (DeletableBaseVerdaComponents, Existance(..), baseVerdaComponentNames)
 
-import           Kathu.App.Tools.ToolMode
-import           Kathu.Config.Dictionary         (Dictionary, emptyDictionary)
+import           Kathu.Config.Dictionary         (Dictionary)
 import           Kathu.Config.Settings
+import           Kathu.Editor.Tools.ToolMode
 import           Kathu.Entity.Action
 import           Kathu.Entity.ActorState
 import           Kathu.Entity.Components
 import           Kathu.Entity.Item               (Inventory)
 import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.BodyConfig (setBodyConfig)
-import           Kathu.Entity.Physics.Floor      (WorldFloor)
+import           Kathu.Entity.Physics.Floor      (FloorProperties, WorldFloor)
 import           Kathu.Entity.Prefab
 import           Kathu.Entity.System
 import           Kathu.Graphics.Palette          (PaletteManager)
@@ -50,33 +50,9 @@ type AllComponents =
     
 -- New Globals
 
-instance Semigroup Settings where (<>) = mappend
-instance Monoid Settings where mempty = defaultSettings
-instance Component Settings where type Storage Settings = Global Settings
-
 instance Semigroup UIConfig where (<>) = mappend
 instance Monoid UIConfig where mempty = error "Attempted to use UIConfig before it has been loaded"
 instance Component UIConfig where type Storage UIConfig = Global UIConfig
-
-instance Semigroup Dictionary where (<>) = mappend
-instance Monoid Dictionary where mempty = emptyDictionary
-instance Component Dictionary where type Storage Dictionary = Global Dictionary
-
-instance Semigroup ScriptBank where (<>) = mappend
-instance Monoid ScriptBank where mempty = error "Attempted to use ScriptBank before it has been loaded"
-instance Component ScriptBank where type Storage ScriptBank = Global ScriptBank
-
-instance Semigroup RunningScriptEntity where (<>) = mappend
-instance Monoid RunningScriptEntity where mempty = RunningScriptEntity Nothing
-instance Component RunningScriptEntity where type Storage RunningScriptEntity = Global RunningScriptEntity
-
-instance Semigroup ScriptEventBuffer where (<>) = mappend
-instance Monoid ScriptEventBuffer where mempty = ScriptEventBuffer []
-instance Component ScriptEventBuffer where type Storage ScriptEventBuffer = Global ScriptEventBuffer
-
-instance Semigroup WireReceivers where (<>) = mappend
-instance Monoid WireReceivers where mempty = error "Attempted to use WireReceivers before it has been loaded"
-instance Component WireReceivers where type Storage WireReceivers = Global WireReceivers
 
 -- World
 

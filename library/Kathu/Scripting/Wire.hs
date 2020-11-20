@@ -1,7 +1,8 @@
 module Kathu.Scripting.Wire where
 
+import           Apecs
 import           Control.Monad           (forM_)
-import           Control.Monad.IO.Class  (MonadIO, liftIO)
+import           Control.Monad.IO.Class  (MonadIO)
 import           Control.Monad.ST        (stToIO)
 import qualified Data.HashTable.ST.Basic as HT
 import           Data.IntMap             (IntMap)
@@ -17,6 +18,10 @@ data WireReceiver = WireReceiver
     }
 
 newtype WireReceivers = WireReceivers {unWireConnections :: IDHashTable WireReceiver}
+
+instance Semigroup WireReceivers where (<>) = mappend
+instance Monoid WireReceivers where mempty = error "Attempted to use WireReceivers before it has been loaded"
+instance Component WireReceivers where type Storage WireReceivers = Global WireReceivers
 
 addWireListener :: MonadIO m => Identifier -> Int -> OnSignalChange -> WireReceivers -> m ()
 addWireListener sigName iid onChange (WireReceivers con) = liftIO . stToIO $ HT.mutate con sigName ((,()) . addL)

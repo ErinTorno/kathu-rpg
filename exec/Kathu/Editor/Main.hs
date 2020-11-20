@@ -26,7 +26,7 @@ import           Kathu.App.System           (EntityWorld)
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventHandler
 import           Kathu.App.Tools.EventQueue
-import           Kathu.App.Tools.ToolMode
+import           Kathu.Editor.Tools.ToolMode
 import           Kathu.App.Tools.ToolSystem (addToolSystemExtension, runToolMode)
 import           Kathu.Config.Settings
 import           Kathu.Editor.Dialogs
