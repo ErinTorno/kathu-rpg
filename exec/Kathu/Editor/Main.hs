@@ -26,7 +26,6 @@ import           Kathu.App.System           (EntityWorld)
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventHandler
 import           Kathu.App.Tools.EventQueue
-import           Kathu.Editor.Tools.ToolMode
 import           Kathu.App.Tools.ToolSystem (addToolSystemExtension, runToolMode)
 import           Kathu.Config.Settings
 import           Kathu.Editor.Dialogs
@@ -34,9 +33,10 @@ import           Kathu.Editor.Dialogs.Entity
 import           Kathu.Editor.File
 import           Kathu.Editor.Panels
 import           Kathu.Editor.Resources
+import           Kathu.Editor.Tools.Info
+import           Kathu.Editor.Tools.ToolMode
 import           Kathu.Editor.Types
 import           Kathu.Editor.Util.GtkMisc
-import           Kathu.Entity.System        (IncludeEditorInfo(..))
 import           Kathu.World.WorldSpace
 
 mkMenuBarDescription :: EditorState -> MenuBarDescription

@@ -27,12 +27,12 @@ import           Verda.Util.Dependency
 import           Verda.Util.Types          (Identifier, IDMap)
 import           Verda.World               (Existance(..))
 
+import           Kathu.Editor.Tools.Info
 import           Kathu.Entity.Components
 import           Kathu.Entity.Item
 import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Prefab       (Prefab, prefabID)
-import           Kathu.Entity.System       (IncludeEditorInfo(..))
 import           Kathu.Graphics.Palette
 import           Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua       as Lua

@@ -44,12 +44,14 @@ library
   import:           kathu-extensions
   exposed-modules:  Kathu.Game
                     Kathu.Language
+                    Kathu.Random
                     -- Config
                     Kathu.Config.Controls
                     Kathu.Config.KathuStore
                     Kathu.Config.Dictionary
                     Kathu.Config.Settings
                     -- Editor
+                    Kathu.Editor.Tools.Info
                     Kathu.Editor.Tools.ToolMode
                     -- Entity
                     Kathu.Entity.Action

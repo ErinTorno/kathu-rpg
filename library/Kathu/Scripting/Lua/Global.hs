@@ -17,7 +17,7 @@ import           Verda.Util.Apecs
 import           Verda.World               (IsDebug(..))
 
 import           Kathu.Entity.Components
-import           Kathu.Entity.System
+import           Kathu.Random
 import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables

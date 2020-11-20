@@ -33,10 +33,10 @@ import           Kathu.Config.Settings
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.Floor
-import           Kathu.Entity.System
 import           Kathu.Game                      (initPhysics)
 import           Kathu.Graphics.UI               (addUIExtension, gameIcon)
 import           Kathu.Language
+import           Kathu.Random
 import           Kathu.Scripting.Lua             (initScripting)
 import           Kathu.Scripting.Variables       (initVariables)
 import           Kathu.World.Tile                (Tile, makeAllTiles)

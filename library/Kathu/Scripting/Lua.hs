@@ -36,7 +36,7 @@ import           Verda.World                        (IsDebug)
 
 import           Kathu.Entity.Components
 import           Kathu.Entity.LifeTime              (LifeTime)
-import           Kathu.Entity.System
+import           Kathu.Random
 import           Kathu.Scripting.Event
 import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Component

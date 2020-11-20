@@ -48,6 +48,10 @@ data UIConfig = UIConfig
     , manaBar   :: DisplayBar
     }
 
+instance Semigroup UIConfig where (<>) = mappend
+instance Monoid UIConfig where mempty = error "Attempted to use UIConfig before it has been loaded"
+instance Component UIConfig where type Storage UIConfig = Global UIConfig
+
 instance (FromJSON (Dependency s m Sprite), Monad m) => FromJSON (Dependency s m DisplayBar) where
     parseJSON (Object v) = getCompose $ DisplayBar
         <$> fmap pos (v .:^ "starts-at")

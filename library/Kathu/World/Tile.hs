@@ -149,5 +149,5 @@ makeAllTiles :: Map k Tile -> IO (AllTiles Tile)
 makeAllTiles elemMap = MVec.unsafeNew (Map.size elemMap) >>= \vec -> foldM (setElem vec) 0 allElems $> AllTiles vec
     where allElems = sortBy (\x y -> (x^.tileID) `compare` (y^.tileID)) . Map.elems $ elemMap
           setElem !vec !idx !e = if e^.tileID /= emptyTileID && e^.tileID.to (fromIntegral . unTileID) /= idx
-                                 then error . concat $ ["Tile ", e^.tileTextID.to show, " had tile id ", e^.tileID.to show, " but was stored in index ", show idx, " in Kathu.Entity.System.makeTiles"]
+                                 then error . concat $ ["Tile ", e^.tileTextID.to show, " had tile id ", e^.tileID.to show, " but was stored in index ", show idx, " in Kathu.World.Tile.makeTiles"]
                                  else MVec.unsafeWrite vec idx e $> (idx + 1)

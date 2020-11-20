@@ -16,6 +16,7 @@ import           Verda.World                     (DeletableBaseVerdaComponents, 
 
 import           Kathu.Config.Dictionary         (Dictionary)
 import           Kathu.Config.Settings
+import           Kathu.Editor.Tools.Info
 import           Kathu.Editor.Tools.ToolMode
 import           Kathu.Entity.Action
 import           Kathu.Entity.ActorState
@@ -25,10 +26,10 @@ import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.BodyConfig (setBodyConfig)
 import           Kathu.Entity.Physics.Floor      (FloorProperties, WorldFloor)
 import           Kathu.Entity.Prefab
-import           Kathu.Entity.System
 import           Kathu.Graphics.Palette          (PaletteManager)
 import           Kathu.Graphics.UI
 import           Kathu.Language                  (Language)
+import           Kathu.Random
 import qualified Kathu.Scripting.Lua             as Lua
 import           Kathu.Scripting.Lua.Types       (ActiveScript, RunningScriptEntity(..), ScriptBank, ScriptEventBuffer(..))
 import           Kathu.Scripting.Variables       (Variables)
@@ -47,12 +48,6 @@ type AllComponents =
     , (Body, Shape, Constraint)
     , DeletableBaseVerdaComponents
     )
-    
--- New Globals
-
-instance Semigroup UIConfig where (<>) = mappend
-instance Monoid UIConfig where mempty = error "Attempted to use UIConfig before it has been loaded"
-instance Component UIConfig where type Storage UIConfig = Global UIConfig
 
 -- World
 
