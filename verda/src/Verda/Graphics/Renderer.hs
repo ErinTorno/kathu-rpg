@@ -14,6 +14,7 @@ import qualified SDL
 import           Verda.Graphics.Color            (unColor, white)
 import           Verda.Graphics.Components
 import           Verda.Graphics.Drawing
+import           Verda.Graphics.Shaders          (getProgram)
 import           Verda.Graphics.SpriteBuffer
 import           Verda.Graphics.Sprites
 import           Verda.Time                      (stepRenderTime)
@@ -99,16 +100,17 @@ runRender !window !renderer !screenTex !spriteBuffer !dT = do
         let smallRect = Just (SDL.Rectangle (SDL.P 0) 16)
          in SDL.copy renderer screenTex smallRect smallRect
 
-    liftIO $ renderGLVertex window renderer screenTex resolution
+    shaders <- get global
+    liftIO $ renderGLVertex window renderer screenTex shaders resolution
 
 -- | Bind and draw screen tex on square in world
-renderGLVertex :: SDL.Window -> SDL.Renderer -> SDL.Texture -> V2 Int -> IO ()
-renderGLVertex window renderer screenTex res = do
+renderGLVertex :: SDL.Window -> SDL.Renderer -> SDL.Texture -> ShaderSet -> V2 Int -> IO ()
+renderGLVertex window renderer screenTex shaders res = do
     SDL.rendererRenderTarget renderer $= Nothing
     SDL.glBindTexture screenTex
     
     prevProg <- SDL.get GL.currentProgram
-    -- GL.currentProgram SDL.$= getProgram shaders
+    GL.currentProgram SDL.$= getProgram shaders
 
     let minX, maxX, minY, maxY, minU, maxU, minV, maxV :: GL.GLfloat
         V2 resGLx resGLy = fromIntegral <$> res

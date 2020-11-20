@@ -70,14 +70,14 @@ instance Component RunState where type Storage RunState = Global RunState
 
 -- | For use as a constraint to ensure all components required by Verda are available
 type VerdaWorld w m = ReadWriteEach w m
-   '[ BackgroundColor, ControlState, CursorMotionState, FontCache, IsDebug, Logger, LogicTime, RenderExtensions, RenderTime, Resolution, RunState, SpriteManager
+   '[ BackgroundColor, ControlState, CursorMotionState, FontCache, IsDebug, Logger, LogicTime, RenderExtensions, RenderTime, Resolution, RunState, ShaderSet, SpriteManager
     , Camera
     , Existance, FollowParent, Position, Sprite, Tint
     ]
 
 baseVerdaComponentNames :: [Name]
 baseVerdaComponentNames =
-    [ ''BackgroundColor, ''ControlState, ''CursorMotionState, ''FontCache, ''IsDebug, ''Logger, ''LogicTime, ''RenderExtensions, ''RenderTime, ''Resolution, ''RunState, ''SpriteManager
+    [ ''BackgroundColor, ''ControlState, ''CursorMotionState, ''FontCache, ''IsDebug, ''Logger, ''LogicTime, ''RenderExtensions, ''RenderTime, ''Resolution, ''RunState, ''ShaderSet, ''SpriteManager
     , ''Camera
     , ''Existance, ''FollowParent, ''Sprite, ''Tint
     ]

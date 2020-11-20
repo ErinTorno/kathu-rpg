@@ -13,6 +13,7 @@ module Verda.Graphics.Components
     , noTint
     -- Re-exported
     , FontCache
+    , ShaderSet
     , Sprite
     , SpriteManager
     ) where
@@ -27,6 +28,7 @@ import qualified SDL
 
 import           Verda.Graphics.Color
 import           Verda.Graphics.Fonts         (FontCache)
+import           Verda.Graphics.Shaders       (ShaderSet)
 import           Verda.Graphics.SpriteManager (SpriteManager)
 import           Verda.Graphics.Sprites       (Sprite)
 
