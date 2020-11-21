@@ -1,4 +1,4 @@
-module Kathu.App.Events (runEvents) where
+module Kathu.ControlEvents (runControlEvents) where
 
 import           Apecs
 import           Apecs.Physics
@@ -18,8 +18,8 @@ import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.System
 
-runEvents :: System' ()
-runEvents = do
+runControlEvents :: System' ()
+runControlEvents = do
     updateControls
     updateDebugControls
 

@@ -1,4 +1,4 @@
-module Kathu.App.Graphics.Debug (addDebugExtension) where
+module Kathu.Graphics.Debug (addDebugExtension) where
 
 import           Apecs                           hiding (($=))
 import           Apecs.Physics                   hiding (($=))

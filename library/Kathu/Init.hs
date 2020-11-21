@@ -1,4 +1,4 @@
-module Kathu.App.Init
+module Kathu.Init
     ( entityWorld
     , system
     , sdlWindowConfig
@@ -25,7 +25,6 @@ import           Verda.Util.Containers           (fromJustElseError)
 import           Verda.Util.Types                (unID)
 import           Verda.World                     (addBeforeRenderExtension, initVerdaWorld)
 
-import           Kathu.App.Graphics.Debug        (addDebugExtension)
 import           Kathu.Config.Dictionary
 import           Kathu.Config.Settings
 import           Kathu.Entity.Action
@@ -33,6 +32,7 @@ import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.Floor
 import           Kathu.Entity.System
 import           Kathu.Game                      (initPhysics)
+import           Kathu.Graphics.Debug            (addDebugExtension)
 import           Kathu.Graphics.UI               (addUIExtension, gameIcon)
 import           Kathu.Language
 import           Kathu.Random

@@ -7,12 +7,12 @@ import           Verda.App
 import           Verda.Graphics.Icons            (loadIcon)
 import           Verda.World
 
-import           Kathu.App.Events
-import qualified Kathu.App.Init                  as Init
+import qualified Kathu.Config.Settings           as Settings
+import           Kathu.ControlEvents             (runControlEvents)
 import           Kathu.Entity.System
 import           Kathu.Editor.Main               as Editor
-import qualified Kathu.Config.Settings           as Settings
 import qualified Kathu.Game                      as Game
+import qualified Kathu.Init                      as Init
 
 mkAppConfig :: IO (AppConfig KathuWorld)
 mkAppConfig = do
@@ -27,7 +27,7 @@ mkAppConfig = do
         , initWorld          = Init.system settings
         , concurrentWorldVar = pure Nothing
         , runGame            = \updateDelay -> do
-            runEvents
+            runControlEvents
             Game.runGame updateDelay
             runState <- get global
             when (runState == Running) $

@@ -42,7 +42,9 @@ common kathu-extensions
 
 library
   import:           kathu-extensions
-  exposed-modules:  Kathu.Game
+  exposed-modules:  Kathu.ControlEvents
+                    Kathu.Game
+                    Kathu.Init
                     Kathu.Language
                     Kathu.Random
                     -- Config
@@ -71,6 +73,7 @@ library
                     Kathu.Entity.Resource
                     Kathu.Entity.System
                     -- Graphics
+                    Kathu.Graphics.Debug
                     Kathu.Graphics.Palette
                     Kathu.Graphics.UI
                     -- World
@@ -115,10 +118,6 @@ executable kathu
   import:           kathu-extensions
   main-is:          Main.hs
   other-modules:    Kathu.App
-                    Kathu.App.Events
-                    Kathu.App.Init
-                    -- Graphics
-                    Kathu.App.Graphics.Debug
                     -- Editor
                     Kathu.Editor.Dialogs
                     Kathu.Editor.Dialogs.Entity
