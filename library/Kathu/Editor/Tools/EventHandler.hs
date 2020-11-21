@@ -1,4 +1,4 @@
-module Kathu.App.Tools.EventHandler where
+module Kathu.Editor.Tools.EventHandler where
 
 import           Apecs
 import           Control.Lens
@@ -6,10 +6,10 @@ import           Control.Monad               (when)
 import qualified Data.Map                    as Map
 import           Verda.World                 (IsDebug(..), RunState(..))
 
-import           Kathu.App.Tools.Commands
-import           Kathu.App.Tools.EventQueue
-import           Kathu.App.Tools.ToolSystem
+import           Kathu.Editor.Tools.EventQueue
+import           Kathu.Editor.Tools.ToolSystem
 import           Kathu.Config.Dictionary
+import           Kathu.Editor.Tools.Commands
 import           Kathu.Editor.Tools.ToolMode
 import           Kathu.Entity.System
 import           Kathu.World.Loader          (loadWorldSpace, placeInstancedPrefab)

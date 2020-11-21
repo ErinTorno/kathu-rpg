@@ -17,7 +17,7 @@ import qualified GI.Gtk                     as Gtk
 import qualified GI.GdkPixbuf               as Gdk
 import           Verda.Graphics.Sprites     (SpriteID(..), spriteID)
 
-import           Kathu.App.Tools.EventQueue
+import           Kathu.Editor.Tools.EventQueue
 import           Kathu.Editor.Tools.ToolMode
 import           Kathu.Config.Dictionary   (dictParsingStore, dictTiles)
 import           Kathu.Config.KathuStore   (psCountingIDs)

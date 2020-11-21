@@ -1,4 +1,4 @@
-module Kathu.App.Tools.EventQueue where
+module Kathu.Editor.Tools.EventQueue where
 
 import           Apecs
 import           Control.Concurrent.MVar

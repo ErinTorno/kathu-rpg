@@ -9,7 +9,7 @@ import           Data.Text                  (Text)
 import           Data.Vector                (Vector)
 import qualified GI.Gtk                     as Gtk
 
-import           Kathu.App.Tools.EventQueue
+import           Kathu.Editor.Tools.EventQueue
 import           Kathu.Editor.Resources     (Resources)
 import           Kathu.Entity.Prefab        (prefabID)
 import           Kathu.World.WorldSpace

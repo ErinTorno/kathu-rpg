@@ -1,4 +1,4 @@
-module Kathu.App.Tools.Commands
+module Kathu.Editor.Tools.Commands
     ( Command(..)
     , CommandState
     , newCommandState
