@@ -21,16 +21,18 @@ import           Foreign.Lua                       hiding (call, error)
 import qualified Foreign.Lua.Core                  as Lua
 import qualified Foreign.Lua.FunctionCalling       as Lua
 
-import           Kathu.Entity.System
 import           Kathu.Scripting.Event
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
 import           Kathu.Scripting.Wire
+import           Verda.Util.Apecs
+
+type HasScripting w m = ReadWriteEach w m [ActiveScript, LuaModules, RunningScriptEntity, ScriptBank, ScriptEventBuffer, Variables, WireReceivers]
 
 call :: Lua.LuaCallFunc a => String -> a
 call = callFunc
 
-releaseActiveScript :: ActiveScript -> SystemT' IO ()
+releaseActiveScript :: HasScripting w IO => ActiveScript -> SystemT w IO ()
 releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched signals singStatus _) = do
     let ety = unEntity scriptEntity
     when (scriptEntity /= global && shouldScriptRun onDestroy as) $
@@ -50,7 +52,7 @@ releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched signals singS
             Lua.close lstate
             putMVar stmvar $ error "Attempted to use a release ActiveScript"
 
-mkActiveScript :: (ActiveScript -> ActiveScript) -> Entity -> SingletonStatus -> Lua () -> Script -> SystemT' IO ActiveScript
+mkActiveScript :: HasScripting w IO => (ActiveScript -> ActiveScript) -> Entity -> SingletonStatus -> Lua () -> Script -> SystemT w IO ActiveScript
 mkActiveScript mapper !ety !singStatus !initLua (Script _ mainScr flags _) = do
     mvar <- liftIO newEmptyMVar
     -- warning: by this point no mvar is supplied, so if something tries to use it it will have issues
@@ -66,18 +68,18 @@ mkActiveScript mapper !ety !singStatus !initLua (Script _ mainScr flags _) = do
         newMVar st'
     pure $ baseAS {activeState = mvar'}
 
-loadScript :: [LuaModule KathuWorld] -> (ActiveScript -> ActiveScript) -> Entity -> Script -> SystemT' IO ActiveScript
-loadScript modules mapper ety script
+loadScript :: HasScripting w IO => (ActiveScript -> ActiveScript) -> Entity -> Script -> SystemT w IO ActiveScript
+loadScript mapper ety script
     | script^.isSingleton = runIfOnInit =<< fromBank
     | otherwise           = runIfOnInit =<< mkAS mapper NonSingleton ety
-    where mkAS f singStatus e = ask >>= (\l -> mkActiveScript f e singStatus l script) . initLua
-          initLua world = do
+    where mkAS f singStatus e = (\l -> mkActiveScript f e singStatus l script) . initLua =<< get global
+          initLua (LuaModules modules) = do
               openbase
               openmath
               openpackage
               openstring
               opentable
-              forM_ modules ($world)
+              forM_ modules id
           runIfOnInit as | shouldScriptRun onInit as = set ety as >> execFor as (call "onInit" (unEntity ety)) >> return as
                          | otherwise                 = set ety as >> return as
           fromBank = do
@@ -90,7 +92,7 @@ loadScript modules mapper ety script
                                 liftIO . stToIO $ HT.insert sbank sID ascript
                                 pure . mapper $ ascript {instanceEntity = ety, singletonStatus = SingletonReference}
 
-initScripting :: SystemT' IO ()
+initScripting :: HasScripting w IO => SystemT w IO ()
 initScripting = do
     scriptBank <- liftIO $ ScriptBank <$> stToIO (HT.newSized 64)
     receivers  <- liftIO $ WireReceivers <$> stToIO (HT.newSized 64)

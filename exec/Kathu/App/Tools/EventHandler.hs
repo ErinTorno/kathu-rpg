@@ -12,7 +12,6 @@ import           Kathu.App.Tools.ToolSystem
 import           Kathu.Config.Dictionary
 import           Kathu.Editor.Tools.ToolMode
 import           Kathu.Entity.System
-import           Kathu.Entity.Utils
 import           Kathu.World.Loader          (loadWorldSpace, placeInstancedPrefab)
 import           Kathu.World.WorldSpace
 

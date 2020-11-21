@@ -17,17 +17,13 @@ import           Verda.Util.Apecs
 import           Verda.World               (IsDebug(..))
 
 import           Kathu.Entity.Components
-import           Kathu.Entity.Prefab
 import           Kathu.Entity.System
 import           Kathu.Random
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
 
-registerGlobalFunctions :: (Identifier -> SystemT' IO (Maybe Prefab))
-                        -> (Prefab -> SystemT' IO Entity)
-                        -> (Identifier -> SystemT' IO Bool)
-                        -> KathuWorld -> Lua ()
-registerGlobalFunctions lookupEntityPrefab newFromPrefab setPalette world = do
+registerGlobalFunctions :: KathuWorld -> Lua ()
+registerGlobalFunctions  world = do
     registerHaskellFunction "log"               $ logLua world
     registerHaskellFunction "getCursorPosition" $ getCursorPosition world
     registerHaskellFunction "getPlayerEntity"   $ getPlayerEntity world
@@ -52,8 +48,8 @@ registerGlobalFunctions lookupEntityPrefab newFromPrefab setPalette world = do
     registerHaskellFunction "setGlobalInt"      $ setGlobalInt world
     registerHaskellFunction "setGlobalText"     $ setGlobalText world
 
-    registerHaskellFunction "setPalette"        $ setPaletteLua setPalette world
-    registerHaskellFunction "newEntity"         $ newFromPrototypeLua lookupEntityPrefab newFromPrefab world
+    registerHaskellFunction "setPalette"        $ setPaletteLua world
+    registerHaskellFunction "newEntity"         $ newFromPrototypeLua world
 
     registerHaskellFunction "registerGlobalVarListener" $ registerListener addGlobalListener world
     registerHaskellFunction "registerWorldVarListener"  $ registerListener addWorldListener world
@@ -66,12 +62,12 @@ getCursorPosition :: forall w. (ReadWrite w IO CursorMotionState) => w -> Lua (V
 getCursorPosition !world = liftIO . Apecs.runWith world $
     cursorPosition <$> get global
 
-setPaletteLua :: (Identifier -> SystemT' IO Bool) -> KathuWorld -> Text -> Lua Bool
-setPaletteLua setPalette !world !idt = liftIO . Apecs.runWith world $ runW
+setPaletteLua :: KathuWorld -> Text -> Lua Bool
+setPaletteLua !world !idt = liftIO . Apecs.runWith world $ runW
     where runW = setPalette . mkIdentifier $ idt
 
-newFromPrototypeLua :: (Identifier -> SystemT' IO (Maybe Prefab)) -> (Prefab -> SystemT' IO Entity) -> KathuWorld -> Text -> Lua (Optional Int)
-newFromPrototypeLua lookupEntityPrefab newFromPrefab !world !protoID = liftIO . Apecs.runWith world $ mkEntity
+newFromPrototypeLua :: KathuWorld -> Text -> Lua (Optional Int)
+newFromPrototypeLua !world !protoID = liftIO . Apecs.runWith world $ mkEntity
     where mkEntity = lookupEntityPrefab (mkIdentifier protoID) >>= mkIfPres
           mkIfPres Nothing   = return $ Optional Nothing
           mkIfPres (Just pr) = Optional . Just . unEntity <$> newFromPrefab pr
@@ -80,21 +76,21 @@ newFromPrototypeLua lookupEntityPrefab newFromPrefab !world !protoID = liftIO . 
 -- Unique Components --
 -----------------------
 
-getPlayerEntity :: forall w. (ReadWrite w IO Local) => w -> Lua (Optional Int)
+getPlayerEntity :: KathuWorld -> Lua (Optional Int)
 getPlayerEntity !world = liftIO . Apecs.runWith world $ do
     player <- getUnique
     case player of
         (Just (_ :: Local, Entity ety)) -> pure . Optional $ Just ety
         Nothing                         -> pure . Optional $ Nothing
 
-getCameraEntity :: forall w. (ReadWrite w IO Camera) => w -> Lua (Optional Int)
+getCameraEntity :: KathuWorld -> Lua (Optional Int)
 getCameraEntity !world = liftIO . Apecs.runWith world $ do
     cam <- getUnique
     case cam of
         (Just (_ :: Camera, Entity ety)) -> pure . Optional $ Just ety
         Nothing                          -> pure . Optional $ Nothing
 
-setCameraEntity :: forall w. (ReadWrite w IO Camera) => w -> Int -> Lua ()
+setCameraEntity :: KathuWorld -> Int -> Lua ()
 setCameraEntity !world !etyID = liftIO . Apecs.runWith world $ do
     cam <- fromMaybe defaultCamera <$> getUnique
     let deleteCam :: Camera -> Maybe Camera
@@ -106,38 +102,37 @@ setCameraEntity !world !etyID = liftIO . Apecs.runWith world $ do
 -- Global Components --
 -----------------------
 
-getScriptEntity :: forall w. (ReadWrite w IO RunningScriptEntity) => w -> Lua (Optional Int)
+getScriptEntity :: KathuWorld -> Lua (Optional Int)
 getScriptEntity !world = liftIO . Apecs.runWith world $ (Optional . fmap unEntity . runningScript <$> get global)
 
-isDebug :: forall w. (ReadWrite w IO IsDebug) => w -> Lua Bool
+isDebug :: KathuWorld -> Lua Bool
 isDebug !world = liftIO . Apecs.runWith world $ (unDebug <$> get global)
 
-getRandomInt :: forall w. (ReadWrite w IO Random) => w -> Int -> Int -> Lua Int
+getRandomInt :: KathuWorld -> Int -> Int -> Lua Int
 getRandomInt !world !minV !maxV = liftIO . Apecs.runWith world $ do
     Random r <- get global
     let (res, r') = R.random r
     global $= Random r'
     pure (res `mod` (maxV + 1 - minV) + minV)
 
-getRandomDouble :: forall w. (ReadWrite w IO Random) => w -> Lua Double
+getRandomDouble :: KathuWorld -> Lua Double
 getRandomDouble !world = liftIO . Apecs.runWith world $ do
     (Random r) <- get global
     let (res, r') = R.random r
     global $= Random r'
     pure res
 
-getLogicTime :: forall w. (ReadWrite w IO LogicTime) => w -> Lua Int
+getLogicTime :: KathuWorld -> Lua Int
 getLogicTime !world = liftIO . Apecs.runWith world $ (fromIntegral . unLogicTime <$> get global)
 
-getRenderTime :: forall w. (ReadWrite w IO RenderTime) => w -> Lua Int
+getRenderTime :: KathuWorld -> Lua Int
 getRenderTime !world = liftIO . Apecs.runWith world $ (fromIntegral . unRenderTime <$> get global)
 
 ---------------
 -- Variables --
 ---------------
 
-registerListener :: forall w. (ReadWriteEach w IO [ActiveScript, RunningScriptEntity, ScriptEventBuffer, Variables])
-                 => (Identifier -> Int -> (WorldVariable -> IO ()) -> Variables -> SystemT w IO ()) -> w -> Text -> String -> Lua ()
+registerListener :: (Identifier -> Int -> (WorldVariable -> IO ()) -> Variables -> SystemT' IO ()) -> KathuWorld -> Text -> String -> Lua ()
 registerListener addWatch !world !idt fnName = liftIO . Apecs.runWith world $ do
     let getRS = fromJustElseError "RunningScriptEntity was Nothing when registerListener was called" . runningScript
     currentEty   <- getRS <$> get global
@@ -155,7 +150,7 @@ registerListener addWatch !world !idt fnName = liftIO . Apecs.runWith world $ do
 
             addWatch (mkIdentifier idt) ety onUpdate variables
 
-getVariable :: forall w. ReadWrite w IO Variables => (Identifier -> Variables -> IO (Maybe WorldVariable)) -> w -> Text -> Lua (Optional WorldVariable)
+getVariable :: (Identifier -> Variables -> IO (Maybe WorldVariable)) -> KathuWorld -> Text -> Lua (Optional WorldVariable)
 getVariable getGroup !world !idt = liftIO . Apecs.runWith world $ (getVar =<< get global)
     where getVar !vars = do
               var <- liftIO . getGroup (mkIdentifier idt) $ vars
@@ -163,7 +158,7 @@ getVariable getGroup !world !idt = liftIO . Apecs.runWith world $ (getVar =<< ge
                   Just a  -> Optional $ Just a
                   Nothing -> Optional Nothing
 
-setVariableLua :: forall w a. ReadWrite w IO Variables => (Identifier -> Variables -> SystemT w IO Bool) -> (Identifier -> WorldVariable -> Variables -> IO ()) -> (a -> WorldVariable) -> w -> Text -> a -> Lua ()
+setVariableLua :: (Identifier -> Variables -> SystemT' IO Bool) -> (Identifier -> WorldVariable -> Variables -> IO ()) -> (a -> WorldVariable) -> KathuWorld -> Text -> a -> Lua ()
 setVariableLua getIsValid setter mkVar !world !idtTxt !newVal = liftIO . Apecs.runWith world $ do
     variables <- get global
 
@@ -173,28 +168,28 @@ setVariableLua getIsValid setter mkVar !world !idtTxt !newVal = liftIO . Apecs.r
     when isValid $
         liftIO $ setter idt (mkVar newVal) variables
 
-setWorldBool :: forall w. (ReadWrite w IO Variables) => w -> Text -> Bool -> Lua ()
+setWorldBool :: KathuWorld -> Text -> Bool -> Lua ()
 setWorldBool = setVariableLua (\i v -> isJust <$> getWorldVariable i v) setWorldVariable WorldBool
 
-setWorldDouble :: forall w. (ReadWrite w IO Variables) => w -> Text -> Double -> Lua ()
+setWorldDouble :: KathuWorld -> Text -> Double -> Lua ()
 setWorldDouble = setVariableLua (\i v -> isJust <$> getWorldVariable i v) setWorldVariable WorldDouble
 
-setWorldInt :: forall w. (ReadWrite w IO Variables) => w -> Text -> Int -> Lua ()
+setWorldInt :: KathuWorld -> Text -> Int -> Lua ()
 setWorldInt = setVariableLua (\i v -> isJust <$> getWorldVariable i v) setWorldVariable (WorldInt . fromIntegral)
 
-setWorldText :: forall w. (ReadWrite w IO Variables) => w -> Text -> Text -> Lua ()
+setWorldText :: KathuWorld -> Text -> Text -> Lua ()
 setWorldText = setVariableLua (\i v -> isJust <$> getWorldVariable i v) setWorldVariable WorldText
 
 -- Global variables don't care if the key is present or not before they can be set
 
-setGlobalBool :: forall w. (ReadWrite w IO Variables) => w -> Text -> Bool -> Lua ()
+setGlobalBool :: KathuWorld -> Text -> Bool -> Lua ()
 setGlobalBool = setVariableLua (\_ _ -> pure True) setGlobalVariable WorldBool
 
-setGlobalDouble :: forall w. (ReadWrite w IO Variables) => w -> Text -> Double -> Lua ()
+setGlobalDouble :: KathuWorld -> Text -> Double -> Lua ()
 setGlobalDouble = setVariableLua (\_ _ -> pure True) setGlobalVariable WorldDouble
 
-setGlobalInt :: forall w. (ReadWrite w IO Variables) => w -> Text -> Int -> Lua ()
+setGlobalInt :: KathuWorld -> Text -> Int -> Lua ()
 setGlobalInt = setVariableLua (\_ _ -> pure True) setGlobalVariable (WorldInt . fromIntegral)
 
-setGlobalText :: forall w. (ReadWrite w IO Variables) => w -> Text -> Text -> Lua ()
+setGlobalText :: KathuWorld -> Text -> Text -> Lua ()
 setGlobalText = setVariableLua (\_ _ -> pure True) setGlobalVariable WorldText

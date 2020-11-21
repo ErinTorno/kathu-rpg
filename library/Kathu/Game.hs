@@ -16,7 +16,6 @@ import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Physics.Floor
 import           Kathu.Entity.System
-import           Kathu.Entity.Utils                  (destroyEntity)
 import           Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua                 as Lua
 import           Kathu.World.Time                    (stepWorldTime)

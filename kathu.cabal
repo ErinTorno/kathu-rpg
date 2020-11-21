@@ -66,7 +66,6 @@ library
                     Kathu.Entity.Prefab
                     Kathu.Entity.Resource
                     Kathu.Entity.System
-                    Kathu.Entity.Utils
                     -- Graphics
                     Kathu.Graphics.Palette
                     Kathu.Graphics.UI

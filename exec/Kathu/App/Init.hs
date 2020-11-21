@@ -32,12 +32,13 @@ import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.Floor
 import           Kathu.Entity.System
-import           Kathu.Entity.Utils              (newFromPrefab)
 import           Kathu.Game                      (initPhysics)
 import           Kathu.Graphics.UI               (addUIExtension, gameIcon)
 import           Kathu.Language
 import           Kathu.Random
-import           Kathu.Scripting.Lua             (initScripting)
+import           Kathu.Scripting.Lua.Component   (registerComponentFunctions)
+import           Kathu.Scripting.Lua.Global      (registerGlobalFunctions)
+import           Kathu.Scripting.Lua             (LuaModules(..), initScripting)
 import           Kathu.Scripting.Variables       (initVariables)
 import           Kathu.World.Loader              (loadWorldSpace)
 import           Kathu.World.Tile                (Tile, makeAllTiles)
@@ -83,6 +84,10 @@ system settings window renderer = do
     SDL.HintRenderScaleQuality SDL.$= SDL.ScaleNearest
     lift sdlWindowConfig
     initVerdaWorld
+    -- important to register before dictionary, as dictionary will be loading many scripts
+    world <- ask
+    global $= LuaModules [registerComponentFunctions world, registerGlobalFunctions world]
+    -- now that lua modules are initialized, good to load
     (dictionary, manager) <- liftIO $ loadDictionary renderer
     seed       <- lift . maybe (R.randomIO :: IO Int) pure . randomSeed $ settings
     tilesV     <- lift . makeAllTiles . view dictTiles $ dictionary

@@ -16,9 +16,8 @@ import           Kathu.Entity.Item
 import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.System
-import           Kathu.Entity.Utils        (destroyEntity, loadKathuScript, newFromPrefabWithScriptMapping, setPalette)
 import           Kathu.Scripting.Event
-import qualified Kathu.Scripting.Lua.Types as Lua
+import qualified Kathu.Scripting.Lua       as Lua
 import           Kathu.Scripting.Variables
 import           Kathu.Scripting.Wire
 import           Kathu.World.ChunkBuilder
@@ -51,7 +50,7 @@ loadWorldSpace ws = do
         Nothing    -> pure ()
         (Just scr) -> do
             ety    <- newExistingEntity ()
-            active <- loadKathuScript id ety scr
+            active <- Lua.loadScript id ety scr
             ety    $= active
     void $ setPalette (ws^.initialPalette)
     -- to prevent pausing issues during gameplay, we force a GC now while it's just done loading

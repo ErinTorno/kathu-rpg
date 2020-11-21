@@ -110,7 +110,11 @@ instance Semigroup ScriptEventBuffer where (<>) = mappend
 instance Monoid ScriptEventBuffer where mempty = ScriptEventBuffer []
 instance Component ScriptEventBuffer where type Storage ScriptEventBuffer = Global ScriptEventBuffer
 
-type HasScripting w m = ReadWriteEach w m [ActiveScript, RunningScriptEntity, ScriptBank, ScriptEventBuffer]
+newtype LuaModules = LuaModules {unLuaModules :: [Lua ()]}
+
+instance Semigroup LuaModules where (<>) = mappend
+instance Monoid LuaModules where mempty = LuaModules []
+instance Component LuaModules where type Storage LuaModules = Global LuaModules
 
 type LuaModule w = w -> Lua ()
 
