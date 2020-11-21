@@ -1,12 +1,8 @@
 -- Meant to be imported qualified
 module Kathu.Scripting.Lua
-    ( module Kathu.Scripting.ExternalFunctions
-    , module Kathu.Scripting.Lua.Types
-    , HasScripting
+    ( module Kathu.Scripting.Lua.Types
     , call
     , loadScript
-    , shouldScriptRun
-    , setInstanceConfig
     , addWireController
     , addWireReceiver
     , releaseActiveScript
@@ -14,9 +10,8 @@ module Kathu.Scripting.Lua
     ) where
 
 import           Apecs
-import           Apecs.Physics                     (Force, Mass, Physics, Position, Velocity)
 import           Control.Concurrent.MVar
-import           Control.Monad                     (unless, when)
+import           Control.Monad                     (forM_, unless, when)
 import           Control.Monad.ST                  (stToIO)
 import           Control.Lens                      ((^.))
 import qualified Data.HashTable.ST.Basic           as HT
@@ -25,70 +20,17 @@ import qualified Data.Vector                       as Vec
 import           Foreign.Lua                       hiding (call, error)
 import qualified Foreign.Lua.Core                  as Lua
 import qualified Foreign.Lua.FunctionCalling       as Lua
-import           Verda.Event.Controls              (CursorMotionState)
-import           Verda.Graphics.Components         (Camera(..))
-import           Verda.Graphics.Sprites            (Sprite)
-import           Verda.Logger
-import           Verda.Time
-import           Verda.Util.Types
-import           Verda.Util.Apecs
-import           Verda.World                        (IsDebug)
 
-import           Kathu.Entity.Components
-import           Kathu.Entity.LifeTime              (LifeTime)
-import           Kathu.Random
+import           Kathu.Entity.System
 import           Kathu.Scripting.Event
-import           Kathu.Scripting.ExternalFunctions
-import           Kathu.Scripting.Lua.Component
-import           Kathu.Scripting.Lua.Global
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
 import           Kathu.Scripting.Wire
 
-type HasScripting w m = ReadWriteEach w m [ActiveScript, RunningScriptEntity, ScriptBank, ScriptEventBuffer, WireReceivers]
-
 call :: Lua.LuaCallFunc a => String -> a
 call = callFunc
 
-shouldScriptRun :: ScriptEvent -> ActiveScript -> Bool
-shouldScriptRun e = isEventSet e . eventFlags
-
-setInstanceConfig :: IDMap WorldVariable -> ActiveScript -> ActiveScript
-setInstanceConfig config script = script {instanceConfig = config}
-
-addWireController :: Identifier -> ActiveScript -> ActiveScript
-addWireController sigName as = as { wireSignals = Vec.cons sigName (wireSignals as) }
-
-addWireReceiver :: forall w. (ReadWriteEach w IO [RunningScriptEntity, ScriptEventBuffer, WireReceivers])
-                => Identifier -> ActiveScript -> SystemT w IO ()
-addWireReceiver sigName as@ActiveScript {instanceEntity = ety} = do
-    world     <- ask
-    receivers <- get global
-
-    let onChange     = execFor as . call "onSignalChange" (unEntity ety)
-        onChangeIO i = Apecs.runWith world $ do
-            ScriptEventBuffer buffer <- get global
-            global $= ScriptEventBuffer (Apecs.runWith world (onChange i) : buffer)
-            
-    liftIO $ addWireListener sigName (unEntity ety) onChangeIO receivers
-
-mkActiveScript :: forall w. (HasScripting w IO) => (ActiveScript -> ActiveScript) -> Entity -> SingletonStatus -> Lua () -> Script -> SystemT w IO ActiveScript
-mkActiveScript mapper !ety !singStatus !initLua (Script _ mainScr flags _) = do
-    mvar <- liftIO newEmptyMVar
-    -- warning: by this point no mvar is supplied, so if something tries to use it it will have issues
-    -- fortunately nothing should, as this won't trigger execFor/runFor or events
-    let baseAS = mapper $ ActiveScript mvar flags ety Vec.empty Vec.empty singStatus Map.empty
-    ety    $= baseAS
-    global $= RunningScriptEntity (Just ety)
-
-    mvar' <- liftIO $ do
-        st  <- Lua.newstate
-        -- for some reason Lua exception logging doesn't actually get caught here, unlike in execFor...
-        st' <- Foreign.Lua.runWith st (initLua >> handleLuaOp (Lua.dostring mainScr) >> Lua.state)
-        newMVar st'
-    pure $ baseAS {activeState = mvar'}
-
-releaseActiveScript :: forall w. (ReadWriteEach w IO [RunningScriptEntity, ScriptEventBuffer, Variables, WireReceivers]) => ActiveScript -> SystemT w IO ()
+releaseActiveScript :: ActiveScript -> SystemT' IO ()
 releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched signals singStatus _) = do
     let ety = unEntity scriptEntity
     when (scriptEntity /= global && shouldScriptRun onDestroy as) $
@@ -108,9 +50,24 @@ releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched signals singS
             Lua.close lstate
             putMVar stmvar $ error "Attempted to use a release ActiveScript"
 
-loadScript :: forall w. (Has w IO Physics, ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, Force, Identity, IsDebug, LifeTime, Local, Logger, LogicTime, Mass, MovingSpeed, Position, Random, RenderTime, RunningScriptEntity, ScriptBank, ScriptEventBuffer, Sprite, Tags, Variables, Velocity, WireReceivers])
-           => (ActiveScript -> ActiveScript) -> ExternalFunctions w -> Entity -> Script -> SystemT w IO ActiveScript
-loadScript mapper extFuns ety script
+mkActiveScript :: (ActiveScript -> ActiveScript) -> Entity -> SingletonStatus -> Lua () -> Script -> SystemT' IO ActiveScript
+mkActiveScript mapper !ety !singStatus !initLua (Script _ mainScr flags _) = do
+    mvar <- liftIO newEmptyMVar
+    -- warning: by this point no mvar is supplied, so if something tries to use it it will have issues
+    -- fortunately nothing should, as this won't trigger execFor/runFor or events
+    let baseAS = mapper $ ActiveScript mvar flags ety Vec.empty Vec.empty singStatus Map.empty
+    ety    $= baseAS
+    global $= RunningScriptEntity (Just ety)
+
+    mvar' <- liftIO $ do
+        st  <- Lua.newstate
+        -- for some reason Lua exception logging doesn't actually get caught here, unlike in execFor...
+        st' <- Foreign.Lua.runWith st (initLua >> handleLuaOp (Lua.dostring mainScr) >> Lua.state)
+        newMVar st'
+    pure $ baseAS {activeState = mvar'}
+
+loadScript :: [LuaModule KathuWorld] -> (ActiveScript -> ActiveScript) -> Entity -> Script -> SystemT' IO ActiveScript
+loadScript modules mapper ety script
     | script^.isSingleton = runIfOnInit =<< fromBank
     | otherwise           = runIfOnInit =<< mkAS mapper NonSingleton ety
     where mkAS f singStatus e = ask >>= (\l -> mkActiveScript f e singStatus l script) . initLua
@@ -120,8 +77,7 @@ loadScript mapper extFuns ety script
               openpackage
               openstring
               opentable
-              registerComponentFunctions world extFuns
-              registerGlobalFunctions world extFuns
+              forM_ modules ($world)
           runIfOnInit as | shouldScriptRun onInit as = set ety as >> execFor as (call "onInit" (unEntity ety)) >> return as
                          | otherwise                 = set ety as >> return as
           fromBank = do
@@ -134,7 +90,7 @@ loadScript mapper extFuns ety script
                                 liftIO . stToIO $ HT.insert sbank sID ascript
                                 pure . mapper $ ascript {instanceEntity = ety, singletonStatus = SingletonReference}
 
-initScripting :: forall w. (ReadWriteEach w IO [ScriptBank, WireReceivers]) => SystemT w IO ()
+initScripting :: SystemT' IO ()
 initScripting = do
     scriptBank <- liftIO $ ScriptBank <$> stToIO (HT.newSized 64)
     receivers  <- liftIO $ WireReceivers <$> stToIO (HT.newSized 64)

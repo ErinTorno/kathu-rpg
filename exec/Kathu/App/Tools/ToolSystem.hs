@@ -26,16 +26,17 @@ import           Verda.Util.Flow             (ireplicateM_)
 import           Verda.Util.Apecs
 import           Verda.World                 (addRendererExtension)
 
-import           Kathu.App.System
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
-import           Kathu.Editor.Tools.ToolMode
-import           Kathu.App.World
 import           Kathu.Config.Dictionary
 import           Kathu.Config.Settings
+import           Kathu.Editor.Tools.ToolMode
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.CollisionGroup
+import           Kathu.Entity.System
+import           Kathu.Entity.Utils
 import           Verda.Graphics.Color
+import           Kathu.World.Loader           (rebuildCurrentTileCollisions)
 import           Kathu.World.Tile
 import           Kathu.World.WorldSpace
 

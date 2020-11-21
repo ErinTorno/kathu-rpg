@@ -16,17 +16,15 @@ import           Verda.Logger
 import           Kathu.Entity.Components
 import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.CollisionGroup
-import           Kathu.Scripting.ExternalFunctions
+import           Kathu.Entity.System
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
 import           Kathu.Scripting.Wire
 import           Verda.Util.Types
 import           Verda.Util.Apecs
 
--- ExternalFunctions is unused in this, but is included here since it might be in the future, mirrors the Global's function signature, and acts as a Proxy for g
-registerComponentFunctions :: forall w. (Has w IO Physics, ReadWriteEach w IO '[ActiveScript, Force, Identity, LifeTime, Logger, Mass, MovingSpeed, Position, RunningScriptEntity, ScriptEventBuffer, Sprite, Tags, Velocity, WireReceivers])
-                           => w -> ExternalFunctions w -> Lua ()
-registerComponentFunctions world _ = do
+registerComponentFunctions :: KathuWorld -> Lua ()
+registerComponentFunctions world = do
     registerHaskellFunction "getIdentifier"        $ getIdentifier world
     registerHaskellFunction "getName"              $ getName world
     registerHaskellFunction "getDescription"       $ getDescription world

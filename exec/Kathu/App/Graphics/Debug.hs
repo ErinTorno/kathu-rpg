@@ -17,9 +17,9 @@ import           Verda.Util.Containers           (fromJustElseError)
 import           Verda.Util.Types                (unID)
 import           Verda.World                     (IsDebug(..), addRendererExtension)
 
-import           Kathu.App.System                (SystemT')
 import           Kathu.Editor.Tools.ToolMode        (isNoTool)
 import           Kathu.Entity.Physics.CollisionGroup (collisionFilterDebugColor)
+import           Kathu.Entity.System
 import           Kathu.Language
 import           Kathu.World.WorldSpace
 

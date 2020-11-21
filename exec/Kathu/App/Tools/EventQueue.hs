@@ -3,8 +3,8 @@ module Kathu.App.Tools.EventQueue where
 import           Apecs
 import           Control.Concurrent.MVar
 
-import           Kathu.App.System
 import           Kathu.Editor.Tools.ToolMode
+import           Kathu.Entity.System
 import           Kathu.World.Tile            (Tile)
 import           Kathu.World.WorldSpace      (InstancedPrefab, WorldSpace)
 
@@ -24,7 +24,7 @@ data EditorEvent
     = EditEntityInstance Entity InstancedPrefab
 
 data EventQueue = EventQueue
-    { entityWorld  :: !(MVar EntityWorld)
+    { entityWorld  :: !(MVar KathuWorld)
     , appEvents    :: !(MVar [AppEvent])
     , editorEvents :: !(MVar [EditorEvent])
     }
@@ -63,10 +63,10 @@ pollEvents eventMVar = do
 
 -- EntityWorld
 
-takeEntityWorld :: EventQueue -> IO EntityWorld
+takeEntityWorld :: EventQueue -> IO KathuWorld
 takeEntityWorld EventQueue{entityWorld = worldMVar} = takeMVar worldMVar
 
-putEntityWorld :: EntityWorld -> EventQueue -> IO ()
+putEntityWorld :: KathuWorld -> EventQueue -> IO ()
 putEntityWorld world EventQueue{entityWorld = worldMVar} = putMVar worldMVar world
 
 runWithEntityWorld :: EventQueue -> SystemT' IO a -> IO a

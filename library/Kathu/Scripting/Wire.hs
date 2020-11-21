@@ -1,14 +1,18 @@
 module Kathu.Scripting.Wire where
 
 import           Apecs
-import           Control.Monad           (forM_)
-import           Control.Monad.IO.Class  (MonadIO)
-import           Control.Monad.ST        (stToIO)
-import qualified Data.HashTable.ST.Basic as HT
-import           Data.IntMap             (IntMap)
-import qualified Data.IntMap             as IntMap
-
+import           Control.Monad             (forM_)
+import           Control.Monad.IO.Class    (MonadIO)
+import           Control.Monad.ST          (stToIO)
+import qualified Data.HashTable.ST.Basic   as HT
+import           Data.IntMap               (IntMap)
+import qualified Data.IntMap               as IntMap
+import qualified Data.Vector               as Vec
+import qualified Foreign.Lua               as Lua
+import           Verda.Util.Apecs
 import           Verda.Util.Types
+
+import           Kathu.Scripting.Lua.Types
 
 type OnSignalChange = Int -> IO ()
 
@@ -44,3 +48,23 @@ mutateWirePower sigName f (WireReceivers con) = do
         liftIO . stToIO . HT.insert con sigName $ receiver {wirePower = power'}
 
         liftIO $ forM_ (wireEvents receiver) ($power')
+
+------------
+-- Script --
+------------
+
+addWireController :: Identifier -> ActiveScript -> ActiveScript
+addWireController sigName as = as { wireSignals = Vec.cons sigName (wireSignals as) }
+
+addWireReceiver :: forall w. (ReadWriteEach w IO [RunningScriptEntity, ScriptEventBuffer, WireReceivers])
+                => Identifier -> ActiveScript -> SystemT w IO ()
+addWireReceiver sigName as@ActiveScript {instanceEntity = ety} = do
+    world     <- ask
+    receivers <- get global
+
+    let onChange     = execFor as . Lua.callFunc "onSignalChange" (unEntity ety)
+        onChangeIO i = Apecs.runWith world $ do
+            ScriptEventBuffer buffer <- get global
+            global $= ScriptEventBuffer (Apecs.runWith world (onChange i) : buffer)
+            
+    liftIO $ addWireListener sigName (unEntity ety) onChangeIO receivers

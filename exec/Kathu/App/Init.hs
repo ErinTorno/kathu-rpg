@@ -26,24 +26,25 @@ import           Verda.Util.Types                (unID)
 import           Verda.World                     (addBeforeRenderExtension, initVerdaWorld)
 
 import           Kathu.App.Graphics.Debug        (addDebugExtension)
-import           Kathu.App.System
-import           Kathu.App.World                 (loadWorldSpace)
 import           Kathu.Config.Dictionary
 import           Kathu.Config.Settings
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.Physics.Floor
+import           Kathu.Entity.System
+import           Kathu.Entity.Utils              (newFromPrefab)
 import           Kathu.Game                      (initPhysics)
 import           Kathu.Graphics.UI               (addUIExtension, gameIcon)
 import           Kathu.Language
 import           Kathu.Random
 import           Kathu.Scripting.Lua             (initScripting)
 import           Kathu.Scripting.Variables       (initVariables)
+import           Kathu.World.Loader              (loadWorldSpace)
 import           Kathu.World.Tile                (Tile, makeAllTiles)
 import           Kathu.World.WorldSpace          (emptyWorldSpace)
 
-entityWorld :: IO EntityWorld
-entityWorld = initEntityWorld
+entityWorld :: IO KathuWorld
+entityWorld = initKathuWorld
 
 -- initializes an entity as the local player
 initLocalPlayer :: Entity -> SystemT' IO ()

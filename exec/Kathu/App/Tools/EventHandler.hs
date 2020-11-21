@@ -6,13 +6,14 @@ import           Control.Monad               (when)
 import qualified Data.Map                    as Map
 import           Verda.World                 (IsDebug(..), RunState(..))
 
-import           Kathu.App.System
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventQueue
-import           Kathu.Editor.Tools.ToolMode
 import           Kathu.App.Tools.ToolSystem
-import           Kathu.App.World             (loadWorldSpace)
 import           Kathu.Config.Dictionary
+import           Kathu.Editor.Tools.ToolMode
+import           Kathu.Entity.System
+import           Kathu.Entity.Utils
+import           Kathu.World.Loader          (loadWorldSpace, placeInstancedPrefab)
 import           Kathu.World.WorldSpace
 
 -- Polls for all events in the EventQueue, and returns True if the normal game runner should run after this
@@ -28,7 +29,7 @@ handleEvent event = case event of
         global $= Quitting
     ToggleDebug -> do
         IsDebug isDebug <- get global
-        global        $= IsDebug (not isDebug)
+        global          $= IsDebug (not isDebug)
     UseToolMode newMode ->
         handleUseToolModeEvent newMode
     SetSelectedTile sTile -> do
@@ -42,8 +43,7 @@ handleEvent event = case event of
     DestroyEntity ety ->
         destroyEntity ety
     PlaceEntity instancedPrefab -> do
-        includeEditorInfo <- get global
-        placeInstancedPrefab includeEditorInfo newFromPrefabWithScriptMapping instancedPrefab
+        placeInstancedPrefab instancedPrefab
         -- If we can edit entities, then we must rebuild the editor info collisions to include this new entity
         toolmode <- get global
         when (canEditEntities toolmode)

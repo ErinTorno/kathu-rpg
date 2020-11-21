@@ -12,11 +12,11 @@ import           Verda.Time
 import           Verda.Util.Types
 import           Verda.World                     (IsDebug(..))
 
-import           Kathu.App.System
 import           Kathu.Config.Controls
 import           Kathu.Config.Settings
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
+import           Kathu.Entity.System
 
 runEvents :: System' ()
 runEvents = do

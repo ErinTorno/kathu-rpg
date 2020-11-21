@@ -30,9 +30,9 @@ import           Verda.IO.Directory
 import           Verda.Parsing.Aeson
 import           Kathu.Scripting.Event
 import           Kathu.Scripting.Variables   (WatchedVariable, WorldVariable)
+import           Verda.Util.Apecs
 import           Verda.Util.Dependency
 import           Verda.Util.Types
-import           Verda.Util.Apecs
 
 data Script = Script
     { _scriptID         :: !Identifier -- a unique identifier to refer to this script (usually its file path)
@@ -110,6 +110,10 @@ instance Semigroup ScriptEventBuffer where (<>) = mappend
 instance Monoid ScriptEventBuffer where mempty = ScriptEventBuffer []
 instance Component ScriptEventBuffer where type Storage ScriptEventBuffer = Global ScriptEventBuffer
 
+type HasScripting w m = ReadWriteEach w m [ActiveScript, RunningScriptEntity, ScriptBank, ScriptEventBuffer]
+
+type LuaModule w = w -> Lua ()
+
 handleLua :: a -> Lua a -> Lua a
 handleLua !def !lua = do
     res <- Lua.try lua
@@ -159,6 +163,12 @@ runFor ActiveScript {activeState = stmvar, instanceEntity = ety} fn = do
 
     global $= RunningScriptEntity Nothing
     return a
+
+shouldScriptRun :: ScriptEvent -> ActiveScript -> Bool
+shouldScriptRun e = isEventSet e . eventFlags
+
+setInstanceConfig :: IDMap WorldVariable -> ActiveScript -> ActiveScript
+setInstanceConfig config script = script {instanceConfig = config}
 
 -- Peekable/Pushable instances
 

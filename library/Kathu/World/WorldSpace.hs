@@ -8,7 +8,7 @@ import           Apecs                     hiding (Map)
 import qualified Apecs
 import           Apecs.Physics             hiding (Map)
 import           Control.Lens              hiding ((.=), set)
-import           Control.Monad             (foldM, forM_, when)
+import           Control.Monad             (foldM)
 import           Control.Monad.IO.Class    (MonadIO)
 import           Data.Aeson
 import           Data.Aeson.Types          (Parser, typeMismatch)
@@ -17,29 +17,19 @@ import           Data.Text                 (Text)
 import qualified Data.Text                 as T
 import           Data.Vector               (Vector)
 import qualified Data.Vector               as Vec
-import           Verda.Graphics.Sprites    (Sprite)
 import           Verda.IO.Directory        (WorkingDirectory)
 import           Verda.Parsing.Yaml        (FieldOrder, mkFieldOrderFromList)
 import           Verda.System.Tile.Chunks  (unitsPerTile)
 import           Verda.System.Tile.Components
-import           Verda.Util.Apecs
 import           Verda.Util.Dependency
 import           Verda.Util.Types          (Identifier, IDMap)
-import           Verda.World               (Existance(..))
 
-import           Kathu.Editor.Tools.Info
-import           Kathu.Entity.Components
 import           Kathu.Entity.Item
-import           Kathu.Entity.LifeTime
-import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Prefab       (Prefab, prefabID)
 import           Kathu.Graphics.Palette
-import           Kathu.Scripting.Event
-import qualified Kathu.Scripting.Lua       as Lua
+import qualified Kathu.Scripting.Lua.Types as Lua
 import           Kathu.Scripting.Variables
-import           Kathu.Scripting.Wire
 import           Kathu.World.ChunkBuilder
-import           Kathu.World.Stasis
 import           Kathu.World.Tile          (AllTiles', Tile)
 
 data InstancedPrefab = InstancedPrefab
@@ -88,111 +78,6 @@ instance Component WorldSpace  where type Storage WorldSpace  = Global WorldSpac
 
 emptyWorldSpace :: WorldSpace
 emptyWorldSpace = WorldSpace "" "the void..." "" Map.empty (V2 0 0) False Map.empty Nothing Vec.empty Vec.empty emptyChunks
-
---------------------
--- System Related --
---------------------
-
-initWorldSpace :: forall w. (Get w IO EntityCounter, Get w IO AllTiles', Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[Chunks, EditorInstancedFromWorld, Existance, IncludeEditorInfo, LifeTime, Player, SpecialEntity, Sprite, Variables, WireReceivers, WorldSpace, WorldStases])
-               => (Entity -> SystemT w IO ())
-               -> ((Lua.ActiveScript -> Lua.ActiveScript) -> Prefab -> SystemT w IO Entity)
-               -> (Entity -> Lua.Script -> SystemT w IO Lua.ActiveScript)
-               -> WorldSpace
-               -> SystemT w IO ()
-initWorldSpace destroyEty mkEntity loadScript ws = do
-    -- we clean up all previous entities without lifetimes
-    cmapM_ $ \(Existance, _ :: Not LifeTime, ety) -> destroyEty ety
-    -- for those that have them, we clear those that are not persistant
-    cmapM_ $ \(lf :: LifeTime, ety)    -> when (lf /= Persistant) $ destroyEty ety
-    
-    saveWorldVariables ws
-
-    global $= ws
-
-    includeEditorInfo <- get global
-
-    cmap $ \(_ :: Player) -> ws^.loadPoint.to Position
-    -- we place all items in the world as entities
-    forM_ (ws^.worldItems) $ \(InstancedItem item pos) -> newEntityFromItem item pos
-    forM_ (ws^.worldEntities) $ placeInstancedPrefab includeEditorInfo mkEntity
-
-    global $= ws^.worldChunks
-    buildTileCollisions ws
-
-    case ws^.worldScript of
-        Nothing    -> pure ()
-        (Just scr) -> do
-            ety    <- newExistingEntity ()
-            active <- loadScript ety scr
-            ety    $= active
-
-placeInstancedPrefab :: forall w. (Get w IO EntityCounter, Has w IO Physics, Lua.HasScripting w IO, ReadWriteEach w IO '[EditorInstancedFromWorld, Existance, SpecialEntity, Sprite, WireReceivers])
-                     => IncludeEditorInfo
-                     -> ((Lua.ActiveScript -> Lua.ActiveScript) -> Prefab -> SystemT w IO Entity)
-                     -> InstancedPrefab
-                     -> SystemT w IO ()
-placeInstancedPrefab (IncludeEditorInfo shouldIncludeInfo) mkEntity instancedPrefab@(InstancedPrefab _ prefab pos sigOut sigIn config) = do
-    ety <- mkEntity (\s -> s {Lua.instanceConfig = config}) prefab
-    ety $= Position pos
-    -- include the instance with the entity, as we are running in some form of editor mode
-    when shouldIncludeInfo $
-        ety $= EditorInstancedFromWorld instancedPrefab
-
-    initialScript <- getIfExists ety
-    forM_ initialScript $
-        set ety . Lua.setInstanceConfig config 
-
-    forM_ sigOut $ \sig -> modify ety (Lua.addWireController sig)
-
-    forM_ sigIn $ \sig -> do
-        maybeScript <- getIfExists ety
-        forM_ maybeScript $ \script ->
-                when (Lua.shouldScriptRun onSignalChange script) $ Lua.addWireReceiver sig script
-
--- | Destroy all entities created for holding tile collisions
-destroyTileCollisions :: forall w. (ReadWrite w IO SpecialEntity) => (Entity -> SystemT w IO ()) -> SystemT w IO ()
-destroyTileCollisions destroyEty =
-    cmapM_ $ \(specialEty, ety) -> when (specialEty == WorldCollision) $ destroyEty ety
-
-buildTileCollisions :: forall w. (Get w IO EntityCounter, Get w IO AllTiles', Has w IO Physics, ReadWriteEach w IO '[Existance, SpecialEntity])
-                      => WorldSpace
-                      -> SystemT w IO ()
-buildTileCollisions ws = do
-    tiles :: AllTiles' <- get global
-    let worldCollisionFilter = groupCollisionFilter Movement
-        addWorldCollision polygons
-            | Vec.null polygons = pure ()
-            | otherwise         = do
-                ety <- newExistingEntity (WorldCollision, StaticBody, Position (V2 0 0))
-                ety $= (Shape ety (Convex (Vec.head polygons) 0), worldCollisionFilter)
-                
-                mapM_ (\p -> newExistingEntity (WorldCollision, Shape ety $ Convex p 0)) . Vec.tail $ polygons
-    colPolys <- mkCollisionPolygons tiles $ ws^.worldChunks
-
-    addWorldCollision colPolys
-
--- | Loads in the new variables for the current world, and saves the previous to its Stasis
-saveWorldVariables :: forall w m. (MonadIO m, ReadWriteEach w m '[Variables, WorldSpace, WorldStases]) => WorldSpace -> SystemT w m ()
-saveWorldVariables newWS = do
-    oldWS :: WorldSpace <- get global
-    variables <- get global
-    stases    <- get global
-
-    let oldID = oldWS^.worldID
-
-    -- if we already have this world saved, we get its saved variables; otherwise we use the default ones
-    let newVars = maybe (newWS^.worldVariables) statisVariables . getStasis oldID $ stases
-
-    prevWorldVars <- replaceWorldVariables variables newVars
-
-    let saveVar stasis = stasis {statisVariables = prevWorldVars}
-
-    global $= updateStasis oldID stases saveVar
-
--- as of right now, count not considered; this will be added when picking up is implemented
--- currently use StaticBody, although DynamicBody will be used once these have a shape and mass
-newEntityFromItem :: forall w m. (MonadIO m, Get w m EntityCounter, ReadWriteEach w m '[Body, Existance, Position, Sprite]) => ItemStack -> V2 Double -> SystemT w m Entity
-newEntityFromItem stack v = newExistingEntity (StaticBody, Position v, itemIcon . stackItem $ stack)
 
 -------------------
 -- Serialization --

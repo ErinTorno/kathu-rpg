@@ -4,27 +4,27 @@ import           Apecs                               hiding (set)
 import           Apecs.Physics                       hiding (set)
 import           Control.Lens
 import           Control.Monad                       (forM_, when)
-import           Control.Monad.IO.Class              (MonadIO)
 import           Data.Maybe
 import           Data.Word
 import           Verda.Util.Apecs
 import           Verda.Util.Types
-import           Verda.Time                          (LogicTime, stepLogicTime)
-import           Verda.World                         (Existance)
+import           Verda.Time                          (stepLogicTime)
 
 import           Kathu.Entity.Action
 import           Kathu.Entity.Components
 import           Kathu.Entity.LifeTime
 import           Kathu.Entity.Physics.CollisionGroup
 import           Kathu.Entity.Physics.Floor
+import           Kathu.Entity.System
+import           Kathu.Entity.Utils                  (destroyEntity)
 import           Kathu.Scripting.Event
 import qualified Kathu.Scripting.Lua                 as Lua
-import           Kathu.World.Time                    (WorldTime, stepWorldTime)
+import           Kathu.World.Time                    (stepWorldTime)
 
 updateDelay :: Word32
 updateDelay = floor $ 1000 / (60 :: Double) -- 60 ticks per second is ideal
 
-initPhysics :: forall w. (Has w IO Physics, Lua.HasScripting w IO) => SystemT w IO ()
+initPhysics :: SystemT' IO ()
 initPhysics = do
     let callSensorCollide event fnName colFilA etyA etyB =
             when (colFilA == movementSensorFilter) $ do
@@ -50,8 +50,7 @@ initPhysics = do
         , separateCB = Just separate
         }
 
-runPhysics :: forall w m. (MonadIO m, Get w m EntityCounter, Has w m Physics, ReadWriteEach w m '[ActionSet, Existance, FloorProperties, LifeTime, Local, MovingSpeed, WorldFloor])
-           => SystemT w m ()
+runPhysics :: SystemT' IO ()
 runPhysics = do
     (FloorProperties defFloorPropEty _) <- get global
 
@@ -70,14 +69,8 @@ runPhysics = do
                                                      $ as
     pure ()
     
-runGame :: forall w. (Get w IO EntityCounter, Has w IO Physics, ReadWriteEach w IO 
-               [ ActionSet, Existance, FloorProperties, LifeTime, Local, LogicTime, MovingSpeed, WorldFloor, WorldTime
-               , Lua.ActiveScript, Lua.RunningScriptEntity, Lua.ScriptEventBuffer
-               ])
-        => (Entity -> SystemT w IO ()) -- We take a function to destroy an entity, since there are more components than this module knows about
-        -> Word32
-        -> SystemT w IO ()
-runGame destroyEntity !dT = do
+runGame :: Word32 -> SystemT' IO ()
+runGame !dT = do
     cmap   $ updateLifeTime dT
     cmapM_ $ \(life, ety) -> when (hasExpired life) (destroyEntity ety)
     stepLogicTime dT

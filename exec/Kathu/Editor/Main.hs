@@ -22,7 +22,6 @@ import           System.FilePath            (takeFileName)
 import           Verda.App
 import           Verda.World
 
-import           Kathu.App.System           (EntityWorld)
 import           Kathu.App.Tools.Commands
 import           Kathu.App.Tools.EventHandler
 import           Kathu.App.Tools.EventQueue
@@ -37,6 +36,7 @@ import           Kathu.Editor.Tools.Info
 import           Kathu.Editor.Tools.ToolMode
 import           Kathu.Editor.Types
 import           Kathu.Editor.Util.GtkMisc
+import           Kathu.Entity.System         (KathuWorld)
 import           Kathu.World.WorldSpace
 
 mkMenuBarDescription :: EditorState -> MenuBarDescription
@@ -65,7 +65,7 @@ onNewFile es@EditorState{wsEditState = wsEditStRef} = do
 onFileLoad :: EditorState -> Maybe FilePath -> IO ()
 onFileLoad es@EditorState{eventQueue = queue, wsEditState = wsEditStRef} maybeFile =
     forM_ maybeFile $ \f -> do
-        ws <- loadWorldSpace queue f
+        ws <- loadWorldSpaceFromFile queue f
 
         modifyIORef' wsEditStRef $ \wsEditSt ->
             wsEditSt {wsFilePath = Just f}
@@ -159,7 +159,7 @@ getWorldFile [] = Nothing
 getWorldFile (x:xs) | ".world" `isSuffixOf` x = Just x
                     | otherwise               = getWorldFile xs
 
-start :: [String] -> AppConfig EntityWorld -> IO ()
+start :: [String] -> AppConfig KathuWorld -> IO ()
 start args baseAppConfig = do
     queue <- newEventQueue
     commandState <- newCommandState

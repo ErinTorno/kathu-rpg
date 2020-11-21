@@ -11,7 +11,7 @@ import           Apecs
 import           Control.Monad              (unless)
 import           Data.IORef
 
-import           Kathu.App.System            (SystemT')
+import           Kathu.Entity.System
 
 data Command = Command
     { applyCommand  :: !(SystemT' IO ())

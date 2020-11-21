@@ -9,12 +9,12 @@ import           Verda.World
 
 import           Kathu.App.Events
 import qualified Kathu.App.Init                  as Init
-import           Kathu.App.System
+import           Kathu.Entity.System
 import           Kathu.Editor.Main               as Editor
 import qualified Kathu.Config.Settings           as Settings
 import qualified Kathu.Game                      as Game
 
-mkAppConfig :: IO (AppConfig EntityWorld)
+mkAppConfig :: IO (AppConfig KathuWorld)
 mkAppConfig = do
     settings <- Settings.loadSettings
     pure $ AppConfig
@@ -28,7 +28,7 @@ mkAppConfig = do
         , concurrentWorldVar = pure Nothing
         , runGame            = \updateDelay -> do
             runEvents
-            Game.runGame destroyEntity updateDelay
+            Game.runGame updateDelay
             runState <- get global
             when (runState == Running) $
                 stepPhysics (fromIntegral updateDelay / 1000)

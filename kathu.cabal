@@ -66,18 +66,19 @@ library
                     Kathu.Entity.Prefab
                     Kathu.Entity.Resource
                     Kathu.Entity.System
+                    Kathu.Entity.Utils
                     -- Graphics
                     Kathu.Graphics.Palette
                     Kathu.Graphics.UI
                     -- World
                     Kathu.World.ChunkBuilder
+                    Kathu.World.Loader
                     Kathu.World.Stasis
                     Kathu.World.Tile
                     Kathu.World.Time
                     Kathu.World.WorldSpace
                     -- Scripting
                     Kathu.Scripting.Event
-                    Kathu.Scripting.ExternalFunctions
                     Kathu.Scripting.Lua
                     Kathu.Scripting.Lua.Component
                     Kathu.Scripting.Lua.Global
@@ -113,8 +114,6 @@ executable kathu
   other-modules:    Kathu.App
                     Kathu.App.Events
                     Kathu.App.Init
-                    Kathu.App.System
-                    Kathu.App.World
                     -- Graphics
                     Kathu.App.Graphics.Debug
                     -- Tools

@@ -17,13 +17,17 @@ import           Verda.Util.Apecs
 import           Verda.World               (IsDebug(..))
 
 import           Kathu.Entity.Components
+import           Kathu.Entity.Prefab
+import           Kathu.Entity.System
 import           Kathu.Random
-import           Kathu.Scripting.ExternalFunctions
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
 
-registerGlobalFunctions :: forall w. (ReadWriteEach w IO [ActiveScript, Camera, CursorMotionState, IsDebug, Local, Logger, LogicTime, Random, RenderTime, RunningScriptEntity, ScriptEventBuffer, Variables]) => w -> ExternalFunctions w -> Lua ()
-registerGlobalFunctions world extFuns = do
+registerGlobalFunctions :: (Identifier -> SystemT' IO (Maybe Prefab))
+                        -> (Prefab -> SystemT' IO Entity)
+                        -> (Identifier -> SystemT' IO Bool)
+                        -> KathuWorld -> Lua ()
+registerGlobalFunctions lookupEntityPrefab newFromPrefab setPalette world = do
     registerHaskellFunction "log"               $ logLua world
     registerHaskellFunction "getCursorPosition" $ getCursorPosition world
     registerHaskellFunction "getPlayerEntity"   $ getPlayerEntity world
@@ -48,8 +52,8 @@ registerGlobalFunctions world extFuns = do
     registerHaskellFunction "setGlobalInt"      $ setGlobalInt world
     registerHaskellFunction "setGlobalText"     $ setGlobalText world
 
-    registerHaskellFunction "setPalette"        $ setPaletteLua extFuns world
-    registerHaskellFunction "newEntity"         $ newFromPrototypeLua extFuns world
+    registerHaskellFunction "setPalette"        $ setPaletteLua setPalette world
+    registerHaskellFunction "newEntity"         $ newFromPrototypeLua lookupEntityPrefab newFromPrefab world
 
     registerHaskellFunction "registerGlobalVarListener" $ registerListener addGlobalListener world
     registerHaskellFunction "registerWorldVarListener"  $ registerListener addWorldListener world
@@ -62,15 +66,15 @@ getCursorPosition :: forall w. (ReadWrite w IO CursorMotionState) => w -> Lua (V
 getCursorPosition !world = liftIO . Apecs.runWith world $
     cursorPosition <$> get global
 
-setPaletteLua :: ExternalFunctions w -> w -> Text -> Lua Bool
-setPaletteLua extFuns !world !idt = liftIO . Apecs.runWith world $ runW
-    where runW = setPalette extFuns . mkIdentifier $ idt
+setPaletteLua :: (Identifier -> SystemT' IO Bool) -> KathuWorld -> Text -> Lua Bool
+setPaletteLua setPalette !world !idt = liftIO . Apecs.runWith world $ runW
+    where runW = setPalette . mkIdentifier $ idt
 
-newFromPrototypeLua :: ExternalFunctions w -> w -> Text -> Lua (Optional Int)
-newFromPrototypeLua extFuns !world !protoID = liftIO . Apecs.runWith world $ mkEntity
-    where mkEntity = getEntityPrefab extFuns (mkIdentifier protoID) >>= mkIfPres
+newFromPrototypeLua :: (Identifier -> SystemT' IO (Maybe Prefab)) -> (Prefab -> SystemT' IO Entity) -> KathuWorld -> Text -> Lua (Optional Int)
+newFromPrototypeLua lookupEntityPrefab newFromPrefab !world !protoID = liftIO . Apecs.runWith world $ mkEntity
+    where mkEntity = lookupEntityPrefab (mkIdentifier protoID) >>= mkIfPres
           mkIfPres Nothing   = return $ Optional Nothing
-          mkIfPres (Just pr) = Optional . Just . unEntity <$> newFromPrefab extFuns pr
+          mkIfPres (Just pr) = Optional . Just . unEntity <$> newFromPrefab pr
 
 -----------------------
 -- Unique Components --

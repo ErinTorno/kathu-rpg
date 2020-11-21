@@ -50,8 +50,8 @@ saveWorldSpace EditorState{ editorWindow = window
                 FormatYAML -> saveYamlToFileWithFieldOrder worldspaceFieldOrder filePath wsValue
                 format     -> saveToFile format filePath wsValue
 
-loadWorldSpace :: EventQueue -> FilePath -> IO WorldSpace
-loadWorldSpace queue file = runWithEntityWorld queue $ do
+loadWorldSpaceFromFile :: EventQueue -> FilePath -> IO WorldSpace
+loadWorldSpaceFromFile queue file = runWithEntityWorld queue $ do
     dictionary  <- get global
     worldDep <- lift $ loadFromFileDP file
     (worldspace, store') <- runDependency worldDep (dictionary^.dictParsingStore)
