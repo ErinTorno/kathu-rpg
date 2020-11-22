@@ -24,16 +24,20 @@ instance ( s `CanProvide` WorkingDirectory
          , MonadIO m
          ) => (FromJSON (Dependency s m ShaderSet)) where
     parseJSON = withObject "ShaderSet" $ \v -> do
-        vertFileDP <- flattenDependency . fmap resolveAssetPathDP <$> v .:? "vertex"
+        compFileDP <- flattenDependency . fmap resolveAssetPathDP <$> v .:? "compute"
         fragFileDP <- flattenDependency . fmap resolveAssetPathDP <$> v .:? "fragment"
+        geomFileDP <- flattenDependency . fmap resolveAssetPathDP <$> v .:? "geometry"
+        vertFileDP <- flattenDependency . fmap resolveAssetPathDP <$> v .:? "vertex"
         pure $ do
-            vertFile <- vertFileDP
+            compFile <- compFileDP
             fragFile <- fragFileDP
+            geomFile <- geomFileDP
+            vertFile <- vertFileDP
             liftDependency . liftIO $ do
                 shaderMap <- mapM BS.readFile
                            . Map.mapMaybe id
                            . Map.fromList
-                           $ [(GL.VertexShader, vertFile), (GL.FragmentShader, fragFile)]
+                           $ [(GL.ComputeShader, compFile), (GL.FragmentShader, fragFile), (GL.GeometryShader, geomFile), (GL.VertexShader, vertFile)]
                 mkShaderSet shaderMap
 
 mkShaderSet :: MonadIO m => Map GL.ShaderType ByteString -> m ShaderSet

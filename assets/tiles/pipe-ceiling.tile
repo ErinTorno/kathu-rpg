@@ -1,0 +1,7 @@
+tile-id:  pipe-ceiling
+name:     ceiling pipe
+sprite:
+  atlas: pipe-horizontal.png
+  layer: 1
+is-solid: false
+break-behavior: unbreakable

@@ -42,7 +42,8 @@ common kathu-extensions
 
 library
   import:           kathu-extensions
-  exposed-modules:  Kathu.ControlEvents
+  exposed-modules:  Kathu.App
+                    Kathu.ControlEvents
                     Kathu.Game
                     Kathu.Init
                     Kathu.Language
@@ -52,13 +53,24 @@ library
                     Kathu.Config.KathuStore
                     Kathu.Config.Dictionary
                     Kathu.Config.Settings
-                    -- Editor
+                    -- Editor.Tools
                     Kathu.Editor.Tools.Commands
                     Kathu.Editor.Tools.EventHandler
                     Kathu.Editor.Tools.EventQueue
                     Kathu.Editor.Tools.Info
                     Kathu.Editor.Tools.ToolMode
                     Kathu.Editor.Tools.ToolSystem
+                    -- Editor
+                    -- todo toggle with flag
+                    Kathu.Editor.Dialogs
+                    Kathu.Editor.Dialogs.Entity
+                    Kathu.Editor.File
+                    Kathu.Editor.Main
+                    Kathu.Editor.Panels
+                    Kathu.Editor.Resources
+                    Kathu.Editor.Types
+                    Kathu.Editor.Util.GtkMisc
+                    Kathu.Editor.Util.PropertyGrid
                     -- Entity
                     Kathu.Entity.Action
                     Kathu.Entity.ActorState
@@ -93,6 +105,7 @@ library
                     Kathu.Scripting.Wire
                     -- Utility
                     Kathu.Util.Polygon
+  other-modules:    Paths_kathu
   build-depends:    base                    ^>=4.13,
                     verda,
                     apecs                   ^>=0.9.1,
@@ -109,35 +122,8 @@ library
                     text, bytestring,
                     lens, linear, mtl, primitive, random, scientific, unordered-containers, vector, vector-th-unbox,
                     directory, filepath,
-                    aeson, cereal
-  hs-source-dirs:   library
-  ghc-options:      -Wall -Werror -Wincomplete-record-updates -Wredundant-constraints -Wincomplete-uni-patterns
-  default-language: Haskell2010
-
-executable kathu
-  import:           kathu-extensions
-  main-is:          Main.hs
-  other-modules:    Kathu.App
-                    -- Editor
-                    Kathu.Editor.Dialogs
-                    Kathu.Editor.Dialogs.Entity
-                    Kathu.Editor.File
-                    Kathu.Editor.Main
-                    Kathu.Editor.Panels
-                    Kathu.Editor.Resources
-                    Kathu.Editor.Types
-                    Kathu.Editor.Util.GtkMisc
-                    Kathu.Editor.Util.PropertyGrid
-  other-modules:    Paths_kathu
-  build-depends:    base             ^>=4.13,
-                    kathu,
-                    verda,
-                    aeson            ^>=1.4,
-                    apecs            ^>=0.9.1,
-                    apecs-physics    ^>=0.4.4,
-                    containers       ^>=0.6.2,
-                    hashtables       >=1.2.0 && <1.3.0,
-                    mono-traversable >=1.0.9 && <1.1,
+                    aeson, cereal,
+                    -- todo toggle with flag
                     gi-gdk           ^>=3.0.0,
                     gi-gdkpixbuf     ^>=2.0.23,
                     gi-gio           ^>=2.0.2,
@@ -145,9 +131,16 @@ executable kathu
                     gi-gobject       ^>=2.0.22,
                     gi-gtk           ^>=3.0.0,
                     haskell-gi       ^>=0.23.0,
-                    haskell-gi-base  ^>=0.23.0,
-                    sdl2             ^>=2.5,
-                    filepath, lens, linear, random, sdl2-image, sdl2-ttf, text, vector, vector-algorithms
+                    haskell-gi-base  ^>=0.23.0
+  hs-source-dirs:   library
+  ghc-options:      -Wall -Werror -Wincomplete-record-updates -Wredundant-constraints -Wincomplete-uni-patterns
+  default-language: Haskell2010
+
+executable kathu
+  import:           kathu-extensions
+  main-is:          Main.hs
+  build-depends:    base             ^>=4.13,
+                    kathu
   hs-source-dirs:   exec
   ghc-options:      -threaded -Wall -Werror -Wincomplete-record-updates -Wredundant-constraints -Wincomplete-uni-patterns
   default-language: Haskell2010

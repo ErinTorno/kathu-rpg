@@ -1,0 +1,5 @@
+tile-id:  pipe-vertical
+name:     vertical pipe
+sprite:   pipe-vertical.png
+is-solid: true
+break-behavior: unbreakable
