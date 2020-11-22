@@ -19,9 +19,9 @@ import           Verda.System.Tile.Components
 
 import           Verda.Parsing.Aeson         ()
 import           Verda.Util.Containers       (foldlMVec, foldrMVec, fromJustElseError, splitEveryN)
-import           Kathu.Util.Polygon
 import           Verda.Util.Types
 import           Kathu.World.Tile
+import           Kathu.World.Polygons
 
 ---------------
 -- Collision --

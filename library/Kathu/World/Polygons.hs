@@ -1,4 +1,4 @@
-module Kathu.Util.Polygon
+module Kathu.World.Polygons
     ( Polygon(..)
     , mapPolyList
     , mapPolyVertices

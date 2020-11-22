@@ -1,4 +1,4 @@
-module Kathu.Test.Util (utilTests) where
+module Kathu.Test.World (utilTests) where
 
 import           Data.Set            (Set)
 import qualified Data.Set            as Set
@@ -7,10 +7,10 @@ import qualified Data.Vector.Unboxed as UVec
 import           Linear.V2           (V2(..))
 import           Test.HUnit
 
-import           Kathu.Util.Polygon
+import           Kathu.World.Polygons
 
-utilTests :: Test
-utilTests = TestList
+worldTests :: Test
+worldTests = TestList
     [ TestLabel "triangulate Simple" triangulateSimple
     , TestLabel "triangulate One-Hole" triangulateWithOneHole
     , TestLabel "polygonsFromBinaryGrid Empty" fromGridEmpty

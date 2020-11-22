@@ -88,13 +88,6 @@ library
                     Kathu.Graphics.Debug
                     Kathu.Graphics.Palette
                     Kathu.Graphics.UI
-                    -- World
-                    Kathu.World.ChunkBuilder
-                    Kathu.World.Loader
-                    Kathu.World.Stasis
-                    Kathu.World.Tile
-                    Kathu.World.Time
-                    Kathu.World.WorldSpace
                     -- Scripting
                     Kathu.Scripting.Event
                     Kathu.Scripting.Lua
@@ -103,8 +96,14 @@ library
                     Kathu.Scripting.Lua.Types
                     Kathu.Scripting.Variables
                     Kathu.Scripting.Wire
-                    -- Utility
-                    Kathu.Util.Polygon
+                    -- World
+                    Kathu.World.ChunkBuilder
+                    Kathu.World.Loader
+                    Kathu.World.Polygons
+                    Kathu.World.Stasis
+                    Kathu.World.Tile
+                    Kathu.World.Time
+                    Kathu.World.WorldSpace
   other-modules:    Paths_kathu
   build-depends:    base                    ^>=4.13,
                     verda,
