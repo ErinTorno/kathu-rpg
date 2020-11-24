@@ -54,10 +54,10 @@ mutateWirePower sigName f (WireReceivers con) = do
 ------------
 
 addWireController :: Identifier -> ActiveScript -> ActiveScript
-addWireController sigName as = as { wireSignals = Vec.cons sigName (wireSignals as) }
+addWireController sigName as = as {wireControllers = Vec.cons sigName (wireControllers as)}
 
 addWireReceiver :: forall w. (ReadWriteEach w IO [RunningScriptEntity, ScriptEventBuffer, WireReceivers])
-                => Identifier -> ActiveScript -> SystemT w IO ()
+                => Identifier -> ActiveScript -> SystemT w IO ActiveScript
 addWireReceiver sigName as@ActiveScript {instanceEntity = ety} = do
     world     <- ask
     receivers <- get global
@@ -68,3 +68,4 @@ addWireReceiver sigName as@ActiveScript {instanceEntity = ety} = do
             global $= ScriptEventBuffer (Apecs.runWith world (onChange i) : buffer)
             
     liftIO $ addWireListener sigName (unEntity ety) onChangeIO receivers
+    pure $ as {wireReceivers = Vec.cons sigName (wireReceivers as)}

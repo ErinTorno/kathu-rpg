@@ -8,6 +8,7 @@ module Kathu.Scripting.Event
     , isEventSet
     , onUpdate
     , onInit
+    , onInteract
     , onDestroy
     , onSignalChange
     , onSensorCollisionBegin
@@ -47,13 +48,14 @@ setEventFlagEnabled event flags False = disableEventFlag event flags
 isEventSet :: ScriptEvent -> EventFlag -> Bool
 isEventSet (ScriptEvent e) (EventFlag f) = 0 /= e .&. f
 
-onUpdate, onInit, onDestroy, onSignalChange, onSensorCollisionBegin, onSensorCollisionEnd :: ScriptEvent
+onUpdate, onInit, onDestroy, onSignalChange, onSensorCollisionBegin, onSensorCollisionEnd, onInteract :: ScriptEvent
 onUpdate               = ScriptEvent $ bit 1
 onInit                 = ScriptEvent $ bit 2
 onDestroy              = ScriptEvent $ bit 3
 onSignalChange         = ScriptEvent $ bit 4
 onSensorCollisionBegin = ScriptEvent $ bit 5
 onSensorCollisionEnd   = ScriptEvent $ bit 6
+onInteract             = ScriptEvent $ bit 7
 
 allEvents :: Map Text ScriptEvent
 allEvents = Map.fromList
@@ -63,6 +65,7 @@ allEvents = Map.fromList
     , ("on-signal-change",          onSignalChange        )
     , ("on-sensor-collision-begin", onSensorCollisionBegin)
     , ("on-sensor-collision-end",   onSensorCollisionEnd  )
+    , ("on-interact",               onInteract            )
     ]
 
 instance ToJSON ScriptEvent where

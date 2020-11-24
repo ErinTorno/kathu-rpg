@@ -21,7 +21,7 @@ import           Kathu.Editor.Tools.EventQueue
 import           Kathu.Editor.Tools.ToolMode
 import           Kathu.Config.Dictionary   (dictParsingStore, dictTiles)
 import           Kathu.Config.KathuStore   (psCountingIDs)
-import           Kathu.Editor.Dialogs
+import           Kathu.Editor.Dialogs.ScriptEditor
 import           Kathu.Editor.Resources
 import           Kathu.Editor.Types
 import           Kathu.Editor.Util.PropertyGrid
@@ -157,7 +157,7 @@ mkScriptPropertyRow res rowNum grid wsRef = do
                 worldScript ?~ script
 
     prevScript   <- view worldScript <$> readIORef wsRef
-    dialogRunner <- createEditScriptDialogRunner
+    dialogRunner <- mkEditScriptDialogRunner
 
     editBtn   <- new Gtk.Button [#image := iconEdit res,   #tooltipText := "Edit Script"]
     deleteBtn <- new Gtk.Button [#image := iconDelete res, #tooltipText := "Remove Script"]

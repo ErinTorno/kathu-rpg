@@ -29,13 +29,25 @@ initPhysics = do
             when (colFilA == movementSensorFilter) $ do
                 maybeScript <- get etyA
                 case maybeScript of
-                    Just script -> when (Lua.shouldScriptRun event script) $ Lua.execFor script (Lua.call fnName (unEntity etyA) (unEntity etyB))
+                    Just script -> when (Lua.shouldScriptRun event script) $
+                        Lua.execFor script (Lua.call fnName (unEntity etyA) (unEntity etyB))
                     Nothing     -> pure ()
-
-    begin <- mkBeginCB $ \(Collision _ bodyA bodyB shapeA _) -> do
+    begin <- mkBeginCB $ \(Collision _ bodyA bodyB shapeA shapeB) -> do
         colFilA <- get shapeA
+        colFilB <- get shapeB
         -- only check for A as sensor, since the collision event will get called a second time with flipped entities
         callSensorCollide onSensorCollisionBegin "onSensorCollisionBegin" colFilA bodyA bodyB
+        playerActions <- getUnique
+        let isInteract = case playerActions of
+                Just (actionSet, _ :: Local) -> actionSet^.isInteracting
+                Nothing -> False
+        -- todo think of how to prevent delay between interacts
+        when (False && isInteract && colFilA == interactFilter && colFilB == interactorFilter) $ do
+            maybeScript <- get bodyA
+            case maybeScript of
+                Just script -> when (Lua.shouldScriptRun onInteract script) $
+                    Lua.execFor script (Lua.call "onInteract" (unEntity bodyA) (unEntity bodyB))
+                Nothing     -> pure ()
         pure True
 
     separate <- mkSeparateCB $ \(Collision _ bodyA bodyB shapeA _) -> do
@@ -60,7 +72,12 @@ runPhysics = do
     cmap $ \(as, Local press) ->
         let dir       = getDirection press
             facingDir = fromMaybe (as^.facingDirection) dir
-         in set isFocused (timedVal $ press^.useFocus) . set facingDirection facingDir . set moving dir . set lastMoving (as^.moving) $ as
+         in set isFocused (timedVal $ press^.useFocus)
+          . set isInteracting (timedVal $ press^.useInteract)
+          . set facingDirection facingDir
+          . set moving dir
+          . set lastMoving (as^.moving)
+          $ as
     -- Applies for all moving acting entities
     cmap $ \(MovingSpeed s, Velocity v, Mass m, as) -> Force
                                                      . getMoveVector v (movingAcceleration m s) (if as^.isFocused then s / 2 else s)

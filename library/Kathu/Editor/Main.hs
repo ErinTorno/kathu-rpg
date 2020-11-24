@@ -26,7 +26,7 @@ import           Kathu.Editor.Tools.EventHandler
 import           Kathu.Editor.Tools.EventQueue
 import           Kathu.Editor.Tools.ToolSystem (addToolSystemExtension, runToolMode)
 import           Kathu.Config.Settings
-import           Kathu.Editor.Dialogs
+import           Kathu.Editor.Dialogs.About
 import           Kathu.Editor.Dialogs.Entity
 import           Kathu.Editor.File
 import           Kathu.Editor.Panels

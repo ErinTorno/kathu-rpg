@@ -33,13 +33,13 @@ call :: Lua.LuaCallFunc a => String -> a
 call = callFunc
 
 releaseActiveScript :: HasScripting w IO => ActiveScript -> SystemT w IO ()
-releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched signals singStatus _) = do
+releaseActiveScript as@(ActiveScript stmvar _ scriptEntity watched _ wireReceivers singStatus _) = do
     let ety = unEntity scriptEntity
     when (scriptEntity /= global && shouldScriptRun onDestroy as) $
         execFor as (call "onDestroy" ety)
 
     receivers <- get global
-    Vec.forM_ signals $ deleteWireListener ety receivers
+    Vec.forM_ wireReceivers $ deleteWireListener ety receivers
 
     -- don't want to fully release an singleton instance at this time if we aren't clearing the master, non-shared script state
     when (singStatus /= SingletonReference) $ do
@@ -57,7 +57,7 @@ mkActiveScript mapper !ety !singStatus !initLua (Script _ mainScr flags _) = do
     mvar <- liftIO newEmptyMVar
     -- warning: by this point no mvar is supplied, so if something tries to use it it will have issues
     -- fortunately nothing should, as this won't trigger execFor/runFor or events
-    let baseAS = mapper $ ActiveScript mvar flags ety Vec.empty Vec.empty singStatus Map.empty
+    let baseAS = mapper $ ActiveScript mvar flags ety Vec.empty Vec.empty Vec.empty singStatus Map.empty
     ety    $= baseAS
     global $= RunningScriptEntity (Just ety)
 

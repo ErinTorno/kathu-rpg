@@ -1,7 +1,9 @@
 module Kathu.Scripting.Lua.Global (registerGlobalFunctions) where
 
 import           Apecs
+import           Control.Lens
 import           Control.Monad             (forM_, when)
+import qualified Data.Map                  as Map
 import           Data.Maybe                (fromMaybe, isJust)
 import           Data.Text                 (Text)
 import           Foreign.Lua
@@ -16,11 +18,14 @@ import           Verda.Util.Types
 import           Verda.Util.Apecs
 import           Verda.World               (IsDebug(..))
 
+import           Kathu.Config.Dictionary
+import           Kathu.Entity.Item         (ItemStack(..))
 import           Kathu.Entity.Components
 import           Kathu.Entity.System
 import           Kathu.Random
 import           Kathu.Scripting.Lua.Types
 import           Kathu.Scripting.Variables
+import           Kathu.World.WorldSpace    (WorldInventory(..), WorldSpace(..))
 
 registerGlobalFunctions :: KathuWorld -> Lua ()
 registerGlobalFunctions  world = do
@@ -50,6 +55,12 @@ registerGlobalFunctions  world = do
 
     registerHaskellFunction "setPalette"        $ setPaletteLua world
     registerHaskellFunction "newEntity"         $ newFromPrototypeLua world
+
+    registerHaskellFunction "getCurrentWorldspaceID"   $ getCurrentWorldspaceID world
+    registerHaskellFunction "addWorldInventoryItem"    $ addWorldInventoryItem world
+    registerHaskellFunction "getWorldSpaceInventoryID" $ getWorldSpaceInventoryID world
+    registerHaskellFunction "hasWorldInventoryItem"    $ hasWorldInventoryItem world
+    registerHaskellFunction "removeWorldInventoryItem" $ removeWorldInventoryItem world
 
     registerHaskellFunction "registerGlobalVarListener" $ registerListener addGlobalListener world
     registerHaskellFunction "registerWorldVarListener"  $ registerListener addWorldListener world
@@ -127,6 +138,44 @@ getLogicTime !world = liftIO . Apecs.runWith world $ (fromIntegral . unLogicTime
 
 getRenderTime :: KathuWorld -> Lua Int
 getRenderTime !world = liftIO . Apecs.runWith world $ (fromIntegral . unRenderTime <$> get global)
+
+getCurrentWorldspaceID :: KathuWorld -> Lua Identifier
+getCurrentWorldspaceID !world = liftIO . Apecs.runWith world $ (_worldID <$> get global)
+
+getWorldSpaceField :: (WorldSpace -> a) -> KathuWorld -> Identifier -> Lua (Optional a)
+getWorldSpaceField f !world !worldID = liftIO . Apecs.runWith world $ do
+    dict <- get global
+    pure $ case dict^.dictWorldSpaces.to (Map.lookup worldID) of
+        Nothing -> Optional Nothing
+        Just ws -> Optional . Just . f $ ws
+
+getWorldSpaceInventoryID :: KathuWorld -> Identifier -> Lua (Optional Identifier)
+getWorldSpaceInventoryID = getWorldSpaceField _worldInventory
+
+hasWorldInventoryItem :: KathuWorld -> Identifier -> Identifier -> Int -> Lua Bool
+hasWorldInventoryItem !world !worldInvID !itemID !count = liftIO . Apecs.runWith world $ do
+    WorldInventory worldInv <- get global
+    pure $ case Map.lookup worldInvID worldInv of
+        Nothing  -> False
+        Just inv -> case Map.lookup itemID inv of
+            Nothing              -> False
+            Just (ItemStack _ n) -> n >= count
+
+addWorldInventoryItem :: KathuWorld -> Identifier -> Identifier -> Int -> Lua ()
+addWorldInventoryItem !world !worldInvID !itemID !count = liftIO . Apecs.runWith world $ do
+    dict <- get global
+    WorldInventory worldInv <- get global
+    forM_ (Map.lookup worldInvID worldInv) $ \inv ->
+        case dict^.dictItems.to (Map.lookup itemID) of
+            Nothing   -> pure ()
+            Just item ->
+                let addItem Nothing                = if count <= 0     then Nothing else Just $ ItemStack item count
+                    addItem (Just (ItemStack _ n)) = if n + count <= 0 then Nothing else Just $ ItemStack item (count + n)
+                    inv' = Map.alter addItem itemID inv
+                 in global $= WorldInventory (Map.insert worldInvID inv' worldInv)
+
+removeWorldInventoryItem :: KathuWorld -> Identifier -> Identifier -> Int -> Lua ()
+removeWorldInventoryItem !world !worldInvID !itemID = addWorldInventoryItem world worldInvID itemID . negate
 
 ---------------
 -- Variables --

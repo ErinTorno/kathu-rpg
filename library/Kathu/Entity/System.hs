@@ -37,7 +37,7 @@ import           Kathu.Scripting.Wire
 import           Kathu.World.Stasis              (WorldStases)
 import           Kathu.World.Tile                (AllTiles')
 import           Kathu.World.Time                (WorldTime)
-import           Kathu.World.WorldSpace          (EditorInstancedFromWorld, WorldSpace)
+import           Kathu.World.WorldSpace          (EditorInstancedFromWorld, WorldInventory, WorldSpace)
 
 -- ECS Util
 -- selects all unique and non-unique components that an individual entity might have
@@ -56,9 +56,10 @@ makeWorld "KathuWorld"
    ++ baseVerdaComponentNames
    ++ [''SpecialEntity, ''Identity, ''LifeTime, ''ActiveScript, ''WorldFloor, ''MovingSpeed, ''Tags, ''ActorState, ''Inventory, ''EditorInstancedFromWorld, ''ActionSet]
    ++ [''Local, ''Player]
-   ++ [''AllTiles', ''Chunks, ''WorldTime, ''PaletteManager, ''Random, ''WorldStases, ''FloorProperties, ''Variables, ''IncludeEditorInfo]
-   ++ [''Settings, ''UIConfig, ''WorldSpace, ''Dictionary, ''Language, ''LuaModules, ''ScriptBank, ''RunningScriptEntity, ''ScriptEventBuffer, ''WireReceivers]
-   ++ [''ToolMode, ''ToolModeUniversalState]
+   ++ [''Dictionary, ''Language, ''PaletteManager, ''Random, ''Settings, ''UIConfig]
+   ++ [''LuaModules, ''RunningScriptEntity, ''ScriptBank, ''ScriptEventBuffer, ''Variables, ''WireReceivers]
+   ++ [''AllTiles', ''Chunks, ''FloorProperties, ''WorldTime, ''WorldInventory, ''WorldSpace, ''WorldStases]
+   ++ [''IncludeEditorInfo, ''ToolMode, ''ToolModeUniversalState]
 
 type System' a = System KathuWorld a
 type SystemT' m a = SystemT KathuWorld m a

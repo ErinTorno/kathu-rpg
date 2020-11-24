@@ -14,8 +14,9 @@ physics:
   friction:   0
   elasticity: 0
   shapes:
-  - {category: movement, shape: rectangle, bounds: [0.5, 0.25], origin: [-0.25, -0.25]}
-  - {category: hitbox,   shape: circle,    radius: 0.15,        origin: [0, -0.5]}
+  - {category: movement,   shape: rectangle, bounds: [0.5, 0.25], origin: [-0.25, -0.25]}
+  - {category: hitbox,     shape: circle,    radius: 0.15,        origin: [0, -0.5]}
+  - {category: interactor, shape: circle,    radius: 0.75,        origin: [0, -0.3]}
 # - {shape: rectangle, bounds: [1, 1],   origin: [0.5, 0.75]}
 sprite:
   atlas:  player.png

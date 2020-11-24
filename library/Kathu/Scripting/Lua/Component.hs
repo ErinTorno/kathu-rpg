@@ -105,12 +105,11 @@ setSpriteAnimation !world !ety !animIdt = liftIO . Apecs.runWith world $ do
 
 setCollisionCategory :: KathuWorld -> Entity -> Text -> Optional Text -> Lua ()
 setCollisionCategory !world !ety colCategory (Optional tag) = liftIO . Apecs.runWith world $ do
-    ShapeList shapes <- get ety
-    
     let maybeColGroup = collisionGroupFromText colCategory
     case groupCollisionFilter <$> maybeColGroup of
         Nothing        -> lift . putStrLn $ "Couldn't find collision category " ++ show colCategory
-        Just colFilter ->
+        Just colFilter -> do
+            ShapeList shapes <- get ety
             forM_ shapes $ \sEty -> do
                 maybeTags <- get sEty
                 let colGroup = fromJust maybeColGroup
@@ -171,7 +170,7 @@ modifyWirePower !world !ety !dPower = liftIO . Apecs.runWith world $ do
     receivers <- get global
     maybeScript :: Maybe ActiveScript <- get ety
 
-    forM_ maybeScript $ \script -> Vec.forM_ (wireSignals script) $ \signalID ->
+    forM_ maybeScript $ \script -> Vec.forM_ (wireControllers script) $ \signalID ->
         mutateWirePower signalID (+dPower) receivers
 
 -- Script --

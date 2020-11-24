@@ -31,6 +31,7 @@ data Item = Item
     , itemIcon    :: Sprite
     , stackSize   :: Int
     , price       :: Int
+    , autoPickup  :: Bool
     , specialCategory :: SpecialCategory
     -- Effects?
     }
@@ -108,6 +109,7 @@ instance ( s `CanStore` IDMap Item
                   <*> v .:- "icon"
                   <*> v .:^ "max-stack-size"
                   <*> v .:^ "price"
+                  <*> (v .:^? "auto-pickup" .!=- False)
                   <*> v .:^? "special-category" .!=- NonUnique
     parseJSON v = typeMismatch "Item" v
 

@@ -74,7 +74,9 @@ placeInstancedPrefab instancedPrefab@(InstancedPrefab _ prefab pos sigOut sigIn 
     forM_ sigIn $ \sig -> do
         maybeScript <- getIfExists ety
         forM_ maybeScript $ \script ->
-                when (Lua.shouldScriptRun onSignalChange script) $ addWireReceiver sig script
+            when (Lua.shouldScriptRun onSignalChange script) $ do
+                activeScript' <- addWireReceiver sig script
+                ety $= activeScript'
 
 rebuildCurrentTileCollisions :: SystemT' IO ()
 rebuildCurrentTileCollisions = do

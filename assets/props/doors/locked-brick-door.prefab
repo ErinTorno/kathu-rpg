@@ -1,0 +1,30 @@
+identity:
+  id: locked-brick-door
+tags: [door]
+script:
+  file:   locked-door.lua
+  is-singleton: true
+  events: [on-sensor-collision-begin]
+sprite:
+  atlas:  locked-brick-door.png
+  bounds: [34, 48]
+  animations:
+    closed: {row: 0, frames: 1, delay: 1000}
+    open:   {row: 1, frames: 1, delay: 1000}
+physics:
+  type:   static
+  shapes:
+  - tag:      closed
+    category: movement
+    shape:    rectangle
+    bounds:   [2.0, 1.0]
+  - tag:      open
+    category: intangible
+    shape:    rectangle
+    bounds:   [0.35, 1.0]
+    origin:   [-1, -1]
+  - tag:      open
+    category: intangible
+    shape:    rectangle
+    bounds:   [0.35, 1.0]
+    origin:   [0.65, -1]

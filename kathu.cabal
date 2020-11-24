@@ -62,8 +62,9 @@ library
                     Kathu.Editor.Tools.ToolSystem
                     -- Editor
                     -- todo toggle with flag
-                    Kathu.Editor.Dialogs
+                    Kathu.Editor.Dialogs.About
                     Kathu.Editor.Dialogs.Entity
+                    Kathu.Editor.Dialogs.ScriptEditor
                     Kathu.Editor.File
                     Kathu.Editor.Main
                     Kathu.Editor.Panels

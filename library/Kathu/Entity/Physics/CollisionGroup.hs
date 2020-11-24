@@ -9,6 +9,7 @@ module Kathu.Entity.Physics.CollisionGroup
     , movementSensorFilter
     , floorEffectFilter
     , interactFilter
+    , interactorFilter
     , hitboxFilter
     , attackFilter
     , editorInfoFilter
@@ -29,6 +30,7 @@ data CollisionGroup
     | MovementSensor
     | FloorEffect
     | Interact
+    | Interactor
     | Hitbox
     | Attack
     | Intangible
@@ -42,6 +44,7 @@ collisionGroupFromText s = case s of
     "movement-sensor" -> Just MovementSensor
     "floor-effect"    -> Just FloorEffect
     "interact"        -> Just Interact
+    "interactor"      -> Just Interactor
     "hitbox"          -> Just Hitbox
     "attack"          -> Just Attack
     "intangible"      -> Just Intangible
@@ -61,7 +64,8 @@ collisionGroups = Vec.fromList
     [ mkFilter Movement       [Movement, MovementSensor, FloorEffect]
     , mkFilter MovementSensor [Movement]
     , mkFilter FloorEffect    [Movement]
-    , mkFilter Interact       [Movement]
+    , mkFilter Interact       [Interactor]
+    , mkFilter Interactor     [Interact]
     , mkFilter Hitbox         [Attack]
     , mkFilter Attack         [Hitbox]
     , mkFilter Intangible     ([] :: [CollisionGroup])
@@ -73,11 +77,12 @@ collisionGroups = Vec.fromList
 groupCollisionFilter :: CollisionGroup -> CollisionFilter
 groupCollisionFilter = (collisionGroups Vec.!) . fromEnum
 
-movementFilter, movementSensorFilter, floorEffectFilter, interactFilter, hitboxFilter, attackFilter, editorInfoFilter, editorSensorFilter :: CollisionFilter
+movementFilter, movementSensorFilter, floorEffectFilter, interactFilter, interactorFilter, hitboxFilter, attackFilter, editorInfoFilter, editorSensorFilter :: CollisionFilter
 movementFilter       = groupCollisionFilter Movement
 movementSensorFilter = groupCollisionFilter MovementSensor
 floorEffectFilter    = groupCollisionFilter FloorEffect
 interactFilter       = groupCollisionFilter Interact
+interactorFilter     = groupCollisionFilter Interactor
 hitboxFilter         = groupCollisionFilter Hitbox
 attackFilter         = groupCollisionFilter Attack
 editorInfoFilter     = groupCollisionFilter EditorInfo
@@ -90,6 +95,7 @@ collisionGroupDebugColor group = case group of
     MovementSensor -> mkColor  55  81 150 255
     FloorEffect    -> mkColor 133  82 156 255
     Interact       -> mkColor  88 204  79 255
+    Interactor     -> mkColor 132 255 123 255
     Hitbox         -> mkColor 223  58 108 255
     Attack         -> mkColor 223 143  58 255
     Intangible     -> mkColor  56  81  98 255

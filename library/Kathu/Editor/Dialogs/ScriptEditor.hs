@@ -1,9 +1,6 @@
 {-# LANGUAGE OverloadedLists #-}
 
-module Kathu.Editor.Dialogs where
-
-import           Paths_kathu                (version)
-import           Data.Version               (showVersion)
+module Kathu.Editor.Dialogs.ScriptEditor where
 
 import           Control.Lens               hiding (set)
 import           Control.Monad              (forM, forM_, void, when)
@@ -19,8 +16,8 @@ import qualified Kathu.Scripting.Lua        as Lua
 import           Kathu.Scripting.Event
 
 -- | Creates a dialog for editing a script, and returns an IO action that displays, saves, and then hides the dialog
-createEditScriptDialogRunner :: IO (DialogRunner Lua.Script)
-createEditScriptDialogRunner = do
+mkEditScriptDialogRunner :: IO (DialogRunner Lua.Script)
+mkEditScriptDialogRunner = do
     dialog    <- new Gtk.Dialog [#title := "Edit Script", #modal := True]
     scriptRef <- newIORef Lua.blankScript
 
@@ -70,15 +67,3 @@ createEditScriptDialogRunner = do
                     Gtk.widgetHide dialogContent
                     Gtk.widgetHide dialog
     pure runUntilClose
-
--- | Shows the about dialog for this program
-showAboutDialog :: IO ()
-showAboutDialog = do
-    dialog <- new Gtk.AboutDialog
-        [ #authors     := ["Erin Torno"]
-        , #comments    := "An editor for creating and working with Kathu's .world files"
-        , #programName := "Kathu Editor"
-        , #version     := T.pack (showVersion version)
-        ]
-    void $ Gtk.dialogRun dialog
-    Gtk.widgetDestroy dialog

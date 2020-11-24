@@ -12,6 +12,7 @@ data Controls = Controls
     , inputMoveSouth         :: !InputCode
     , inputMoveWest          :: !InputCode
     , inputFocus             :: !InputCode
+    , inputInteract          :: !InputCode
     , inputToggleDebug       :: !InputCode
     , inputDebugZoomIn       :: !InputCode
     , inputDebugZoomOut      :: !InputCode
@@ -31,6 +32,7 @@ defaultControls = Controls
     , inputMoveSouth         = fromScanCode SDL.ScancodeS
     , inputMoveWest          = fromScanCode SDL.ScancodeA
     , inputFocus             = fromScanCode SDL.ScancodeLShift
+    , inputInteract          = fromScanCode SDL.ScancodeE
     , inputToggleDebug       = fromScanCode SDL.ScancodeF3
     , inputDebugZoomIn       = fromScanCode SDL.ScancodeKPMinus
     , inputDebugZoomOut      = fromScanCode SDL.ScancodeKPPlus

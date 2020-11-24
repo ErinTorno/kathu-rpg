@@ -84,7 +84,8 @@ data ActiveScript = ActiveScript
     , eventFlags        :: !EventFlag
     , instanceEntity    :: !Entity
     , watchedVariables  :: !(Vector WatchedVariable)
-    , wireSignals       :: !(Vector Identifier)      -- this script can attempt to send signals to entities holding these wire identifiers
+    , wireControllers   :: !(Vector Identifier)      -- this script can attempt to send signals to entities holding these wire identifiers
+    , wireReceivers     :: !(Vector Identifier)
     , singletonStatus   :: !SingletonStatus
     , instanceConfig    :: !(IDMap WorldVariable)
     }

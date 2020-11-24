@@ -19,6 +19,7 @@ data ActionSet = ActionSet
     , _lastMoving      :: !(Maybe Direction)
     , _facingDirection :: !Direction -- so even if waiting, we still know which direction to draw
     , _isFocused       :: !Bool
+    , _isInteracting   :: !Bool
     , _usingPrimary    :: !(Maybe Double) -- angle
     , _usingSecondary  :: !(Maybe Double) -- angle; should be changed to TimeStamped to allow for charging
     }
@@ -30,7 +31,7 @@ newDirection :: ActionSet -> Bool
 newDirection aset = view moving aset /= view lastMoving aset
 
 emptyActionSet :: ActionSet
-emptyActionSet = ActionSet id Nothing Nothing South False Nothing Nothing
+emptyActionSet = ActionSet id Nothing Nothing South False False Nothing Nothing
 
 -- unlike NPCs, the player gives input that is later combined
 data ActionPressed = ActionPressed
@@ -39,13 +40,14 @@ data ActionPressed = ActionPressed
     , _moveSouth    :: !(TimeStamped Bool)
     , _moveWest     :: !(TimeStamped Bool)
     , _useFocus     :: !(TimeStamped Bool)
+    , _useInteract  :: !(TimeStamped Bool)
     , _usePrimary   :: !(TimeStamped Bool)
     , _useSecondary :: !(TimeStamped Bool)
     } deriving (Show, Eq)
 makeLenses ''ActionPressed
 
 emptyActionPressed :: ActionPressed
-emptyActionPressed = ActionPressed noPress noPress noPress noPress noPress noPress noPress
+emptyActionPressed = ActionPressed noPress noPress noPress noPress noPress noPress noPress noPress
     where noPress = TimeStamped False 0
 
 -- (\n -> if n == Nothing then n else error . show $ n)

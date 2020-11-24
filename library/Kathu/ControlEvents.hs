@@ -40,6 +40,7 @@ updateControls = do
                             >>= ukp (inputMoveNorth cs) moveNorth
                             >>= ukp (inputMoveSouth cs) moveSouth
                             >>= ukp (inputFocus cs) useFocus
+                            >>= ukp (inputInteract cs) useInteract
     cmapM $ \(Local actions) -> Local <$> updateActions actions
 
 ------------------

@@ -5,6 +5,7 @@ controls:
   input-toggle-debug: 60
   input-debug-print-physics: 64
   input-debug-zoom-out: 87
+  input-interact: 8
   input-move-east: 7
   input-move-west: 4
   input-move-south: 22

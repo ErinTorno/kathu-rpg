@@ -1,5 +1,11 @@
 # Revision history for kathu
 
+## 0.1.12.0 -- TBD
+* Massive refactor to work with verda game engine, see verda changelogs for new features over previous engine
+* Added ability to interact with entities, and register events to fire with it
+* Added worldspace inventory and lua functions to manipulate it
+* Fixed deleted entity not removing wire receiver connections from a wire
+
 ## 0.1.11.0 -- 2020-04-24
 * Added map editor mode enabled by starting the program with either the --editor argument, or by passing in a .world file as an argument
 * Editor can load worlds into the game and play them; saving isn't supported yet
